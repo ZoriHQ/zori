@@ -1,0 +1,3 @@
+package ingestion
+
+func BuildDiContainer() {}

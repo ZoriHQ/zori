@@ -1,10 +1,22 @@
 package config
 
-import "github.com/caarlos0/env/v11"
+import (
+	"time"
+
+	"github.com/caarlos0/env/v11"
+)
 
 type Config struct {
 	ClickHouseURL string `env:"CLICKHOUSE_URL"`
 	PostgresURL   string `env:"POSTGRES_URL"`
+
+	// JWT Configuration
+	JWTSecretKey       string        `env:"JWT_SECRET_KEY" envDefault:"your-super-secret-key-change-in-production-min-32-chars"`
+	JWTAccessTokenTTL  time.Duration `env:"JWT_ACCESS_TOKEN_TTL" envDefault:"15m"`
+	JWTRefreshTokenTTL time.Duration `env:"JWT_REFRESH_TOKEN_TTL" envDefault:"168h"`
+
+	// Bcrypt Configuration
+	BcryptCost int `env:"BCRYPT_COST" envDefault:"12"`
 }
 
 func NewConfig() *Config {
