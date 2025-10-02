@@ -8,18 +8,12 @@ import (
 	"marker/internal/server"
 	"marker/internal/storage/postgres"
 	"marker/internal/utils"
+	"marker/services/auth/helpers"
 	"marker/services/auth/models"
 
 	"github.com/google/uuid"
 	"github.com/uptrace/bun"
 )
-
-type AuthService struct {
-	db       *bun.DB
-	password *PasswordService
-	jwt      *JWTService
-	token    *TokenService
-}
 
 type RegisterRequest struct {
 	Email            string `json:"email" validate:"required,email"`
@@ -34,12 +28,23 @@ type LoginRequest struct {
 	Password string `json:"password" validate:"required"`
 }
 
+type RefreshRequest struct {
+	RefreshToken string `json:"refresh_token" validate:"required"`
+}
+
 type AuthResponse struct {
 	AccessToken  string               `json:"access_token"`
 	RefreshToken string               `json:"refresh_token"`
 	ExpiresIn    int64                `json:"expires_in"`
 	Account      *models.Account      `json:"account"`
 	Organization *models.Organization `json:"organization"`
+}
+
+type AuthService struct {
+	db       *bun.DB
+	password *PasswordService
+	jwt      *JWTService
+	token    *TokenService
 }
 
 func NewAuthService(db *postgres.PostgresDB, password *PasswordService, jwt *JWTService, token *TokenService) *AuthService {
@@ -78,7 +83,7 @@ func (s *AuthService) Register(ctx *server.Ctx) (any, error) {
 		return nil, err
 	}
 
-	slug := generateSlug(req.OrganizationName)
+	slug := helpers.GenerateSlug(req.OrganizationName)
 
 	tx, err := s.db.BeginTx(ctx.Echo.Request().Context(), nil)
 	if err != nil {
@@ -217,7 +222,6 @@ func (s *AuthService) Login(ctx *server.Ctx) (any, error) {
 		return nil, fmt.Errorf("failed to create session: %w", err)
 	}
 
-	// Generate JWT tokens with session ID
 	accessToken, refreshToken, err := s.jwt.GenerateTokenPair(
 		sessionID,
 		account.ID,
@@ -239,10 +243,6 @@ func (s *AuthService) Login(ctx *server.Ctx) (any, error) {
 }
 
 func (s *AuthService) RefreshToken(ctx *server.Ctx) (any, error) {
-	type RefreshRequest struct {
-		RefreshToken string `json:"refresh_token" validate:"required"`
-	}
-
 	var req RefreshRequest
 	if err := ctx.Echo.Bind(&req); err != nil {
 		return nil, err
@@ -392,11 +392,4 @@ func (s *AuthService) RecoverConfirm(ctx *server.Ctx) (any, error) {
 
 	// TODO: Implement password recovery confirmation
 	return map[string]string{"message": "Password recovery confirmation not implemented yet"}, nil
-}
-
-func generateSlug(name string) string {
-	slug := strings.ToLower(name)
-	slug = strings.ReplaceAll(slug, " ", "-")
-	// Add timestamp to ensure uniqueness
-	return fmt.Sprintf("%s-%d", slug, time.Now().Unix())
 }
