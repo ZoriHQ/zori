@@ -4,11 +4,12 @@ import (
 	"time"
 
 	"github.com/caarlos0/env/v11"
+	_ "github.com/joho/godotenv/autoload"
 )
 
 type Config struct {
-	ClickHouseURL string `env:"CLICKHOUSE_URL"`
-	PostgresURL   string `env:"POSTGRES_URL"`
+	ClickHouseURL string `env:"CLICKHOUSE_URL,required"`
+	PostgresURL   string `env:"POSTGRES_URL,required"`
 
 	// JWT Configuration
 	JWTSecretKey       string        `env:"JWT_SECRET_KEY" envDefault:"your-super-secret-key-change-in-production-min-32-chars"`

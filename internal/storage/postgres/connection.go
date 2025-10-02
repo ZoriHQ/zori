@@ -17,15 +17,13 @@ type PostgresDB struct {
 	*bun.DB
 }
 
-func NewPostgresDB(cfg *config.Config) (*PostgresDB, error) {
+func NewPostgresDB(cfg *config.Config) *PostgresDB {
 	if cfg.PostgresURL == "" {
-		return nil, fmt.Errorf("POSTGRES_URL is required")
+		panic("POSTGRES_URL is required")
 	}
 
-	// Create a database/sql DB connection
 	sqldb := sql.OpenDB(pgdriver.NewConnector(pgdriver.WithDSN(cfg.PostgresURL)))
 
-	// Create a Bun DB instance
 	db := bun.NewDB(sqldb, pgdialect.New())
 
 	// Add query hook for debugging in development
@@ -36,10 +34,14 @@ func NewPostgresDB(cfg *config.Config) (*PostgresDB, error) {
 
 	// Test the connection
 	if err := db.PingContext(context.Background()); err != nil {
-		return nil, fmt.Errorf("failed to ping database: %w", err)
+		panic(fmt.Errorf("failed to ping database: %w", err))
 	}
 
-	return &PostgresDB{DB: db}, nil
+	return &PostgresDB{DB: db}
+}
+
+func (p *PostgresDB) Db() *bun.DB {
+	return p.DB
 }
 
 func (p *PostgresDB) Close() error {

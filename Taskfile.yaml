@@ -1,0 +1,208 @@
+version: "3"
+
+dotenv: [".env"]
+
+vars:
+  GO_MODULE: marker
+
+tasks:
+  # Server tasks
+  server:
+    desc: Start the HTTP server (default port 8080)
+    cmds:
+      - go run . server
+
+  server:port:
+    desc: Start the HTTP server on custom port
+    cmds:
+      - go run . server --port={{.PORT}}
+    vars:
+      PORT: '{{.PORT | default "3000"}}'
+
+  server:host:
+    desc: Start the HTTP server on custom host and port
+    cmds:
+      - go run . server --host={{.HOST}} --port={{.PORT}}
+    vars:
+      HOST: '{{.HOST | default "localhost"}}'
+      PORT: '{{.PORT | default "8080"}}'
+
+  # Migration tasks
+  migrate:up:
+    desc: Run all pending database migrations
+    cmds:
+      - goose -dir internal/storage/postgres/migrations postgres "$DATABASE_URL" up
+
+  migrate:down:
+    desc: Rollback the last database migration
+    cmds:
+      - goose -dir internal/storage/postgres/migrations postgres "$DATABASE_URL" down
+
+  migrate:status:
+    desc: Show database migration status
+    cmds:
+      - goose -dir internal/storage/postgres/migrations postgres "$DATABASE_URL" status
+
+  migrate:version:
+    desc: Show current migration version
+    cmds:
+      - goose -dir internal/storage/postgres/migrations postgres "$DATABASE_URL" version
+
+  migrate:create:
+    desc: Create a new migration file
+    cmds:
+      - goose -dir internal/storage/postgres/migrations create {{.NAME}} sql
+    vars:
+      NAME: '{{.NAME | default "migration"}}'
+
+  # Database setup tasks
+  db:setup:
+    desc: Initialize database and run all migrations
+    cmds:
+      - task: migrate:up
+
+  db:reset:
+    desc: Reset database (rollback all migrations and re-run)
+    cmds:
+      - goose -dir internal/storage/postgres/migrations postgres "$DATABASE_URL" reset
+      - task: migrate:up
+
+  # Development tasks
+  dev:
+    desc: Run the application in development mode with hot reload
+    cmds:
+      - air
+    silent: true
+
+  # Build tasks (for production)
+  build:
+    desc: Build the application binary
+    cmds:
+      - go build -o {{.GO_MODULE}} .
+    sources:
+      - "**/*.go"
+      - go.mod
+      - go.sum
+    generates:
+      - "{{.GO_MODULE}}"
+
+  build:race:
+    desc: Build the application with race detection
+    cmds:
+      - go build -race -o {{.GO_MODULE}} .
+
+  # Testing tasks
+  test:
+    desc: Run all tests
+    cmds:
+      - go test ./...
+
+  test:verbose:
+    desc: Run all tests with verbose output
+    cmds:
+      - go test -v ./...
+
+  test:race:
+    desc: Run all tests with race detection
+    cmds:
+      - go test -race ./...
+
+  test:coverage:
+    desc: Run tests with coverage report
+    cmds:
+      - go test -coverprofile=coverage.out ./...
+      - go tool cover -html=coverage.out -o coverage.html
+
+  # Code quality tasks
+  fmt:
+    desc: Format Go code
+    cmds:
+      - go fmt ./...
+
+  vet:
+    desc: Run go vet
+    cmds:
+      - go vet ./...
+
+  lint:
+    desc: Run golangci-lint
+    cmds:
+      - golangci-lint run
+
+  tidy:
+    desc: Tidy go modules
+    cmds:
+      - go mod tidy
+
+  # Clean tasks
+  clean:
+    desc: Clean build artifacts and temporary files
+    cmds:
+      - rm -f {{.GO_MODULE}}
+      - rm -f coverage.out coverage.html
+      - go clean -testcache
+
+  clean:all:
+    desc: Clean everything including go module cache
+    deps: [clean]
+    cmds:
+      - go clean -modcache
+
+  # Development workflow tasks
+  check:
+    desc: Run all code quality checks
+    deps: [fmt, vet, lint, test]
+
+  install:deps:
+    desc: Install/update development dependencies
+    cmds:
+      - go install github.com/cosmtrek/air@latest
+      - go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+      - go install github.com/pressly/goose/v3/cmd/goose@latest
+
+  # Docker tasks (if needed)
+  docker:build:
+    desc: Build Docker image
+    cmds:
+      - docker build -t {{.GO_MODULE}}:latest .
+
+  docker:run:
+    desc: Run Docker container
+    cmds:
+      - docker run -p 8080:8080 --env-file .env {{.GO_MODULE}}:latest
+
+  # Environment setup
+  env:copy:
+    desc: Copy example.env to .env
+    cmds:
+      - cp example.env .env
+      - echo "Copied example.env to .env - please update with your values"
+    status:
+      - test -f .env
+
+  env:check:
+    desc: Check if .env file exists and show variables
+    cmds:
+      - |
+        if [ -f .env ]; then
+          echo "✅ .env file exists"
+          echo "Environment variables loaded:"
+          cat .env | grep -v '^#' | grep -v '^$' | cut -d'=' -f1 | sed 's/^/  - /'
+        else
+          echo "❌ .env file not found. Run 'task env:copy' to create one."
+          exit 1
+        fi
+
+  # Quick start task
+  start:
+    desc: Quick start - setup environment and run server
+    cmds:
+      - task: env:copy
+      - task: migrate:up
+      - task: server
+
+  # Help task
+  help:
+    desc: Show available tasks
+    cmds:
+      - task --list-all

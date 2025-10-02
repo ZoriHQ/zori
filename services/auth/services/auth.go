@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"marker/internal/server"
+	"marker/internal/storage/postgres"
 	"marker/internal/utils"
 	"marker/services/auth/models"
 
@@ -41,9 +42,9 @@ type AuthResponse struct {
 	Organization *models.Organization `json:"organization"`
 }
 
-func NewAuthService(db *bun.DB, password *PasswordService, jwt *JWTService, token *TokenService) *AuthService {
+func NewAuthService(db *postgres.PostgresDB, password *PasswordService, jwt *JWTService, token *TokenService) *AuthService {
 	return &AuthService{
-		db:       db,
+		db:       db.DB,
 		password: password,
 		jwt:      jwt,
 		token:    token,
