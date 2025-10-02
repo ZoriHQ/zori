@@ -2,6 +2,7 @@ package auth
 
 import (
 	"marker/services/auth/services"
+	"marker/services/auth/web"
 
 	"go.uber.org/fx"
 )
@@ -14,5 +15,6 @@ func BuildAuthDIContainer() fx.Option {
 			services.NewJWTService,
 			services.NewAuthService,
 		),
+		fx.Invoke(web.RegisterRoutes),
 	)
 }

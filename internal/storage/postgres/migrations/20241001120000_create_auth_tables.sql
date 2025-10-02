@@ -1,3 +1,4 @@
+-- +goose Up
 -- Create organizations table
 CREATE TABLE organizations (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -60,3 +61,20 @@ CREATE TRIGGER update_organizations_updated_at BEFORE UPDATE ON organizations
 
 CREATE TRIGGER update_accounts_updated_at BEFORE UPDATE ON accounts
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- +goose Down
+DROP TRIGGER IF EXISTS update_accounts_updated_at ON accounts;
+DROP TRIGGER IF EXISTS update_organizations_updated_at ON organizations;
+DROP FUNCTION IF EXISTS update_updated_at_column();
+
+DROP INDEX IF EXISTS idx_sessions_expires_at;
+DROP INDEX IF EXISTS idx_sessions_refresh_token;
+DROP INDEX IF EXISTS idx_sessions_account_id;
+DROP INDEX IF EXISTS idx_organization_members_account_id;
+DROP INDEX IF EXISTS idx_organization_members_org_id;
+DROP INDEX IF EXISTS idx_accounts_email;
+
+DROP TABLE IF EXISTS sessions;
+DROP TABLE IF EXISTS organization_members;
+DROP TABLE IF EXISTS accounts;
+DROP TABLE IF EXISTS organizations;
