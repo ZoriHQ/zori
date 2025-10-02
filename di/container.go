@@ -18,7 +18,6 @@ func NewApplication() *fx.App {
 		fx.Provide(
 			config.NewConfig,
 			postgres.NewPostgresDB,
-			postgres.NewMigrator,
 			server.New,
 		),
 
@@ -61,37 +60,4 @@ func registerDatabaseLifecycle(lc fx.Lifecycle, db *postgres.PostgresDB) {
 			return db.Close()
 		},
 	})
-}
-
-func RunMigrations(action string) error {
-	app := fx.New(
-		fx.Provide(
-			config.NewConfig,
-			postgres.NewPostgresDB,
-			postgres.NewMigrator,
-		),
-		fx.Invoke(func(migrator *postgres.Migrator) error {
-			ctx := context.Background()
-
-			switch action {
-			case "up":
-				fmt.Println("Running migrations...")
-				return migrator.Migrate(ctx)
-			case "down":
-				fmt.Println("Rolling back migration...")
-				return migrator.Rollback(ctx)
-			case "status":
-				fmt.Println("Migration status:")
-				return migrator.Status(ctx)
-			case "init":
-				fmt.Println("Initializing migrations...")
-				return migrator.Init(ctx)
-			default:
-				return fmt.Errorf("unknown migration action: %s", action)
-			}
-		}),
-		fx.NopLogger,
-	)
-
-	return app.Start(context.Background())
 }

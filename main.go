@@ -38,32 +38,6 @@ func main() {
 				},
 				Action: runServer,
 			},
-			{
-				Name:  "migrate",
-				Usage: "Database migration commands",
-				Commands: []*cli.Command{
-					{
-						Name:   "up",
-						Usage:  "Run all pending migrations",
-						Action: migrateUp,
-					},
-					{
-						Name:   "down",
-						Usage:  "Rollback the last migration",
-						Action: migrateDown,
-					},
-					{
-						Name:   "status",
-						Usage:  "Show migration status",
-						Action: migrateStatus,
-					},
-					{
-						Name:   "init",
-						Usage:  "Initialize migration tables",
-						Action: migrateInit,
-					},
-				},
-			},
 		},
 	}
 
@@ -106,20 +80,4 @@ func runServer(ctx context.Context, cmd *cli.Command) error {
 
 	fmt.Println("Application stopped successfully")
 	return nil
-}
-
-func migrateUp(ctx context.Context, cmd *cli.Command) error {
-	return di.RunMigrations("up")
-}
-
-func migrateDown(ctx context.Context, cmd *cli.Command) error {
-	return di.RunMigrations("down")
-}
-
-func migrateStatus(ctx context.Context, cmd *cli.Command) error {
-	return di.RunMigrations("status")
-}
-
-func migrateInit(ctx context.Context, cmd *cli.Command) error {
-	return di.RunMigrations("init")
 }
