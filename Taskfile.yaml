@@ -31,17 +31,17 @@ tasks:
   migrate:up:
     desc: Run all pending database migrations
     cmds:
-      - goose -dir internal/storage/postgres/migrations postgres "$DATABASE_URL" up
+      - goose -dir internal/storage/postgres/migrations postgres "$POSTGRES_URL" up
 
   migrate:down:
     desc: Rollback the last database migration
     cmds:
-      - goose -dir internal/storage/postgres/migrations postgres "$DATABASE_URL" down
+      - goose -dir internal/storage/postgres/migrations postgres "$POSTGRES_URL" down
 
   migrate:status:
     desc: Show database migration status
     cmds:
-      - goose -dir internal/storage/postgres/migrations postgres "$DATABASE_URL" status
+      - goose -dir internal/storage/postgres/migrations postgres "$POSTGRES_URL" status
 
   migrate:version:
     desc: Show current migration version
