@@ -1,4 +1,5 @@
 .env
+.env.test
 
 .idea/
 .zed/
