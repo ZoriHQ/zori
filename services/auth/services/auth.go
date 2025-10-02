@@ -127,8 +127,24 @@ func (s *AuthService) Register(ctx *server.Ctx) (any, error) {
 		return nil, fmt.Errorf("failed to create organization member: %w", err)
 	}
 
-	// Generate JWT tokens
+	// Create session
+	sessionID := uuid.New().String()
+	session := &models.Session{
+		ID:        sessionID,
+		AccountID: account.ID,
+		ExpiresAt: time.Now().Add(7 * 24 * time.Hour), // 7 days
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+
+	_, err = tx.NewInsert().Model(session).Exec(ctx.Echo.Request().Context())
+	if err != nil {
+		return nil, fmt.Errorf("failed to create session: %w", err)
+	}
+
+	// Generate JWT tokens with session ID
 	accessToken, refreshToken, err := s.jwt.GenerateTokenPair(
+		sessionID,
 		account.ID,
 		org.ID,
 		account.Email,
@@ -136,19 +152,6 @@ func (s *AuthService) Register(ctx *server.Ctx) (any, error) {
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate tokens: %w", err)
-	}
-
-	session := &models.Session{
-		ID:           uuid.New().String(),
-		AccountID:    account.ID,
-		RefreshToken: refreshToken,
-		ExpiresAt:    time.Now().Add(7 * 24 * time.Hour), // 7 days
-		CreatedAt:    time.Now(),
-	}
-
-	_, err = tx.NewInsert().Model(session).Exec(ctx.Echo.Request().Context())
-	if err != nil {
-		return nil, fmt.Errorf("failed to create session: %w", err)
 	}
 
 	if err := tx.Commit(); err != nil {
@@ -169,12 +172,10 @@ func (s *AuthService) Login(ctx *server.Ctx) (any, error) {
 	if err := ctx.Echo.Bind(&req); err != nil {
 		return nil, err
 	}
-	// Validate request
 	if err := utils.ValidateStruct(req); err != nil {
 		return nil, err
 	}
 
-	// Find account by email
 	account := &models.Account{}
 	err := s.db.NewSelect().
 		Model(account).
@@ -184,7 +185,6 @@ func (s *AuthService) Login(ctx *server.Ctx) (any, error) {
 		return nil, fmt.Errorf("invalid email or password")
 	}
 
-	// Verify password
 	err = s.password.VerifyPassword(account.PasswordHash, req.Password)
 	if err != nil {
 		return nil, fmt.Errorf("invalid email or password")
@@ -196,15 +196,30 @@ func (s *AuthService) Login(ctx *server.Ctx) (any, error) {
 		Relation("Organization").
 		Where("om.account_id = ?", account.ID).
 		Where("om.role IN (?)", bun.In([]string{models.RoleOwner, models.RoleAdmin})).
-		Order("om.role ASC, om.joined_at ASC").
 		Limit(1).
 		Scan(ctx.Echo.Request().Context())
 	if err != nil {
 		return nil, fmt.Errorf("no organization found for user")
 	}
 
-	// Generate new JWT tokens
+	// Create new session
+	sessionID := uuid.New().String()
+	session := &models.Session{
+		ID:        sessionID,
+		AccountID: account.ID,
+		ExpiresAt: time.Now().Add(7 * 24 * time.Hour), // 7 days
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+
+	_, err = s.db.NewInsert().Model(session).Exec(ctx.Echo.Request().Context())
+	if err != nil {
+		return nil, fmt.Errorf("failed to create session: %w", err)
+	}
+
+	// Generate JWT tokens with session ID
 	accessToken, refreshToken, err := s.jwt.GenerateTokenPair(
+		sessionID,
 		account.ID,
 		member.OrganizationID,
 		account.Email,
@@ -212,19 +227,6 @@ func (s *AuthService) Login(ctx *server.Ctx) (any, error) {
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate tokens: %w", err)
-	}
-
-	session := &models.Session{
-		ID:           uuid.New().String(),
-		AccountID:    account.ID,
-		RefreshToken: refreshToken,
-		ExpiresAt:    time.Now().Add(7 * 24 * time.Hour),
-		CreatedAt:    time.Now(),
-	}
-
-	_, err = s.db.NewInsert().Model(session).Exec(ctx.Echo.Request().Context())
-	if err != nil {
-		return nil, fmt.Errorf("failed to create session: %w", err)
 	}
 
 	return &AuthResponse{
@@ -250,53 +252,70 @@ func (s *AuthService) RefreshToken(ctx *server.Ctx) (any, error) {
 		return nil, err
 	}
 
-	refreshToken := req.RefreshToken
-	if !s.token.IsValidRefreshToken(refreshToken) {
-		return nil, fmt.Errorf("invalid refresh token format")
+	// Validate refresh token JWT
+	refreshClaims, err := s.jwt.ValidateRefreshToken(req.RefreshToken)
+	if err != nil {
+		return nil, fmt.Errorf("invalid refresh token: %w", err)
 	}
 
+	// Check if session exists and is valid
 	session := &models.Session{}
-	err := s.db.NewSelect().
+	err = s.db.NewSelect().
 		Model(session).
 		Relation("Account").
-		Where("s.refresh_token = ?", refreshToken).
+		Where("s.id = ?", refreshClaims.SessionID).
+		Where("s.account_id = ?", refreshClaims.AccountID).
 		Scan(ctx.Echo.Request().Context())
 	if err != nil {
-		return nil, fmt.Errorf("invalid refresh token")
+		return nil, fmt.Errorf("session not found or expired")
 	}
 
 	if session.IsExpired() {
+		// Delete expired session
 		s.db.NewDelete().Model(session).WherePK().Exec(ctx.Echo.Request().Context())
-		return nil, fmt.Errorf("refresh token expired")
+		return nil, fmt.Errorf("session expired")
 	}
 
+	// Get organization membership
 	member := &models.OrganizationMember{}
 	err = s.db.NewSelect().
 		Model(member).
 		Relation("Organization").
 		Where("om.account_id = ?", session.AccountID).
 		Where("om.role IN (?)", bun.In([]string{models.RoleOwner, models.RoleAdmin})).
-		Order("om.role ASC, om.joined_at ASC").
 		Limit(1).
 		Scan(ctx.Echo.Request().Context())
 	if err != nil {
 		return nil, fmt.Errorf("no organization found for user")
 	}
 
-	// Generate new access token
-	accessToken, err := s.jwt.GenerateAccessToken(
+	// Update session expiry
+	session.ExpiresAt = time.Now().Add(7 * 24 * time.Hour)
+	session.UpdatedAt = time.Now()
+	_, err = s.db.NewUpdate().
+		Model(session).
+		Column("expires_at", "updated_at").
+		WherePK().
+		Exec(ctx.Echo.Request().Context())
+	if err != nil {
+		return nil, fmt.Errorf("failed to update session: %w", err)
+	}
+
+	// Generate new token pair
+	accessToken, refreshToken, err := s.jwt.GenerateTokenPair(
+		session.ID,
 		session.Account.ID,
 		member.OrganizationID,
 		session.Account.Email,
 		member.Role,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to generate access token: %w", err)
+		return nil, fmt.Errorf("failed to generate tokens: %w", err)
 	}
 
 	return &AuthResponse{
 		AccessToken:  accessToken,
-		RefreshToken: refreshToken,   // Return same refresh token
+		RefreshToken: refreshToken,
 		ExpiresIn:    int64(15 * 60), // 15 minutes
 		Account:      session.Account,
 		Organization: member.Organization,
@@ -316,13 +335,23 @@ func (s *AuthService) Logout(ctx *server.Ctx) (any, error) {
 	if err := utils.ValidateStruct(req); err != nil {
 		return nil, err
 	}
-	// Delete session by refresh token
-	_, err := s.db.NewDelete().
+
+	// Validate refresh token to get session ID
+	refreshClaims, err := s.jwt.ValidateRefreshToken(req.RefreshToken)
+	if err != nil {
+		// Still try to return success even if token is invalid
+		return map[string]string{"message": "Logged out successfully"}, nil
+	}
+
+	// Delete session by ID
+	_, err = s.db.NewDelete().
 		Model((*models.Session)(nil)).
-		Where("refresh_token = ?", req.RefreshToken).
+		Where("id = ?", refreshClaims.SessionID).
+		Where("account_id = ?", refreshClaims.AccountID).
 		Exec(ctx.Echo.Request().Context())
 	if err != nil {
-		return nil, fmt.Errorf("failed to logout: %w", err)
+		// Log error but still return success
+		// The session might already be deleted or expired
 	}
 
 	return map[string]string{"message": "Logged out successfully"}, nil
