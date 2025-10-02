@@ -25,5 +25,4 @@ func JwtMiddleware(jwtService *services.JWTService) echo.MiddlewareFunc {
 			return next(c)
 		}
 	}
-
 }
