@@ -94,24 +94,95 @@ tasks:
   # Testing tasks
   test:
     desc: Run all tests
+    dotenv: [".env.test"]
     cmds:
       - go test ./...
 
   test:verbose:
     desc: Run all tests with verbose output
+    dotenv: [".env.test"]
     cmds:
       - go test -v ./...
 
   test:race:
     desc: Run all tests with race detection
+    dotenv: [".env.test"]
     cmds:
       - go test -race ./...
 
   test:coverage:
     desc: Run tests with coverage report
+    dotenv: [".env.test"]
     cmds:
       - go test -coverprofile=coverage.out ./...
       - go tool cover -html=coverage.out -o coverage.html
+      - go tool cover -func=coverage.out | grep "total:"
+
+  test:auth:
+    desc: Run authentication tests
+    dotenv: [".env.test"]
+    cmds:
+      - go test -v -race ./services/auth/...
+
+  test:integration:
+    desc: Run integration tests with database setup
+    dotenv: [".env.test"]
+    cmds:
+      - ./scripts/run-tests.sh
+
+  test:integration:verbose:
+    desc: Run integration tests with verbose output
+    dotenv: [".env.test"]
+    cmds:
+      - ./scripts/run-tests.sh --verbose
+
+  test:integration:coverage:
+    desc: Run integration tests with coverage
+    dotenv: [".env.test"]
+    cmds:
+      - ./scripts/run-tests.sh --coverage
+
+  test:unit:
+    desc: Run only unit tests (no database)
+    dotenv: [".env.test"]
+    cmds:
+      - go test -v -short ./...
+
+  test:specific:
+    desc: Run specific test by name
+    dotenv: [".env.test"]
+    cmds:
+      - go test -v -run={{.TEST}} ./...
+    vars:
+      TEST: '{{.TEST | default "Test"}}'
+
+  test:watch:
+    desc: Run tests in watch mode (requires entr)
+    dotenv: [".env.test"]
+    cmds:
+      - find . -name "*.go" | entr -c go test ./...
+
+  # Test database tasks
+  test:db:setup:
+    desc: Setup test database
+    dotenv: [".env.test"]
+    cmds:
+      - |
+        PGPASSWORD=${TEST_DB_PASSWORD:-postgres} psql -h ${TEST_DB_HOST:-localhost} -U ${TEST_DB_USER:-postgres} -c "DROP DATABASE IF EXISTS marker_test"
+        PGPASSWORD=${TEST_DB_PASSWORD:-postgres} psql -h ${TEST_DB_HOST:-localhost} -U ${TEST_DB_USER:-postgres} -c "CREATE DATABASE marker_test"
+
+  test:db:reset:
+    desc: Reset test database
+    dotenv: [".env.test"]
+    deps: [test:db:setup]
+    cmds:
+      - echo "Test database reset complete"
+
+  test:db:migrate:
+    desc: Run migrations on test database
+    dotenv: [".env.test"]
+    cmds:
+      - goose -dir internal/storage/postgres/migrations postgres "$TEST_POSTGRES_URL" up
 
   # Code quality tasks
   fmt:
@@ -159,6 +230,7 @@ tasks:
       - go install github.com/cosmtrek/air@latest
       - go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
       - go install github.com/pressly/goose/v3/cmd/goose@latest
+      - go get -u github.com/stretchr/testify
 
   # Docker tasks (if needed)
   docker:build:
@@ -179,6 +251,25 @@ tasks:
       - echo "Copied example.env to .env - please update with your values"
     status:
       - test -f .env
+
+  env:test:
+    desc: Setup test environment
+    cmds:
+      - |
+        if [ ! -f .env.test ]; then
+          echo "Creating .env.test file..."
+          cat > .env.test << 'EOF'
+        TEST_POSTGRES_URL=postgres://postgres:postgres@localhost:5432/marker_test?sslmode=disable
+        TEST_CLICKHOUSE_URL=clickhouse://localhost:9000/marker_test
+        JWT_SECRET_KEY=test-secret-key-for-testing-purposes-min-32-chars
+        JWT_ACCESS_TOKEN_TTL=15m
+        JWT_REFRESH_TOKEN_TTL=168h
+        BCRYPT_COST=4
+        EOF
+          echo "✅ .env.test file created"
+        else
+          echo "✅ .env.test file already exists"
+        fi
 
   env:check:
     desc: Check if .env file exists and show variables

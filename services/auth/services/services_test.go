@@ -77,12 +77,13 @@ func TestJWTService(t *testing.T) {
 	})
 
 	t.Run("GenerateTokenPair", func(t *testing.T) {
+		sessionID := "323e4567-e89b-12d3-a456-426614174002"
 		accountID := "123e4567-e89b-12d3-a456-426614174000"
 		orgID := "223e4567-e89b-12d3-a456-426614174001"
 		email := "test@example.com"
 		role := "owner"
 
-		accessToken, refreshToken, err := js.GenerateTokenPair(accountID, orgID, email, role)
+		accessToken, refreshToken, err := js.GenerateTokenPair(sessionID, accountID, orgID, email, role)
 		if err != nil {
 			t.Fatalf("Expected no error, got %v", err)
 		}
@@ -101,12 +102,13 @@ func TestJWTService(t *testing.T) {
 	})
 
 	t.Run("ValidateAccessToken", func(t *testing.T) {
+		sessionID := "323e4567-e89b-12d3-a456-426614174002"
 		accountID := "123e4567-e89b-12d3-a456-426614174000"
 		orgID := "223e4567-e89b-12d3-a456-426614174001"
 		email := "test@example.com"
 		role := "admin"
 
-		accessToken, _, _ := js.GenerateTokenPair(accountID, orgID, email, role)
+		accessToken, _, _ := js.GenerateTokenPair(sessionID, accountID, orgID, email, role)
 
 		claims, err := js.ValidateAccessToken(accessToken)
 		if err != nil {
@@ -131,20 +133,25 @@ func TestJWTService(t *testing.T) {
 	})
 
 	t.Run("ValidateRefreshToken", func(t *testing.T) {
+		sessionID := "323e4567-e89b-12d3-a456-426614174002"
 		accountID := "123e4567-e89b-12d3-a456-426614174000"
 		orgID := "223e4567-e89b-12d3-a456-426614174001"
 		email := "test@example.com"
 		role := "member"
 
-		_, refreshToken, _ := js.GenerateTokenPair(accountID, orgID, email, role)
+		_, refreshToken, _ := js.GenerateTokenPair(sessionID, accountID, orgID, email, role)
 
-		extractedAccountID, err := js.ValidateRefreshToken(refreshToken)
+		refreshClaims, err := js.ValidateRefreshToken(refreshToken)
 		if err != nil {
 			t.Fatalf("Expected no error, got %v", err)
 		}
 
-		if extractedAccountID != accountID {
-			t.Errorf("Expected AccountID %s, got %s", accountID, extractedAccountID)
+		if refreshClaims.AccountID != accountID {
+			t.Errorf("Expected AccountID %s, got %s", accountID, refreshClaims.AccountID)
+		}
+
+		if refreshClaims.SessionID != sessionID {
+			t.Errorf("Expected SessionID %s, got %s", sessionID, refreshClaims.SessionID)
 		}
 	})
 

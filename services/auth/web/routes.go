@@ -16,6 +16,12 @@ func RegisterRoutes(s *server.Server, authService *services.AuthService) {
 	// Login route
 	auth.POST("/login", authService.Login)
 
+	// Token refresh route
+	auth.POST("/refresh", authService.RefreshToken)
+
+	// Logout route
+	auth.POST("/logout", authService.Logout)
+
 	// Password recovery routes
 	auth.POST("/recover", authService.Recover)
 	auth.POST("/recover-confirm", authService.RecoverConfirm)
