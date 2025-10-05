@@ -18,28 +18,45 @@ import (
 )
 
 type RegisterRequest struct {
-	Email            string `json:"email" validate:"required,email"`
-	Password         string `json:"password" validate:"required,min=8"`
-	FirstName        string `json:"first_name"`
-	LastName         string `json:"last_name"`
-	OrganizationName string `json:"organization_name" validate:"required"`
+	Email            string `json:"email" validate:"required,email" example:"user@example.com"`
+	Password         string `json:"password" validate:"required,min=8" example:"SecurePassword123!"`
+	FirstName        string `json:"first_name" example:"John"`
+	LastName         string `json:"last_name" example:"Doe"`
+	OrganizationName string `json:"organization_name" validate:"required" example:"Acme Corporation"`
 }
 
 type LoginRequest struct {
-	Email    string `json:"email" validate:"required,email"`
-	Password string `json:"password" validate:"required"`
+	Email    string `json:"email" validate:"required,email" example:"user@example.com"`
+	Password string `json:"password" validate:"required" example:"SecurePassword123!"`
 }
 
 type RefreshRequest struct {
-	RefreshToken string `json:"refresh_token" validate:"required"`
+	RefreshToken string `json:"refresh_token" validate:"required" example:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."`
+}
+
+type LogoutRequest struct {
+	RefreshToken string `json:"refresh_token" validate:"required" example:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."`
+}
+
+type RecoverRequest struct {
+	Email string `json:"email" validate:"required,email" example:"user@example.com"`
+}
+
+type RecoverConfirmRequest struct {
+	Token    string `json:"token" validate:"required" example:"recovery-token-from-email"`
+	Password string `json:"password" validate:"required,min=8" example:"NewSecurePassword123!"`
 }
 
 type AuthResponse struct {
-	AccessToken  string               `json:"access_token"`
-	RefreshToken string               `json:"refresh_token"`
-	ExpiresIn    int64                `json:"expires_in"`
+	AccessToken  string               `json:"access_token" example:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."`
+	RefreshToken string               `json:"refresh_token" example:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."`
+	ExpiresIn    int64                `json:"expires_in" example:"900"`
 	Account      *models.Account      `json:"account"`
 	Organization *models.Organization `json:"organization"`
+}
+
+type MessageResponse struct {
+	Message string `json:"message" example:"Operation completed successfully"`
 }
 
 type AuthService struct {
@@ -58,7 +75,19 @@ func NewAuthService(db *postgres.PostgresDB, password *PasswordService, jwt *JWT
 	}
 }
 
-func (s *AuthService) Register(ctx *ctx.Ctx) (any, error) {
+// Register creates a new user account and organization
+// @Summary Register a new account
+// @Description Create a new user account with an organization
+// @Tags Authentication
+// @Accept json
+// @Produce json
+// @Param request body RegisterRequest true "Registration details"
+// @Success 200 {object} AuthResponse "Successfully registered and authenticated"
+// @Failure 400 {object} map[string]interface{} "Invalid request or validation failed"
+// @Failure 409 {object} map[string]interface{} "Account with email already exists"
+// @Failure 500 {object} map[string]interface{} "Internal server error"
+// @Router /api/v1/auth/register [post]
+func (s *AuthService) Register(ctx *ctx.Ctx) (*AuthResponse, error) {
 	var req RegisterRequest
 	if err := ctx.Echo.Bind(&req); err != nil {
 		return nil, err
@@ -174,7 +203,18 @@ func (s *AuthService) Register(ctx *ctx.Ctx) (any, error) {
 	}, nil
 }
 
-func (s *AuthService) Login(ctx *ctx.Ctx) (any, error) {
+// Login authenticates a user with email and password
+// @Summary User login
+// @Description Authenticate a user with email and password
+// @Tags Authentication
+// @Accept json
+// @Produce json
+// @Param request body LoginRequest true "Login credentials"
+// @Success 200 {object} AuthResponse "Successfully authenticated"
+// @Failure 400 {object} map[string]interface{} "Invalid email or password"
+// @Failure 500 {object} map[string]interface{} "Internal server error"
+// @Router /api/v1/auth/login [post]
+func (s *AuthService) Login(ctx *ctx.Ctx) (*AuthResponse, error) {
 	var req LoginRequest
 	if err := ctx.Echo.Bind(&req); err != nil {
 		return nil, err
@@ -245,7 +285,19 @@ func (s *AuthService) Login(ctx *ctx.Ctx) (any, error) {
 	}, nil
 }
 
-func (s *AuthService) RefreshToken(ctx *ctx.Ctx) (any, error) {
+// RefreshToken exchanges a valid refresh token for new access and refresh tokens
+// @Summary Refresh access token
+// @Description Exchange a valid refresh token for new access and refresh tokens
+// @Tags Authentication
+// @Accept json
+// @Produce json
+// @Param request body RefreshRequest true "Refresh token"
+// @Success 200 {object} AuthResponse "Successfully refreshed tokens"
+// @Failure 400 {object} map[string]interface{} "Invalid or expired refresh token"
+// @Failure 401 {object} map[string]interface{} "Session not found or expired"
+// @Failure 500 {object} map[string]interface{} "Internal server error"
+// @Router /api/v1/auth/refresh [post]
+func (s *AuthService) RefreshToken(ctx *ctx.Ctx) (*AuthResponse, error) {
 	var req RefreshRequest
 	if err := ctx.Echo.Bind(&req); err != nil {
 		return nil, err
@@ -325,11 +377,17 @@ func (s *AuthService) RefreshToken(ctx *ctx.Ctx) (any, error) {
 	}, nil
 }
 
-func (s *AuthService) Logout(ctx *ctx.Ctx) (any, error) {
-	type LogoutRequest struct {
-		RefreshToken string `json:"refresh_token" validate:"required"`
-	}
-
+// Logout invalidates the current session and refresh token
+// @Summary User logout
+// @Description Invalidate the current session and refresh token
+// @Tags Authentication
+// @Accept json
+// @Produce json
+// @Param request body LogoutRequest true "Logout request"
+// @Success 200 {object} MessageResponse "Successfully logged out"
+// @Failure 400 {object} map[string]interface{} "Invalid request"
+// @Router /api/v1/auth/logout [post]
+func (s *AuthService) Logout(ctx *ctx.Ctx) (*MessageResponse, error) {
 	var req LogoutRequest
 	if err := ctx.Echo.Bind(&req); err != nil {
 		return nil, err
@@ -343,7 +401,7 @@ func (s *AuthService) Logout(ctx *ctx.Ctx) (any, error) {
 	refreshClaims, err := s.jwt.ValidateRefreshToken(req.RefreshToken)
 	if err != nil {
 		// Still try to return success even if token is invalid
-		return map[string]string{"message": "Logged out successfully"}, nil
+		return &MessageResponse{Message: "Logged out successfully"}, nil
 	}
 
 	// Delete session by ID
@@ -357,14 +415,21 @@ func (s *AuthService) Logout(ctx *ctx.Ctx) (any, error) {
 		// The session might already be deleted or expired
 	}
 
-	return map[string]string{"message": "Logged out successfully"}, nil
+	return &MessageResponse{Message: "Logged out successfully"}, nil
 }
 
-func (s *AuthService) Recover(ctx *ctx.Ctx) (any, error) {
-	type RecoverRequest struct {
-		Email string `json:"email" validate:"required,email"`
-	}
-
+// Recover initiates password recovery by sending an email to the user
+// @Summary Request password recovery
+// @Description Send a password recovery email to the registered email address
+// @Tags Authentication
+// @Accept json
+// @Produce json
+// @Param request body RecoverRequest true "Recovery request"
+// @Success 200 {object} MessageResponse "Recovery email sent if account exists"
+// @Failure 400 {object} map[string]interface{} "Invalid email format"
+// @Failure 500 {object} map[string]interface{} "Internal server error"
+// @Router /api/v1/auth/recover [post]
+func (s *AuthService) Recover(ctx *ctx.Ctx) (*MessageResponse, error) {
 	var req RecoverRequest
 	if err := ctx.Echo.Bind(&req); err != nil {
 		return nil, err
@@ -375,15 +440,22 @@ func (s *AuthService) Recover(ctx *ctx.Ctx) (any, error) {
 	}
 
 	// TODO: Implement password recovery
-	return map[string]string{"message": "Password recovery not implemented yet"}, nil
+	return &MessageResponse{Message: "Password recovery not implemented yet"}, nil
 }
 
-func (s *AuthService) RecoverConfirm(ctx *ctx.Ctx) (any, error) {
-	type RecoverConfirmRequest struct {
-		Token    string `json:"token" validate:"required"`
-		Password string `json:"password" validate:"required,min=8"`
-	}
-
+// RecoverConfirm resets the password using a recovery token
+// @Summary Confirm password recovery
+// @Description Reset password using recovery token received via email
+// @Tags Authentication
+// @Accept json
+// @Produce json
+// @Param request body RecoverConfirmRequest true "Recovery confirmation"
+// @Success 200 {object} MessageResponse "Password successfully reset"
+// @Failure 400 {object} map[string]interface{} "Invalid or expired token"
+// @Failure 422 {object} map[string]interface{} "Password validation failed"
+// @Failure 500 {object} map[string]interface{} "Internal server error"
+// @Router /api/v1/auth/recover-confirm [post]
+func (s *AuthService) RecoverConfirm(ctx *ctx.Ctx) (*MessageResponse, error) {
 	var req RecoverConfirmRequest
 	if err := ctx.Echo.Bind(&req); err != nil {
 		return nil, err
@@ -394,5 +466,5 @@ func (s *AuthService) RecoverConfirm(ctx *ctx.Ctx) (any, error) {
 	}
 
 	// TODO: Implement password recovery confirmation
-	return map[string]string{"message": "Password recovery confirmation not implemented yet"}, nil
+	return &MessageResponse{Message: "Password recovery confirmation not implemented yet"}, nil
 }

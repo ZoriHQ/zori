@@ -8,7 +8,8 @@ import (
 	"github.com/labstack/echo/v4/middleware"
 )
 
-type HandlerFunc func(*ctx.Ctx) (any, error)
+// HandlerFunc is a generic handler function that returns a specific type T
+type HandlerFunc[T any] func(*ctx.Ctx) (T, error)
 
 type Server struct {
 	Echo *echo.Echo
@@ -25,26 +26,32 @@ func New() *Server {
 	}
 }
 
-func (s *Server) GET(path string, handler HandlerFunc) {
-	s.Echo.GET(path, s.wrapHandler(handler))
+// GET registers a GET route with a generic handler
+func GET[T any](s *Server, path string, handler HandlerFunc[T]) {
+	s.Echo.GET(path, wrapHandler(s, handler))
 }
 
-func (s *Server) POST(path string, handler HandlerFunc) {
-	s.Echo.POST(path, s.wrapHandler(handler))
+// POST registers a POST route with a generic handler
+func POST[T any](s *Server, path string, handler HandlerFunc[T]) {
+	s.Echo.POST(path, wrapHandler(s, handler))
 }
 
-func (s *Server) PUT(path string, handler HandlerFunc) {
-	s.Echo.PUT(path, s.wrapHandler(handler))
+// PUT registers a PUT route with a generic handler
+func PUT[T any](s *Server, path string, handler HandlerFunc[T]) {
+	s.Echo.PUT(path, wrapHandler(s, handler))
 }
 
-func (s *Server) DELETE(path string, handler HandlerFunc) {
-	s.Echo.DELETE(path, s.wrapHandler(handler))
+// DELETE registers a DELETE route with a generic handler
+func DELETE[T any](s *Server, path string, handler HandlerFunc[T]) {
+	s.Echo.DELETE(path, wrapHandler(s, handler))
 }
 
-func (s *Server) PATCH(path string, handler HandlerFunc) {
-	s.Echo.PATCH(path, s.wrapHandler(handler))
+// PATCH registers a PATCH route with a generic handler
+func PATCH[T any](s *Server, path string, handler HandlerFunc[T]) {
+	s.Echo.PATCH(path, wrapHandler(s, handler))
 }
 
+// Group creates a new route group with the given prefix
 func (s *Server) Group(prefix string) *Group {
 	return &Group{
 		echo:   s.Echo.Group(prefix),
@@ -52,7 +59,8 @@ func (s *Server) Group(prefix string) *Group {
 	}
 }
 
-func (s *Server) wrapHandler(handler HandlerFunc) echo.HandlerFunc {
+// wrapHandler wraps a generic handler into an echo.HandlerFunc
+func wrapHandler[T any](s *Server, handler HandlerFunc[T]) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := ctx.NewCtx(c)
 
@@ -66,37 +74,45 @@ func (s *Server) wrapHandler(handler HandlerFunc) echo.HandlerFunc {
 	}
 }
 
+// handleError handles errors and returns appropriate HTTP responses
 func (s *Server) handleError(c echo.Context, err error) error {
 	return c.JSON(http.StatusInternalServerError, map[string]string{
 		"error": err.Error(),
 	})
 }
 
+// Group represents a group of routes with a common prefix
 type Group struct {
 	echo   *echo.Group
 	server *Server
 }
 
-func (g *Group) GET(path string, handler HandlerFunc) {
-	g.echo.GET(path, g.server.wrapHandler(handler))
+// GET registers a GET route within the group with a generic handler
+func GroupGET[T any](g *Group, path string, handler HandlerFunc[T]) {
+	g.echo.GET(path, wrapHandler(g.server, handler))
 }
 
-func (g *Group) POST(path string, handler HandlerFunc) {
-	g.echo.POST(path, g.server.wrapHandler(handler))
+// POST registers a POST route within the group with a generic handler
+func GroupPOST[T any](g *Group, path string, handler HandlerFunc[T]) {
+	g.echo.POST(path, wrapHandler(g.server, handler))
 }
 
-func (g *Group) PUT(path string, handler HandlerFunc) {
-	g.echo.PUT(path, g.server.wrapHandler(handler))
+// PUT registers a PUT route within the group with a generic handler
+func GroupPUT[T any](g *Group, path string, handler HandlerFunc[T]) {
+	g.echo.PUT(path, wrapHandler(g.server, handler))
 }
 
-func (g *Group) DELETE(path string, handler HandlerFunc) {
-	g.echo.DELETE(path, g.server.wrapHandler(handler))
+// DELETE registers a DELETE route within the group with a generic handler
+func GroupDELETE[T any](g *Group, path string, handler HandlerFunc[T]) {
+	g.echo.DELETE(path, wrapHandler(g.server, handler))
 }
 
-func (g *Group) PATCH(path string, handler HandlerFunc) {
-	g.echo.PATCH(path, g.server.wrapHandler(handler))
+// PATCH registers a PATCH route within the group with a generic handler
+func GroupPATCH[T any](g *Group, path string, handler HandlerFunc[T]) {
+	g.echo.PATCH(path, wrapHandler(g.server, handler))
 }
 
+// Use applies middleware to the group
 func (g *Group) Use(middleware ...echo.MiddlewareFunc) {
 	g.echo.Use(middleware...)
 }

@@ -17,7 +17,7 @@ func (s *ProjectService) ListOrganizationProjects(c *ctx.Ctx) ([]*data.ProjectDa
 	return s.data.ListOrganizationProjects(c.OrgID())
 }
 
-func (s *ProjectService) ListProjects(c *ctx.Ctx) (any, error) {
+func (s *ProjectService) ListProjects(c *ctx.Ctx) ([]*data.ProjectData, error) {
 	projects, err := s.data.ListOrganizationProjects(c.OrgID())
 	if err != nil {
 		return nil, err

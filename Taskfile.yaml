@@ -74,6 +74,17 @@ tasks:
       - air
     silent: true
 
+  docs:
+    desc: Generate Swagger documentation
+    cmds:
+      - swag init -g main.go --parseDependency --parseInternal --parseDepth 2
+    silent: false
+
+  swag-install:
+    desc: Install swag CLI tool
+    cmds:
+      - go install github.com/swaggo/swag/cmd/swag@latest
+
   # Build tasks (for production)
   build:
     desc: Build the application binary

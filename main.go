@@ -14,6 +14,26 @@ import (
 	"github.com/urfave/cli/v3"
 )
 
+// @title           OpenAPI Specification for Zori server
+// @version         1.0
+// @termsOfService  https://swagger.io/terms/
+
+// @contact.name   Zori Support
+// @contact.url    https://www.zorihq.com/support
+// @contact.email  support@zorihq.com
+
+// @license.name  Apache 2.0
+// @license.url   https://www.apache.org/licenses/LICENSE-2.0.html
+
+// @host      api.prod.zorihq.com
+// @BasePath  /api/v1
+
+// @securityDefinitions.apikey ApiKeyAuth
+// @in header
+// @name Authorization
+
+// @externalDocs.description  Zori API Documentation
+// @externalDocs.url          https://docs.zorihq.com
 func main() {
 	app := &cli.Command{
 		Name:  "marker",

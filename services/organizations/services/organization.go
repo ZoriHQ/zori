@@ -16,7 +16,7 @@ func NewOrganizationService(data *data.OrganizationData) *OrganizationService {
 	}
 }
 
-func (s *OrganizationService) GetOrganization(c *ctx.Ctx) (any, error) {
+func (s *OrganizationService) GetOrganization(c *ctx.Ctx) (*models.Organization, error) {
 	orgId := c.OrgID()
 	return s.GetOrganizationByID(c, orgId)
 }

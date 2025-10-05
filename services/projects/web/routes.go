@@ -9,5 +9,5 @@ import (
 func RegisterRoutes(s *server.Server, projectService *services.ProjectService, jwtMiddleware *middlewares.JwtMiddleware) {
 	projectRouteGroup := s.Group("/projects")
 	projectRouteGroup.Use(jwtMiddleware.Middleware())
-	projectRouteGroup.GET("/list", projectService.ListProjects)
+	server.GroupGET(projectRouteGroup, "/list", projectService.ListProjects)
 }

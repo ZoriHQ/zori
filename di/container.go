@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	_ "marker/docs" // Import generated swagger docs
 	"marker/internal/config"
 	"marker/internal/server"
 	"marker/internal/server/middlewares"
@@ -31,6 +32,7 @@ func NewApplication() *fx.App {
 		fx.Provide(middlewares.NewJwtMiddleware),
 
 		fx.Invoke(registerDatabaseLifecycle),
+		fx.Invoke(server.RegisterSwaggerRoutes),
 
 		fx.Invoke(func(lc fx.Lifecycle, srv *server.Server) {
 			lc.Append(fx.Hook{

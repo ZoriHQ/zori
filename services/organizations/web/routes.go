@@ -15,5 +15,5 @@ func RegisterRoutes(
 	g := s.Group("/api/v1/organization")
 	g.Use(jwtMiddleware.Middleware())
 
-	g.GET("/", organizationService.GetOrganization)
+	server.GroupGET(g, "/", organizationService.GetOrganization)
 }
