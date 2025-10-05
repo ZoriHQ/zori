@@ -1,0 +1,387 @@
+openapi: 3.0.0
+info:
+  contact:
+    email: support@zorihq.com
+    name: Zori Support
+    url: 'https://www.zorihq.com/support'
+  license:
+    name: Apache 2.0
+    url: 'https://www.apache.org/licenses/LICENSE-2.0.html'
+  termsOfService: 'https://swagger.io/terms/'
+  title: OpenAPI Specification for Zori server
+  version: '1.0'
+servers:
+  - url: /api/v1
+paths:
+  /api/v1/auth/login:
+    post:
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/services.AuthResponse'
+          description: Successfully authenticated
+        '400':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Invalid email or password
+        '500':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Internal server error
+      tags:
+        - Authentication
+      description: Authenticate a user with email and password
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/services.LoginRequest'
+        description: Login credentials
+        required: true
+      summary: User login
+  /api/v1/auth/logout:
+    post:
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/services.MessageResponse'
+          description: Successfully logged out
+        '400':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Invalid request
+      tags:
+        - Authentication
+      description: Invalidate the current session and refresh token
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/services.LogoutRequest'
+        description: Logout request
+        required: true
+      summary: User logout
+  /api/v1/auth/recover:
+    post:
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/services.MessageResponse'
+          description: Recovery email sent if account exists
+        '400':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Invalid email format
+        '500':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Internal server error
+      tags:
+        - Authentication
+      description: Send a password recovery email to the registered email address
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/services.RecoverRequest'
+        description: Recovery request
+        required: true
+      summary: Request password recovery
+  /api/v1/auth/recover-confirm:
+    post:
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/services.MessageResponse'
+          description: Password successfully reset
+        '400':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Invalid or expired token
+        '422':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Password validation failed
+        '500':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Internal server error
+      tags:
+        - Authentication
+      description: Reset password using recovery token received via email
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/services.RecoverConfirmRequest'
+        description: Recovery confirmation
+        required: true
+      summary: Confirm password recovery
+  /api/v1/auth/refresh:
+    post:
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/services.AuthResponse'
+          description: Successfully refreshed tokens
+        '400':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Invalid or expired refresh token
+        '401':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Session not found or expired
+        '500':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Internal server error
+      tags:
+        - Authentication
+      description: Exchange a valid refresh token for new access and refresh tokens
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/services.RefreshRequest'
+        description: Refresh token
+        required: true
+      summary: Refresh access token
+  /api/v1/auth/register:
+    post:
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/services.AuthResponse'
+          description: Successfully registered and authenticated
+        '400':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Invalid request or validation failed
+        '409':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Account with email already exists
+        '500':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Internal server error
+      tags:
+        - Authentication
+      description: Create a new user account with an organization
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/services.RegisterRequest'
+        description: Registration details
+        required: true
+      summary: Register a new account
+components:
+  schemas:
+    models.Account:
+      properties:
+        created_at:
+          type: string
+        email:
+          type: string
+        email_verified:
+          type: boolean
+        first_name:
+          type: string
+        id:
+          type: string
+        last_name:
+          type: string
+        organizations:
+          description: Relations
+          items:
+            $ref: '#/components/schemas/models.Organization'
+          type: array
+        updated_at:
+          type: string
+      required:
+        - email
+      type: object
+    models.Organization:
+      properties:
+        created_at:
+          type: string
+        id:
+          type: string
+        members:
+          description: Relations
+          items:
+            $ref: '#/components/schemas/models.Account'
+          type: array
+        name:
+          maxLength: 255
+          minLength: 1
+          type: string
+        slug:
+          maxLength: 255
+          minLength: 1
+          type: string
+        updated_at:
+          type: string
+      required:
+        - name
+        - slug
+      type: object
+    services.AuthResponse:
+      properties:
+        access_token:
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+          type: string
+        account:
+          $ref: '#/components/schemas/models.Account'
+        expires_in:
+          example: 900
+          type: integer
+        organization:
+          $ref: '#/components/schemas/models.Organization'
+        refresh_token:
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+          type: string
+      type: object
+    services.LoginRequest:
+      properties:
+        email:
+          example: user@example.com
+          type: string
+        password:
+          example: SecurePassword123!
+          type: string
+      required:
+        - email
+        - password
+      type: object
+    services.LogoutRequest:
+      properties:
+        refresh_token:
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+          type: string
+      required:
+        - refresh_token
+      type: object
+    services.MessageResponse:
+      properties:
+        message:
+          example: Operation completed successfully
+          type: string
+      type: object
+    services.RecoverConfirmRequest:
+      properties:
+        password:
+          example: NewSecurePassword123!
+          minLength: 8
+          type: string
+        token:
+          example: recovery-token-from-email
+          type: string
+      required:
+        - password
+        - token
+      type: object
+    services.RecoverRequest:
+      properties:
+        email:
+          example: user@example.com
+          type: string
+      required:
+        - email
+      type: object
+    services.RefreshRequest:
+      properties:
+        refresh_token:
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+          type: string
+      required:
+        - refresh_token
+      type: object
+    services.RegisterRequest:
+      properties:
+        email:
+          example: user@example.com
+          type: string
+        first_name:
+          example: John
+          type: string
+        last_name:
+          example: Doe
+          type: string
+        organization_name:
+          example: Acme Corporation
+          type: string
+        password:
+          example: SecurePassword123!
+          minLength: 8
+          type: string
+      required:
+        - email
+        - organization_name
+        - password
+      type: object
+  securitySchemes:
+    ApiKeyAuth:
+      in: header
+      name: Authorization
+      type: apiKey
+externalDocs:
+  description: Zori API Documentation
+  url: 'https://docs.zorihq.com'
+

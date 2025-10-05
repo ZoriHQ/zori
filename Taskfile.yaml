@@ -78,6 +78,9 @@ tasks:
     desc: Generate Swagger documentation
     cmds:
       - swag init -g main.go --parseDependency --parseInternal --parseDepth 2
+      - npx api-spec-converter --syntax=yaml --from=swagger_2 --to=openapi_3 docs/swagger.yaml > docs/openapi.yaml
+      - rm docs/swagger.yaml
+      - rm docs/swagger.json
     silent: false
 
   swag-install:
