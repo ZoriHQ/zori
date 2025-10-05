@@ -2,7 +2,7 @@ package ctx
 
 import (
 	"context"
-	"marker/internal/storage/postgres/models"
+	"zori/internal/storage/postgres/models"
 
 	"github.com/labstack/echo/v4"
 )

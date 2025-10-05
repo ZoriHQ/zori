@@ -1,9 +1,9 @@
 package web
 
 import (
-	"marker/internal/server"
-	"marker/internal/server/middlewares"
-	"marker/services/organizations/services"
+	"zori/internal/server"
+	"zori/internal/server/middlewares"
+	"zori/services/organizations/services"
 )
 
 func RegisterRoutes(

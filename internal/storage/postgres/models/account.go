@@ -7,7 +7,7 @@ import (
 )
 
 type Account struct {
-	bun.BaseModel `bun:"table:accounts,alias:a"`
+	bun.BaseModel `json:"-" bun:"table:accounts,alias:a"`
 
 	ID            string    `json:"id" bun:",pk,type:uuid,default:gen_random_uuid()"`
 	Email         string    `json:"email" bun:",unique,notnull" validate:"required,email"`

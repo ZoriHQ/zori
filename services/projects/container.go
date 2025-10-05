@@ -1,9 +1,9 @@
 package projects
 
 import (
-	"marker/services/projects/data"
-	"marker/services/projects/services"
-	"marker/services/projects/web"
+	"zori/services/projects/data"
+	"zori/services/projects/services"
+	"zori/services/projects/web"
 
 	"go.uber.org/fx"
 )

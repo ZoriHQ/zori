@@ -4,14 +4,14 @@ import (
 	"context"
 	"fmt"
 
-	_ "marker/docs" // Import generated swagger docs
-	"marker/internal/config"
-	"marker/internal/server"
-	"marker/internal/server/middlewares"
-	"marker/internal/storage/postgres"
-	"marker/services/auth"
-	"marker/services/organizations"
-	"marker/services/projects"
+	_ "zori/docs" // Import generated swagger docs
+	"zori/internal/config"
+	"zori/internal/server"
+	"zori/internal/server/middlewares"
+	"zori/internal/storage/postgres"
+	"zori/services/auth"
+	"zori/services/organizations"
+	"zori/services/projects"
 
 	"go.uber.org/fx"
 )

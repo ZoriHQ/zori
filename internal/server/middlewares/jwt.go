@@ -1,10 +1,10 @@
 package middlewares
 
 import (
-	"marker/internal/ctx"
-	"marker/services/auth/services"
-	orgServices "marker/services/organizations/services"
 	"net/http"
+	"zori/internal/ctx"
+	"zori/services/auth/services"
+	orgServices "zori/services/organizations/services"
 
 	"github.com/labstack/echo/v4"
 )

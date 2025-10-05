@@ -1,8 +1,8 @@
 package web
 
 import (
-	"marker/internal/server"
-	"marker/services/auth/services"
+	"zori/internal/server"
+	"zori/services/auth/services"
 )
 
 func RegisterRoutes(s *server.Server, authService *services.AuthService) {

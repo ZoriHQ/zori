@@ -6,11 +6,11 @@ import (
 	"strings"
 	"time"
 
-	"marker/internal/ctx"
-	"marker/internal/storage/postgres"
-	"marker/internal/storage/postgres/models"
-	"marker/internal/utils"
-	"marker/services/auth/helpers"
+	"zori/internal/ctx"
+	"zori/internal/storage/postgres"
+	"zori/internal/storage/postgres/models"
+	"zori/internal/utils"
+	"zori/services/auth/helpers"
 
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"

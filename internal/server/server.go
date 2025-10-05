@@ -1,8 +1,8 @@
 package server
 
 import (
-	"marker/internal/ctx"
 	"net/http"
+	"zori/internal/ctx"
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"

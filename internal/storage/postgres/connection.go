@@ -5,8 +5,8 @@ import (
 	"database/sql"
 	"fmt"
 
-	"marker/internal/config"
-	"marker/internal/storage/postgres/models"
+	"zori/internal/config"
+	"zori/internal/storage/postgres/models"
 
 	"github.com/uptrace/bun"
 	"github.com/uptrace/bun/dialect/pgdialect"
