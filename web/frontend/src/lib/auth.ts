@@ -1,33 +1,5 @@
-import { z } from 'zod'
+import type Zoriapi from 'zorihq'
 
-// Define the structure of the auth response
-export const AuthResponseSchema = z.object({
-  access_token: z.string(),
-  refresh_token: z.string(),
-  expires_in: z.number(),
-  account: z
-    .object({
-      id: z.string(),
-      email: z.string(),
-      first_name: z.string().optional(),
-      last_name: z.string().optional(),
-      created_at: z.string().optional(),
-      updated_at: z.string().optional(),
-    })
-    .optional(),
-  organization: z
-    .object({
-      id: z.string(),
-      name: z.string(),
-      created_at: z.string().optional(),
-      updated_at: z.string().optional(),
-    })
-    .optional(),
-})
-
-export type AuthResponse = z.infer<typeof AuthResponseSchema>
-
-// Storage keys
 const AUTH_STORAGE_KEYS = {
   ACCESS_TOKEN: 'access_token',
   REFRESH_TOKEN: 'refresh_token',
@@ -36,23 +8,18 @@ const AUTH_STORAGE_KEYS = {
   ORGANIZATION: 'organization',
 } as const
 
-// Token management functions
 export const auth = {
-  // Store auth data
-  setAuthData(data: AuthResponse) {
+  setAuthData(data: Zoriapi.V1.Auth.AuthResponse) {
     try {
-      // Store tokens
-      localStorage.setItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN, data.access_token)
-      localStorage.setItem(AUTH_STORAGE_KEYS.REFRESH_TOKEN, data.refresh_token)
+      localStorage.setItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN, data.access_token!)
+      localStorage.setItem(AUTH_STORAGE_KEYS.REFRESH_TOKEN, data.refresh_token!)
 
-      // Calculate and store expiry time
-      const expiryTime = Date.now() + data.expires_in * 1000
+      const expiryTime = Date.now() + data.expires_in! * 1000
       localStorage.setItem(
         AUTH_STORAGE_KEYS.TOKEN_EXPIRY,
         expiryTime.toString(),
       )
 
-      // Store account and organization data if available
       if (data.account) {
         localStorage.setItem(
           AUTH_STORAGE_KEYS.ACCOUNT,
@@ -71,7 +38,6 @@ export const auth = {
     }
   },
 
-  // Get access token
   getAccessToken(): string | null {
     try {
       const token = localStorage.getItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN)
@@ -87,7 +53,6 @@ export const auth = {
     }
   },
 
-  // Get refresh token
   getRefreshToken(): string | null {
     try {
       return localStorage.getItem(AUTH_STORAGE_KEYS.REFRESH_TOKEN)
@@ -96,7 +61,6 @@ export const auth = {
     }
   },
 
-  // Check if token is expired
   isTokenExpired(): boolean {
     try {
       const expiry = localStorage.getItem(AUTH_STORAGE_KEYS.TOKEN_EXPIRY)
@@ -108,7 +72,6 @@ export const auth = {
     }
   },
 
-  // Get stored account data
   getAccount() {
     try {
       const accountStr = localStorage.getItem(AUTH_STORAGE_KEYS.ACCOUNT)
@@ -120,7 +83,6 @@ export const auth = {
     }
   },
 
-  // Get stored organization data
   getOrganization() {
     try {
       const orgStr = localStorage.getItem(AUTH_STORAGE_KEYS.ORGANIZATION)
@@ -132,7 +94,6 @@ export const auth = {
     }
   },
 
-  // Clear all auth data (logout)
   clearAuthData() {
     try {
       Object.values(AUTH_STORAGE_KEYS).forEach((key) => {
@@ -149,7 +110,7 @@ export const auth = {
   },
 
   // Refresh the access token using refresh token
-  async refreshAccessToken(): Promise<AuthResponse | null> {
+  async refreshAccessToken(): Promise<Zoriapi.V1.Auth.AuthResponse | null> {
     try {
       const refreshToken = this.getRefreshToken()
       if (!refreshToken) {
@@ -169,12 +130,9 @@ export const auth = {
       }
 
       const data = await response.json()
-      const validatedData = AuthResponseSchema.parse(data)
+      this.setAuthData(data)
 
-      // Store the new auth data
-      this.setAuthData(validatedData)
-
-      return validatedData
+      return data
     } catch (error) {
       console.error('Failed to refresh token:', error)
       // Clear auth data if refresh fails

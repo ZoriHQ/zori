@@ -1,4 +1,3 @@
-import { formatError } from 'zod'
 import { formatApiError } from './utils'
 import { auth } from './auth'
 
