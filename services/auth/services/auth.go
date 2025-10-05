@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"marker/internal/server"
+	"marker/internal/ctx"
 	"marker/internal/storage/postgres"
 	"marker/internal/storage/postgres/models"
 	"marker/internal/utils"
@@ -58,7 +58,7 @@ func NewAuthService(db *postgres.PostgresDB, password *PasswordService, jwt *JWT
 	}
 }
 
-func (s *AuthService) Register(ctx *server.Ctx) (any, error) {
+func (s *AuthService) Register(ctx *ctx.Ctx) (any, error) {
 	var req RegisterRequest
 	if err := ctx.Echo.Bind(&req); err != nil {
 		return nil, err
@@ -174,7 +174,7 @@ func (s *AuthService) Register(ctx *server.Ctx) (any, error) {
 	}, nil
 }
 
-func (s *AuthService) Login(ctx *server.Ctx) (any, error) {
+func (s *AuthService) Login(ctx *ctx.Ctx) (any, error) {
 	var req LoginRequest
 	if err := ctx.Echo.Bind(&req); err != nil {
 		return nil, err
@@ -245,7 +245,7 @@ func (s *AuthService) Login(ctx *server.Ctx) (any, error) {
 	}, nil
 }
 
-func (s *AuthService) RefreshToken(ctx *server.Ctx) (any, error) {
+func (s *AuthService) RefreshToken(ctx *ctx.Ctx) (any, error) {
 	var req RefreshRequest
 	if err := ctx.Echo.Bind(&req); err != nil {
 		return nil, err
@@ -325,7 +325,7 @@ func (s *AuthService) RefreshToken(ctx *server.Ctx) (any, error) {
 	}, nil
 }
 
-func (s *AuthService) Logout(ctx *server.Ctx) (any, error) {
+func (s *AuthService) Logout(ctx *ctx.Ctx) (any, error) {
 	type LogoutRequest struct {
 		RefreshToken string `json:"refresh_token" validate:"required"`
 	}
@@ -360,7 +360,7 @@ func (s *AuthService) Logout(ctx *server.Ctx) (any, error) {
 	return map[string]string{"message": "Logged out successfully"}, nil
 }
 
-func (s *AuthService) Recover(ctx *server.Ctx) (any, error) {
+func (s *AuthService) Recover(ctx *ctx.Ctx) (any, error) {
 	type RecoverRequest struct {
 		Email string `json:"email" validate:"required,email"`
 	}
@@ -378,7 +378,7 @@ func (s *AuthService) Recover(ctx *server.Ctx) (any, error) {
 	return map[string]string{"message": "Password recovery not implemented yet"}, nil
 }
 
-func (s *AuthService) RecoverConfirm(ctx *server.Ctx) (any, error) {
+func (s *AuthService) RecoverConfirm(ctx *ctx.Ctx) (any, error) {
 	type RecoverConfirmRequest struct {
 		Token    string `json:"token" validate:"required"`
 		Password string `json:"password" validate:"required,min=8"`

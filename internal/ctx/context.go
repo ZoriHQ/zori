@@ -1,6 +1,7 @@
-package server
+package ctx
 
 import (
+	"context"
 	"marker/internal/storage/postgres/models"
 
 	"github.com/labstack/echo/v4"
@@ -9,6 +10,7 @@ import (
 // Ctx is a wrapper around echo.Context that provides additional functionality
 // for handling user authentication and organization context
 type Ctx struct {
+	context.Context
 	Echo echo.Context
 	User *models.Account
 	Org  *models.Organization
@@ -16,7 +18,8 @@ type Ctx struct {
 
 func NewCtx(c echo.Context) *Ctx {
 	return &Ctx{
-		Echo: c,
+		Context: c.Request().Context(),
+		Echo:    c,
 	}
 }
 
