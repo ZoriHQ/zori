@@ -1,14 +1,15 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-// eslint-disable-next-line
-import { auth, type AuthResponse } from '@/lib/auth'
 import { useEffect } from 'react'
 import { useRouter } from '@tanstack/react-router'
+import { auth } from './auth'
+
+import type Zoriapi from 'zorihq'
 
 export interface AuthState {
   isAuthenticated: boolean
   isLoading: boolean
-  account: AuthResponse['account'] | null
-  organization: AuthResponse['organization'] | null
+  account: Zoriapi.V1.Auth.Account | null
+  organization: Zoriapi.V1.Auth.Organization | null
   accessToken: string | null
 }
 
@@ -40,7 +41,7 @@ export function useAuth() {
             isLoading: false,
             account: refreshedData.account || auth.getAccount(),
             organization: refreshedData.organization || auth.getOrganization(),
-            accessToken: refreshedData.access_token,
+            accessToken: refreshedData.access_token!,
           }
         } else {
           return {

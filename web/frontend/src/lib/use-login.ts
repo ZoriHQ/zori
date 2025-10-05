@@ -1,30 +1,38 @@
 import { useMutation } from '@tanstack/react-query'
-import { useApiClient } from '@/lib/api-client'
-// eslint-disable-next-line
-import { auth, type AuthResponse } from '@/lib/auth'
+import Zoriapi from 'zorihq'
+import { auth } from '@/lib/auth'
+
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || 'http://localhost:1323'
 
 export function useLogin() {
-  const apiClient = useApiClient()
+  const zori = new Zoriapi({
+    baseURL: API_BASE_URL,
+    apiKey: '__empty__',
+  })
 
   return useMutation({
     mutationKey: ['login'],
-    mutationFn: async (data: { email: string; password: string }) => {
-      const response = await apiClient.post<AuthResponse>(
-        `/api/v1/auth/login`,
-        data,
-      )
+    mutationFn: async (data: {
+      email: string
+      password: string
+    }): Promise<Zoriapi.V1.Auth.AuthResponse> => {
+      const response = await zori.v1.auth.login({
+        email: data.email,
+        password: data.password,
+      })
 
-      // Store the auth data in localStorage
-      auth.setAuthData(response)
+      auth.setAuthData({
+        access_token: response.access_token!,
+        refresh_token: response.refresh_token!,
+        expires_in: response.expires_in!,
+        account: response.account!,
+        organization: response.organization!,
+      })
 
       return response
     },
-    onSuccess: (data) => {
-      // Optional: Redirect to dashboard or home page after successful login
-      // window.location.href = '/dashboard'
-    },
     onError: (error) => {
-      // Clear any existing auth data on login error
       auth.clearAuthData()
       console.error('Login failed:', error)
     },
