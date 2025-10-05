@@ -61,7 +61,15 @@
         ],
         "description": "Authenticate a user with email and password",
         "requestBody": {
-          "$ref": "#/components/requestBodies/services.LoginRequest"
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/services.LoginRequest"
+              }
+            }
+          },
+          "description": "Login credentials",
+          "required": true
         },
         "summary": "User login"
       }
@@ -96,7 +104,15 @@
         ],
         "description": "Invalidate the current session and refresh token",
         "requestBody": {
-          "$ref": "#/components/requestBodies/services.LogoutRequest"
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/services.LogoutRequest"
+              }
+            }
+          },
+          "description": "Logout request",
+          "required": true
         },
         "summary": "User logout"
       }
@@ -142,7 +158,15 @@
         ],
         "description": "Send a password recovery email to the registered email address",
         "requestBody": {
-          "$ref": "#/components/requestBodies/services.RecoverRequest"
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/services.RecoverRequest"
+              }
+            }
+          },
+          "description": "Recovery request",
+          "required": true
         },
         "summary": "Request password recovery"
       }
@@ -199,7 +223,15 @@
         ],
         "description": "Reset password using recovery token received via email",
         "requestBody": {
-          "$ref": "#/components/requestBodies/services.RecoverConfirmRequest"
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/services.RecoverConfirmRequest"
+              }
+            }
+          },
+          "description": "Recovery confirmation",
+          "required": true
         },
         "summary": "Confirm password recovery"
       }
@@ -256,7 +288,15 @@
         ],
         "description": "Exchange a valid refresh token for new access and refresh tokens",
         "requestBody": {
-          "$ref": "#/components/requestBodies/services.RefreshRequest"
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/services.RefreshRequest"
+              }
+            }
+          },
+          "description": "Refresh token",
+          "required": true
         },
         "summary": "Refresh access token"
       }
@@ -313,310 +353,20 @@
         ],
         "description": "Create a new user account with an organization",
         "requestBody": {
-          "$ref": "#/components/requestBodies/services.RegisterRequest"
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/services.RegisterRequest"
+              }
+            }
+          },
+          "description": "Registration details",
+          "required": true
         },
         "summary": "Register a new account"
       }
     },
-    "/auth/login": {
-      "post": {
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/services.AuthResponse"
-                }
-              }
-            },
-            "description": "Successfully authenticated"
-          },
-          "400": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "additionalProperties": true,
-                  "type": "object"
-                }
-              }
-            },
-            "description": "Invalid email or password"
-          },
-          "500": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "additionalProperties": true,
-                  "type": "object"
-                }
-              }
-            },
-            "description": "Internal server error"
-          }
-        },
-        "tags": [
-          "Authentication"
-        ],
-        "description": "Authenticate a user with email and password",
-        "requestBody": {
-          "$ref": "#/components/requestBodies/services.LoginRequest"
-        },
-        "summary": "User login"
-      }
-    },
-    "/auth/logout": {
-      "post": {
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/services.MessageResponse"
-                }
-              }
-            },
-            "description": "Successfully logged out"
-          },
-          "400": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "additionalProperties": true,
-                  "type": "object"
-                }
-              }
-            },
-            "description": "Invalid request"
-          }
-        },
-        "tags": [
-          "Authentication"
-        ],
-        "description": "Invalidate the current session and refresh token",
-        "requestBody": {
-          "$ref": "#/components/requestBodies/services.LogoutRequest"
-        },
-        "summary": "User logout"
-      }
-    },
-    "/auth/recover": {
-      "post": {
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/services.MessageResponse"
-                }
-              }
-            },
-            "description": "Recovery email sent if account exists"
-          },
-          "400": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "additionalProperties": true,
-                  "type": "object"
-                }
-              }
-            },
-            "description": "Invalid email format"
-          },
-          "500": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "additionalProperties": true,
-                  "type": "object"
-                }
-              }
-            },
-            "description": "Internal server error"
-          }
-        },
-        "tags": [
-          "Authentication"
-        ],
-        "description": "Send a password recovery email to the registered email address",
-        "requestBody": {
-          "$ref": "#/components/requestBodies/services.RecoverRequest"
-        },
-        "summary": "Request password recovery"
-      }
-    },
-    "/auth/recover-confirm": {
-      "post": {
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/services.MessageResponse"
-                }
-              }
-            },
-            "description": "Password successfully reset"
-          },
-          "400": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "additionalProperties": true,
-                  "type": "object"
-                }
-              }
-            },
-            "description": "Invalid or expired token"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "additionalProperties": true,
-                  "type": "object"
-                }
-              }
-            },
-            "description": "Password validation failed"
-          },
-          "500": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "additionalProperties": true,
-                  "type": "object"
-                }
-              }
-            },
-            "description": "Internal server error"
-          }
-        },
-        "tags": [
-          "Authentication"
-        ],
-        "description": "Reset password using recovery token received via email",
-        "requestBody": {
-          "$ref": "#/components/requestBodies/services.RecoverConfirmRequest"
-        },
-        "summary": "Confirm password recovery"
-      }
-    },
-    "/auth/refresh": {
-      "post": {
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/services.AuthResponse"
-                }
-              }
-            },
-            "description": "Successfully refreshed tokens"
-          },
-          "400": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "additionalProperties": true,
-                  "type": "object"
-                }
-              }
-            },
-            "description": "Invalid or expired refresh token"
-          },
-          "401": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "additionalProperties": true,
-                  "type": "object"
-                }
-              }
-            },
-            "description": "Session not found or expired"
-          },
-          "500": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "additionalProperties": true,
-                  "type": "object"
-                }
-              }
-            },
-            "description": "Internal server error"
-          }
-        },
-        "tags": [
-          "Authentication"
-        ],
-        "description": "Exchange a valid refresh token for new access and refresh tokens",
-        "requestBody": {
-          "$ref": "#/components/requestBodies/services.RefreshRequest"
-        },
-        "summary": "Refresh access token"
-      }
-    },
-    "/auth/register": {
-      "post": {
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/services.AuthResponse"
-                }
-              }
-            },
-            "description": "Successfully registered and authenticated"
-          },
-          "400": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "additionalProperties": true,
-                  "type": "object"
-                }
-              }
-            },
-            "description": "Invalid request or validation failed"
-          },
-          "409": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "additionalProperties": true,
-                  "type": "object"
-                }
-              }
-            },
-            "description": "Account with email already exists"
-          },
-          "500": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "additionalProperties": true,
-                  "type": "object"
-                }
-              }
-            },
-            "description": "Internal server error"
-          }
-        },
-        "tags": [
-          "Authentication"
-        ],
-        "description": "Create a new user account with an organization",
-        "requestBody": {
-          "$ref": "#/components/requestBodies/services.RegisterRequest"
-        },
-        "summary": "Register a new account"
-      }
-    },
-    "/projects": {
+    "/api/v1/projects": {
       "post": {
         "responses": {
           "201": {
@@ -697,7 +447,7 @@
         "summary": "Create a new project"
       }
     },
-    "/projects/list": {
+    "/api/v1/projects/list": {
       "get": {
         "responses": {
           "200": {
@@ -745,7 +495,7 @@
         "summary": "List organization projects"
       }
     },
-    "/projects/{id}": {
+    "/api/v1/projects/{id}": {
       "delete": {
         "parameters": [
           {
@@ -978,74 +728,6 @@
     }
   },
   "components": {
-    "requestBodies": {
-      "services.LoginRequest": {
-        "content": {
-          "application/json": {
-            "schema": {
-              "$ref": "#/components/schemas/services.LoginRequest"
-            }
-          }
-        },
-        "description": "Login credentials",
-        "required": true
-      },
-      "services.LogoutRequest": {
-        "content": {
-          "application/json": {
-            "schema": {
-              "$ref": "#/components/schemas/services.LogoutRequest"
-            }
-          }
-        },
-        "description": "Logout request",
-        "required": true
-      },
-      "services.RecoverConfirmRequest": {
-        "content": {
-          "application/json": {
-            "schema": {
-              "$ref": "#/components/schemas/services.RecoverConfirmRequest"
-            }
-          }
-        },
-        "description": "Recovery confirmation",
-        "required": true
-      },
-      "services.RecoverRequest": {
-        "content": {
-          "application/json": {
-            "schema": {
-              "$ref": "#/components/schemas/services.RecoverRequest"
-            }
-          }
-        },
-        "description": "Recovery request",
-        "required": true
-      },
-      "services.RefreshRequest": {
-        "content": {
-          "application/json": {
-            "schema": {
-              "$ref": "#/components/schemas/services.RefreshRequest"
-            }
-          }
-        },
-        "description": "Refresh token",
-        "required": true
-      },
-      "services.RegisterRequest": {
-        "content": {
-          "application/json": {
-            "schema": {
-              "$ref": "#/components/schemas/services.RegisterRequest"
-            }
-          }
-        },
-        "description": "Registration details",
-        "required": true
-      }
-    },
     "schemas": {
       "models.Account": {
         "properties": {
