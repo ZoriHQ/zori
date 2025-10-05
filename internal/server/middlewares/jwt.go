@@ -1,6 +1,7 @@
 package middlewares
 
 import (
+	"fmt"
 	"net/http"
 	"zori/internal/ctx"
 	"zori/services/auth/services"
@@ -34,6 +35,8 @@ func (j *JwtMiddleware) Middleware() echo.MiddlewareFunc {
 				return echo.NewHTTPError(http.StatusUnauthorized, "Missing token")
 			}
 
+			fmt.Println("Middleware invoke", token)
+
 			claims, err := j.JwtService.ValidateAccessToken(token)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusUnauthorized, "Invalid token")
@@ -41,6 +44,7 @@ func (j *JwtMiddleware) Middleware() echo.MiddlewareFunc {
 
 			c.Set("account_id", claims.AccountID)
 			c.Set("organization_id", claims.OrganizationID)
+
 			reqCtx := ctx.NewCtx(c)
 			org, err := j.OrganizationService.GetOrganizationByID(reqCtx, claims.OrganizationID)
 			if err != nil {
@@ -54,6 +58,8 @@ func (j *JwtMiddleware) Middleware() echo.MiddlewareFunc {
 
 			reqCtx.SetOrg(org)
 			reqCtx.SetUser(account)
+
+			c.Set("ctx", reqCtx)
 
 			return next(c)
 		}
