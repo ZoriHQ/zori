@@ -81,6 +81,9 @@ func (s *ProjectService) CreateProject(c *ctx.Ctx) (*ProjectResponse, error) {
 		return nil, fmt.Errorf("failed to create project: %w", err)
 	}
 
+	// Set status code to 201 for successful creation
+	c.Echo.Response().Status = http.StatusCreated
+
 	return &ProjectResponse{Project: project}, nil
 }
 

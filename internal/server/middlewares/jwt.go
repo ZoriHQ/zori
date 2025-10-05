@@ -3,6 +3,7 @@ package middlewares
 import (
 	"fmt"
 	"net/http"
+	"strings"
 	"zori/internal/ctx"
 	"zori/services/auth/services"
 	orgServices "zori/services/organizations/services"
@@ -30,10 +31,12 @@ func NewJwtMiddleware(jwtService *services.JWTService,
 func (j *JwtMiddleware) Middleware() echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
-			token := c.Request().Header.Get("Authorization")
-			if token == "" {
+			authHeader := c.Request().Header.Get("Authorization")
+			if authHeader == "" {
 				return echo.NewHTTPError(http.StatusUnauthorized, "Missing token")
 			}
+
+			token := strings.TrimPrefix(authHeader, "Bearer ")
 
 			fmt.Println("Middleware invoke", token)
 

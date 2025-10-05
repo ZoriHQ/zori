@@ -10,9 +10,12 @@ import (
 
 	"zori/internal/config"
 	"zori/internal/server"
+	"zori/internal/server/middlewares"
 	"zori/internal/storage/postgres"
 	"zori/internal/storage/postgres/models"
 	"zori/services/auth"
+	"zori/services/organizations"
+	"zori/services/projects"
 
 	"github.com/uptrace/bun"
 	"github.com/uptrace/bun/dialect/pgdialect"
@@ -63,6 +66,7 @@ func NewTestPostgresDB(cfg *config.Config) (*postgres.PostgresDB, error) {
 	db.RegisterModel(
 		(*models.Account)(nil),
 		(*models.Organization)(nil),
+		(*models.Project)(nil),
 	)
 
 	return &postgres.PostgresDB{DB: db}, nil
@@ -82,6 +86,11 @@ func NewTestContainer(t *testing.T) *TestContainer {
 		),
 
 		auth.BuildAuthDIContainer(),
+		organizations.BuildOrganizationDIContainer(),
+		projects.BuildProjectsDIContainer(),
+
+		// Jwt middleware must be provided after the auth & org containers are built since it depends on some of the auth services
+		fx.Provide(middlewares.NewJwtMiddleware),
 
 		fx.Populate(&tc.DB, &tc.Server, &tc.Config),
 	)
