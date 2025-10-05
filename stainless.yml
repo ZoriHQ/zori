@@ -1,0 +1,116 @@
+# yaml-language-server: $schema=https://app.stainless.com/config.schema.json
+
+organization:
+  # Name of your organization or company, used to determine the name of the client
+  # and headings.
+  name: zoriapi
+  # Link to your API documentation.
+  docs: https://www.zorihq.com/support
+  # Contact email for bug reports, questions, and support requests.
+  contact: support@zorihq.com
+
+# `targets` define the output targets and their customization options, such as
+# whether to emit the Node SDK and what it's package name should be.
+targets:
+  typescript:
+    package_name: zorihq
+    production_repo: ZoriHQ/typescript-api-sdk
+    publish:
+      npm: true
+
+# `environments` are a map of the name of the environment (e.g. "sandbox",
+# "production") to the corresponding url to use.
+environments:
+  production: /api/v1
+
+# `resources` define the structure and organization for your API, such as how
+# methods and models are grouped together and accessed. See the [configuration
+# guide] for more information.
+#
+# [configuration guide]: https://www.stainless.com/docs/guides/configure#resources
+resources:
+  v1:
+    subresources:
+      projects:
+        # Configure the models--named types--defined in the resource. Each key in the
+        # object is the name of the model and the value is either the name of a schema in
+        # `#/components/schemas` or an object with more detail.
+        #
+        # [reference]: https://www.stainless.com/docs/reference/config#model
+        models:
+          project: "#/components/schemas/models.Project"
+          project_response: "#/components/schemas/services.ProjectResponse"
+          list_projects_response: "#/components/schemas/services.ListProjectsResponse"
+          create_project_request: "#/components/schemas/types.CreateProjectRequest"
+          update_project_request: "#/components/schemas/types.UpdateProjectRequest"
+        # Configure the methods defined in this resource. Each key in the object is the
+        # name of the method and the value is either an endpoint (for example, `get /foo`)
+        # or an object with more detail.
+        #
+        # [reference]: https://www.stainless.com/docs/reference/config#method
+        methods:
+          create: post /api/v1/projects
+          list: get /api/v1/projects/list
+          get: get /api/v1/projects/{id}
+          update: put /api/v1/projects/{id}
+          delete: delete /api/v1/projects/{id}
+      auth:
+        # Configure the methods defined in this resource. Each key in the object is the
+        # name of the method and the value is either an endpoint (for example, `get /foo`)
+        # or an object with more detail.
+        #
+        # [reference]: https://www.stainless.com/docs/reference/config#method
+        # Configure the models--named types--defined in the resource. Each key in the
+        # object is the name of the model and the value is either the name of a schema in
+        # `#/components/schemas` or an object with more detail.
+        #
+        # [reference]: https://www.stainless.com/docs/reference/config#model
+        models:
+          account: "#/components/schemas/models.Account"
+          organization: "#/components/schemas/models.Organization"
+          auth_response: "#/components/schemas/services.AuthResponse"
+          message_response: "#/components/schemas/services.MessageResponse"
+        methods:
+          login: post /api/v1/auth/login
+          logout: post /api/v1/auth/logout
+          request_password_recovery: post /api/v1/auth/recover
+          confirm_password_recovery: post /api/v1/auth/recover-confirm
+          refresh_access_token: post /api/v1/auth/refresh
+          register_account: post /api/v1/auth/register
+
+settings:
+  # All generated integration tests that hit the prism mock http server are marked
+  # as skipped. Removing this setting or setting it to false enables tests, but
+  # doing so may result in test failures due to bugs in the test server.
+  #
+  # [prism mock http server]: https://stoplight.io/open-source/prism
+  disable_mock_tests: true
+  license: Apache-2.0
+
+# `client_settings` define settings for the API client, such as extra constructor
+# arguments (used for authentication), retry behavior, idempotency, etc.
+client_settings:
+  opts:
+    api_key:
+      type: string
+      nullable: false
+      auth:
+        security_scheme: ApiKeyAuth
+      read_env: ZORIAPI_API_KEY
+
+security:
+  - ApiKeyAuth: []
+
+# `readme` is used to configure the code snippets that will be rendered in the
+# README.md of various SDKs. In particular, you can change the `headline`
+# snippet's endpoint and the arguments to call it with.
+readme:
+  example_requests:
+    default:
+      type: request
+      endpoint: post /api/v1/auth/login
+      params: {}
+    headline:
+      type: request
+      endpoint: post /api/v1/auth/login
+      params: {}
