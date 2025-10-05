@@ -1,9 +1,9 @@
 package data
 
 import (
-	"marker/internal/ctx"
-	"marker/internal/storage/postgres"
-	"marker/internal/storage/postgres/models"
+	"zori/internal/ctx"
+	"zori/internal/storage/postgres"
+	"zori/internal/storage/postgres/models"
 
 	"github.com/uptrace/bun"
 )

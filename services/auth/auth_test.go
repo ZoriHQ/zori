@@ -10,9 +10,9 @@ import (
 	"testing"
 	"time"
 
-	"marker/di"
-	"marker/internal/storage/postgres/models"
-	"marker/services/auth/services"
+	"zori/di"
+	"zori/internal/storage/postgres/models"
+	"zori/services/auth/services"
 
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"

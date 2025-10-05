@@ -1,10 +1,10 @@
 package services
 
 import (
-	"marker/internal/config"
 	"strings"
 	"testing"
 	"time"
+	"zori/internal/config"
 )
 
 func TestPasswordService(t *testing.T) {

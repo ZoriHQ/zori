@@ -7,7 +7,7 @@ import (
 )
 
 type OrganizationMember struct {
-	bun.BaseModel `bun:"table:organization_members,alias:om"`
+	bun.BaseModel `json:"-" bun:"table:organization_members,alias:om"`
 
 	ID             string    `json:"id" bun:",pk,type:uuid,default:gen_random_uuid()"`
 	OrganizationID string    `json:"organization_id" bun:",notnull" validate:"required"`

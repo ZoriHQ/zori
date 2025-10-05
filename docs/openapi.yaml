@@ -40,12 +40,7 @@ paths:
         - Authentication
       description: Authenticate a user with email and password
       requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/services.LoginRequest'
-        description: Login credentials
-        required: true
+        $ref: '#/components/requestBodies/services.LoginRequest'
       summary: User login
   /api/v1/auth/logout:
     post:
@@ -67,12 +62,7 @@ paths:
         - Authentication
       description: Invalidate the current session and refresh token
       requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/services.LogoutRequest'
-        description: Logout request
-        required: true
+        $ref: '#/components/requestBodies/services.LogoutRequest'
       summary: User logout
   /api/v1/auth/recover:
     post:
@@ -101,12 +91,7 @@ paths:
         - Authentication
       description: Send a password recovery email to the registered email address
       requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/services.RecoverRequest'
-        description: Recovery request
-        required: true
+        $ref: '#/components/requestBodies/services.RecoverRequest'
       summary: Request password recovery
   /api/v1/auth/recover-confirm:
     post:
@@ -142,12 +127,7 @@ paths:
         - Authentication
       description: Reset password using recovery token received via email
       requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/services.RecoverConfirmRequest'
-        description: Recovery confirmation
-        required: true
+        $ref: '#/components/requestBodies/services.RecoverConfirmRequest'
       summary: Confirm password recovery
   /api/v1/auth/refresh:
     post:
@@ -183,12 +163,7 @@ paths:
         - Authentication
       description: Exchange a valid refresh token for new access and refresh tokens
       requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/services.RefreshRequest'
-        description: Refresh token
-        required: true
+        $ref: '#/components/requestBodies/services.RefreshRequest'
       summary: Refresh access token
   /api/v1/auth/register:
     post:
@@ -224,14 +199,464 @@ paths:
         - Authentication
       description: Create a new user account with an organization
       requestBody:
+        $ref: '#/components/requestBodies/services.RegisterRequest'
+      summary: Register a new account
+  /auth/login:
+    post:
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/services.AuthResponse'
+          description: Successfully authenticated
+        '400':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Invalid email or password
+        '500':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Internal server error
+      tags:
+        - Authentication
+      description: Authenticate a user with email and password
+      requestBody:
+        $ref: '#/components/requestBodies/services.LoginRequest'
+      summary: User login
+  /auth/logout:
+    post:
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/services.MessageResponse'
+          description: Successfully logged out
+        '400':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Invalid request
+      tags:
+        - Authentication
+      description: Invalidate the current session and refresh token
+      requestBody:
+        $ref: '#/components/requestBodies/services.LogoutRequest'
+      summary: User logout
+  /auth/recover:
+    post:
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/services.MessageResponse'
+          description: Recovery email sent if account exists
+        '400':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Invalid email format
+        '500':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Internal server error
+      tags:
+        - Authentication
+      description: Send a password recovery email to the registered email address
+      requestBody:
+        $ref: '#/components/requestBodies/services.RecoverRequest'
+      summary: Request password recovery
+  /auth/recover-confirm:
+    post:
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/services.MessageResponse'
+          description: Password successfully reset
+        '400':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Invalid or expired token
+        '422':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Password validation failed
+        '500':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Internal server error
+      tags:
+        - Authentication
+      description: Reset password using recovery token received via email
+      requestBody:
+        $ref: '#/components/requestBodies/services.RecoverConfirmRequest'
+      summary: Confirm password recovery
+  /auth/refresh:
+    post:
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/services.AuthResponse'
+          description: Successfully refreshed tokens
+        '400':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Invalid or expired refresh token
+        '401':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Session not found or expired
+        '500':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Internal server error
+      tags:
+        - Authentication
+      description: Exchange a valid refresh token for new access and refresh tokens
+      requestBody:
+        $ref: '#/components/requestBodies/services.RefreshRequest'
+      summary: Refresh access token
+  /auth/register:
+    post:
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/services.AuthResponse'
+          description: Successfully registered and authenticated
+        '400':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Invalid request or validation failed
+        '409':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Account with email already exists
+        '500':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Internal server error
+      tags:
+        - Authentication
+      description: Create a new user account with an organization
+      requestBody:
+        $ref: '#/components/requestBodies/services.RegisterRequest'
+      summary: Register a new account
+  /projects:
+    post:
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/services.ProjectResponse'
+          description: Created project
+        '400':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Invalid request or validation failed
+        '401':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Unauthorized - Invalid or missing JWT token
+        '409':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Project with this name already exists
+        '500':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Internal server error
+      security:
+        - ApiKeyAuth: []
+      tags:
+        - Projects
+      description: Create a new project for the authenticated user's organization
+      requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/services.RegisterRequest'
-        description: Registration details
+              $ref: '#/components/schemas/types.CreateProjectRequest'
+        description: Project creation details
         required: true
-      summary: Register a new account
+      summary: Create a new project
+  /projects/list:
+    get:
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/services.ListProjectsResponse'
+          description: List of projects
+        '401':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Unauthorized - Invalid or missing JWT token
+        '500':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Internal server error
+      security:
+        - ApiKeyAuth: []
+      tags:
+        - Projects
+      description: >-
+        Get a list of all projects belonging to the authenticated user's
+        organization
+      summary: List organization projects
+  '/projects/{id}':
+    delete:
+      parameters:
+        - description: Project ID
+          in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: string
+                type: object
+          description: Deletion confirmation
+        '401':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Unauthorized - Invalid or missing JWT token
+        '404':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Project not found
+        '500':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Internal server error
+      security:
+        - ApiKeyAuth: []
+      tags:
+        - Projects
+      description: Delete a project and all its associated data
+      summary: Delete a project
+    get:
+      parameters:
+        - description: Project ID
+          in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/services.ProjectResponse'
+          description: Project details
+        '401':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Unauthorized - Invalid or missing JWT token
+        '404':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Project not found
+        '500':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Internal server error
+      security:
+        - ApiKeyAuth: []
+      tags:
+        - Projects
+      description: Get a single project by its ID
+      summary: Get a project
+    put:
+      parameters:
+        - description: Project ID
+          in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/services.ProjectResponse'
+          description: Updated project
+        '400':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Invalid request or validation failed
+        '401':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Unauthorized - Invalid or missing JWT token
+        '404':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Project not found
+        '500':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Internal server error
+      security:
+        - ApiKeyAuth: []
+      tags:
+        - Projects
+      description: Update an existing project's details
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/types.UpdateProjectRequest'
+        description: Project update details
+        required: true
+      summary: Update a project
 components:
+  requestBodies:
+    services.LoginRequest:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/services.LoginRequest'
+      description: Login credentials
+      required: true
+    services.LogoutRequest:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/services.LogoutRequest'
+      description: Logout request
+      required: true
+    services.RecoverConfirmRequest:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/services.RecoverConfirmRequest'
+      description: Recovery confirmation
+      required: true
+    services.RecoverRequest:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/services.RecoverRequest'
+      description: Recovery request
+      required: true
+    services.RefreshRequest:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/services.RefreshRequest'
+      description: Refresh token
+      required: true
+    services.RegisterRequest:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/services.RegisterRequest'
+      description: Registration details
+      required: true
   schemas:
     models.Account:
       properties:
@@ -282,6 +707,29 @@ components:
         - name
         - slug
       type: object
+    models.Project:
+      properties:
+        allow_local_host:
+          example: false
+          type: boolean
+        domain:
+          example: 'https://example.com'
+          type: string
+        first_event_received_at:
+          example: '2024-01-15T10:30:00Z'
+          type: string
+        id:
+          example: 550e8400-e29b-41d4-a716-446655440000
+          type: string
+        name:
+          example: My Awesome Project
+          type: string
+        organization:
+          $ref: '#/components/schemas/models.Organization'
+        organization_id:
+          example: 660e8400-e29b-41d4-a716-446655440001
+          type: string
+      type: object
     services.AuthResponse:
       properties:
         access_token:
@@ -297,6 +745,16 @@ components:
         refresh_token:
           example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
           type: string
+      type: object
+    services.ListProjectsResponse:
+      properties:
+        projects:
+          items:
+            $ref: '#/components/schemas/models.Project'
+          type: array
+        total:
+          example: 10
+          type: integer
       type: object
     services.LoginRequest:
       properties:
@@ -322,6 +780,29 @@ components:
       properties:
         message:
           example: Operation completed successfully
+          type: string
+      type: object
+    services.ProjectResponse:
+      properties:
+        allow_local_host:
+          example: false
+          type: boolean
+        domain:
+          example: 'https://example.com'
+          type: string
+        first_event_received_at:
+          example: '2024-01-15T10:30:00Z'
+          type: string
+        id:
+          example: 550e8400-e29b-41d4-a716-446655440000
+          type: string
+        name:
+          example: My Awesome Project
+          type: string
+        organization:
+          $ref: '#/components/schemas/models.Organization'
+        organization_id:
+          example: 660e8400-e29b-41d4-a716-446655440001
           type: string
       type: object
     services.RecoverConfirmRequest:
@@ -375,6 +856,33 @@ components:
         - email
         - organization_name
         - password
+      type: object
+    types.CreateProjectRequest:
+      properties:
+        allow_localhost:
+          example: false
+          type: boolean
+        name:
+          example: My Awesome Project
+          type: string
+        website_url:
+          example: 'https://example.com'
+          type: string
+      required:
+        - name
+        - website_url
+      type: object
+    types.UpdateProjectRequest:
+      properties:
+        allow_localhost:
+          example: true
+          type: boolean
+        name:
+          example: Updated Project Name
+          type: string
+        website_url:
+          example: 'https://updated-example.com'
+          type: string
       type: object
   securitySchemes:
     ApiKeyAuth:

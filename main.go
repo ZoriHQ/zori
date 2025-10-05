@@ -9,7 +9,7 @@ import (
 	"syscall"
 	"time"
 
-	"marker/di"
+	"zori/di"
 
 	"github.com/urfave/cli/v3"
 )
@@ -36,8 +36,8 @@ import (
 // @externalDocs.url          https://docs.zorihq.com
 func main() {
 	app := &cli.Command{
-		Name:  "marker",
-		Usage: "Marker application with server and migration commands",
+		Name:  "zori",
+		Usage: "zori application with server and migration commands",
 		Commands: []*cli.Command{
 			{
 				Name:  "server",

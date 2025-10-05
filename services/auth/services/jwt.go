@@ -2,8 +2,8 @@ package services
 
 import (
 	"fmt"
-	"marker/internal/config"
 	"time"
+	"zori/internal/config"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
@@ -66,7 +66,7 @@ func (j *JWTService) GenerateAccessToken(accountID, orgID, email, role string) (
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(j.accessTokenTTL)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 			NotBefore: jwt.NewNumericDate(time.Now()),
-			Issuer:    "marker-auth",
+			Issuer:    "zori-auth",
 			Subject:   accountID,
 		},
 	}
@@ -84,7 +84,7 @@ func (j *JWTService) GenerateRefreshToken(sessionID, accountID string) (string, 
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(j.refreshTokenTTL)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 			NotBefore: jwt.NewNumericDate(time.Now()),
-			Issuer:    "marker-auth",
+			Issuer:    "zori-auth",
 			Subject:   accountID,
 		},
 	}

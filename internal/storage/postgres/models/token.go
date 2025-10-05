@@ -7,7 +7,7 @@ import (
 )
 
 type AccessToken struct {
-	bun.BaseModel `bun:"table:access_tokens,alias:at"`
+	bun.BaseModel `json:"-" bun:"table:access_tokens,alias:at"`
 
 	ID             string     `json:"id" bun:",pk,type:uuid,default:gen_random_uuid()"`
 	OrganizationID string     `json:"organization_id" bun:",notnull" validate:"required"`

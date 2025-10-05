@@ -1,8 +1,8 @@
 package accesstokens
 
 import (
-	"marker/services/auth/services"
-	"marker/services/auth/web"
+	"zori/services/auth/services"
+	"zori/services/auth/web"
 
 	"go.uber.org/fx"
 )

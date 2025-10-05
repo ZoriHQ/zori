@@ -1,9 +1,9 @@
 package services
 
 import (
-	"marker/internal/ctx"
-	"marker/internal/storage/postgres/models"
-	"marker/services/organizations/data"
+	"zori/internal/ctx"
+	"zori/internal/storage/postgres/models"
+	"zori/services/organizations/data"
 )
 
 type OrganizationService struct {

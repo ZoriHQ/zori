@@ -1,9 +1,9 @@
 package organizations
 
 import (
-	"marker/services/organizations/data"
-	"marker/services/organizations/services"
-	"marker/services/organizations/web"
+	"zori/services/organizations/data"
+	"zori/services/organizations/services"
+	"zori/services/organizations/web"
 
 	"go.uber.org/fx"
 )

@@ -1,8 +1,8 @@
 package server
 
 import (
-	_ "marker/docs" // Import generated docs
 	"net/http"
+	_ "zori/docs" // Import generated docs
 
 	"github.com/labstack/echo/v4"
 	echoSwagger "github.com/swaggo/echo-swagger"

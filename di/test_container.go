@@ -8,11 +8,11 @@ import (
 	"testing"
 	"time"
 
-	"marker/internal/config"
-	"marker/internal/server"
-	"marker/internal/storage/postgres"
-	"marker/internal/storage/postgres/models"
-	"marker/services/auth"
+	"zori/internal/config"
+	"zori/internal/server"
+	"zori/internal/storage/postgres"
+	"zori/internal/storage/postgres/models"
+	"zori/services/auth"
 
 	"github.com/uptrace/bun"
 	"github.com/uptrace/bun/dialect/pgdialect"
@@ -32,12 +32,12 @@ type TestContainer struct {
 func NewTestConfig() *config.Config {
 	testPostgresURL := os.Getenv("TEST_POSTGRES_URL")
 	if testPostgresURL == "" {
-		testPostgresURL = "postgres://postgres:postgres@localhost:5432/marker_test?sslmode=disable"
+		testPostgresURL = "postgres://postgres:postgres@localhost:5432/zori_test?sslmode=disable"
 	}
 
 	testClickHouseURL := os.Getenv("TEST_CLICKHOUSE_URL")
 	if testClickHouseURL == "" {
-		testClickHouseURL = "clickhouse://localhost:9000/marker_test"
+		testClickHouseURL = "clickhouse://localhost:9000/zori_test"
 	}
 
 	return &config.Config{

@@ -3,7 +3,7 @@ version: "3"
 dotenv: [".env"]
 
 vars:
-  GO_MODULE: marker
+  GO_MODULE: zori
 
 tasks:
   # Server tasks
@@ -77,7 +77,7 @@ tasks:
   docs:
     desc: Generate Swagger documentation
     cmds:
-      - swag init -g main.go --parseDependency --parseInternal --parseDepth 2
+      - swag init -g main.go --parseDependency --parseInternal --parseDepth 2 --parseFuncBody
       - npx api-spec-converter --syntax=yaml --from=swagger_2 --to=openapi_3 docs/swagger.yaml > docs/openapi.yaml
       - rm docs/swagger.yaml
       - rm docs/swagger.json
@@ -182,8 +182,8 @@ tasks:
     dotenv: [".env.test"]
     cmds:
       - |
-        PGPASSWORD=${TEST_DB_PASSWORD:-postgres} psql -h ${TEST_DB_HOST:-localhost} -U ${TEST_DB_USER:-postgres} -c "DROP DATABASE IF EXISTS marker_test"
-        PGPASSWORD=${TEST_DB_PASSWORD:-postgres} psql -h ${TEST_DB_HOST:-localhost} -U ${TEST_DB_USER:-postgres} -c "CREATE DATABASE marker_test"
+        PGPASSWORD=${TEST_DB_PASSWORD:-postgres} psql -h ${TEST_DB_HOST:-localhost} -U ${TEST_DB_USER:-postgres} -c "DROP DATABASE IF EXISTS zori_test"
+        PGPASSWORD=${TEST_DB_PASSWORD:-postgres} psql -h ${TEST_DB_HOST:-localhost} -U ${TEST_DB_USER:-postgres} -c "CREATE DATABASE zori_test"
 
   test:db:reset:
     desc: Reset test database
@@ -273,8 +273,8 @@ tasks:
         if [ ! -f .env.test ]; then
           echo "Creating .env.test file..."
           cat > .env.test << 'EOF'
-        TEST_POSTGRES_URL=postgres://postgres:postgres@localhost:5432/marker_test?sslmode=disable
-        TEST_CLICKHOUSE_URL=clickhouse://localhost:9000/marker_test
+        TEST_POSTGRES_URL=postgres://postgres:postgres@localhost:5432/zori_test?sslmode=disable
+        TEST_CLICKHOUSE_URL=clickhouse://localhost:9000/zori_test
         JWT_SECRET_KEY=test-secret-key-for-testing-purposes-min-32-chars
         JWT_ACCESS_TOKEN_TTL=15m
         JWT_REFRESH_TOKEN_TTL=168h

@@ -7,7 +7,7 @@ import (
 )
 
 type Session struct {
-	bun.BaseModel `bun:"table:sessions,alias:s"`
+	bun.BaseModel `json:"-" bun:"table:sessions,alias:s"`
 
 	ID        string    `json:"id" bun:",pk,type:uuid,default:gen_random_uuid()"`
 	AccountID string    `json:"account_id" bun:",notnull" validate:"required"`
