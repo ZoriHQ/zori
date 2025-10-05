@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"marker/di"
-	"marker/services/auth/models"
+	"marker/internal/storage/postgres/models"
 	"marker/services/auth/services"
 
 	"github.com/labstack/echo/v4"

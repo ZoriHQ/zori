@@ -1,21 +1,35 @@
 import { defineConfig } from 'vite'
-import { tanstackStart } from '@tanstack/react-start/plugin/vite'
 import viteReact from '@vitejs/plugin-react'
 import viteTsConfigPaths from 'vite-tsconfig-paths'
 import tailwindcss from '@tailwindcss/vite'
-import { cloudflare } from '@cloudflare/vite-plugin'
+import { TanStackRouterVite } from '@tanstack/router-plugin/vite'
 
 const config = defineConfig({
   plugins: [
-    cloudflare({ viteEnvironment: { name: 'ssr' } }),
-    // this is the plugin that enables path aliases
+    // Path aliases support
     viteTsConfigPaths({
       projects: ['./tsconfig.json'],
     }),
+    // Tailwind CSS
     tailwindcss(),
-    tanstackStart(),
+    // TanStack Router plugin for file-based routing
+    TanStackRouterVite(),
+    // React plugin
     viteReact(),
   ],
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'react-vendor': ['react', 'react-dom'],
+          'router-vendor': ['@tanstack/react-router', '@tanstack/react-query'],
+        },
+      },
+    },
+  },
+  server: {
+    port: 3000,
+  },
 })
 
 export default config

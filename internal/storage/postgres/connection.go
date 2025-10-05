@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	"marker/internal/config"
-	"marker/services/auth/models"
+	"marker/internal/storage/postgres/models"
 
 	"github.com/uptrace/bun"
 	"github.com/uptrace/bun/dialect/pgdialect"
@@ -33,13 +33,10 @@ func NewPostgresDB(cfg *config.Config) *PostgresDB {
 		bundebug.FromEnv("BUNDEBUG"),
 	))
 
-	// Test the connection
 	if err := db.PingContext(context.Background()); err != nil {
 		panic(fmt.Errorf("failed to ping database: %w", err))
 	}
 
-	// Register models for many-to-many relationships
-	// IMPORTANT: Register the intermediate table first, before the models that reference it
 	db.RegisterModel((*models.OrganizationMember)(nil))
 	db.RegisterModel(
 		(*models.Account)(nil),

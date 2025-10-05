@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 )
 
 type HandlerFunc func(*Ctx) (any, error)
@@ -13,8 +14,13 @@ type Server struct {
 }
 
 func New() *Server {
+	e := echo.New()
+	e.Use(middleware.Logger())
+	e.Use(middleware.Recover())
+	e.Use(middleware.CORS())
+
 	return &Server{
-		Echo: echo.New(),
+		Echo: e,
 	}
 }
 

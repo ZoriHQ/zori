@@ -2,16 +2,18 @@ package services
 
 import (
 	"fmt"
+	"net/http"
 	"strings"
 	"time"
 
 	"marker/internal/server"
 	"marker/internal/storage/postgres"
+	"marker/internal/storage/postgres/models"
 	"marker/internal/utils"
 	"marker/services/auth/helpers"
-	"marker/services/auth/models"
 
 	"github.com/google/uuid"
+	"github.com/labstack/echo/v4"
 	"github.com/uptrace/bun"
 )
 
@@ -177,6 +179,7 @@ func (s *AuthService) Login(ctx *server.Ctx) (any, error) {
 	if err := ctx.Echo.Bind(&req); err != nil {
 		return nil, err
 	}
+
 	if err := utils.ValidateStruct(req); err != nil {
 		return nil, err
 	}
@@ -187,12 +190,12 @@ func (s *AuthService) Login(ctx *server.Ctx) (any, error) {
 		Where("email = ?", strings.ToLower(req.Email)).
 		Scan(ctx.Echo.Request().Context())
 	if err != nil {
-		return nil, fmt.Errorf("invalid email or password")
+		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Errorf("Invalid email or password"))
 	}
 
 	err = s.password.VerifyPassword(account.PasswordHash, req.Password)
 	if err != nil {
-		return nil, fmt.Errorf("invalid email or password")
+		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Errorf("Invalid email or password"))
 	}
 
 	member := &models.OrganizationMember{}
@@ -204,7 +207,7 @@ func (s *AuthService) Login(ctx *server.Ctx) (any, error) {
 		Limit(1).
 		Scan(ctx.Echo.Request().Context())
 	if err != nil {
-		return nil, fmt.Errorf("no organization found for user")
+		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Errorf("Organization not found"))
 	}
 
 	// Create new session

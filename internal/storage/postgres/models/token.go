@@ -1,7 +1,6 @@
 package models
 
 import (
-	"marker/services/auth/models"
 	"time"
 
 	"github.com/uptrace/bun"
@@ -17,5 +16,5 @@ type AccessToken struct {
 	CreatedAt      time.Time  `json:"created_at" bun:",nullzero,notnull,default:current_timestamp"`
 	LastUsed       *time.Time `json:"last_used" bun:",nullzero,default:null"`
 
-	Organizations models.Organization `json:"organizations" bun:"o2m:organization_members,join:AccessToken=Organization"`
+	Organizations Organization `json:"organizations" bun:"o2m:organization_members,join:AccessToken=Organization"`
 }

@@ -1,7 +1,7 @@
 package server
 
 import (
-	"marker/services/auth/models"
+	"marker/internal/storage/postgres/models"
 
 	"github.com/labstack/echo/v4"
 )
