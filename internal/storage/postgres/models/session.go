@@ -23,21 +23,3 @@ type Session struct {
 func (s *Session) IsExpired() bool {
 	return time.Now().After(s.ExpiresAt)
 }
-
-// IsValid checks if the session is valid (not expired)
-func (s *Session) IsValid() bool {
-	return !s.IsExpired()
-}
-
-// TimeUntilExpiry returns the duration until the session expires
-func (s *Session) TimeUntilExpiry() time.Duration {
-	if s.IsExpired() {
-		return 0
-	}
-	return time.Until(s.ExpiresAt)
-}
-
-// TableName returns the table name for the Session model
-func (*Session) TableName() string {
-	return "sessions"
-}
