@@ -1,6 +1,7 @@
 package server
 
 import (
+	"fmt"
 	"net/http"
 	"zori/internal/ctx"
 
@@ -66,11 +67,25 @@ func wrapHandler[T any](s *Server, handler HandlerFunc[T]) echo.HandlerFunc {
 			return s.handleError(c, err)
 		}
 
-		return c.JSON(http.StatusOK, result)
+		// Use the existing status code if it was set, otherwise default to OK
+		statusCode := c.Response().Status
+		if statusCode == 0 {
+			statusCode = http.StatusOK
+		}
+		
+		return c.JSON(statusCode, result)
 	}
 }
 
 func (s *Server) handleError(c echo.Context, err error) error {
+	// Check if it's an echo.HTTPError to preserve the status code
+	if he, ok := err.(*echo.HTTPError); ok {
+		return c.JSON(he.Code, map[string]string{
+			"error": fmt.Sprintf("%v", he.Message),
+		})
+	}
+	
+	// Default to 500 for other errors
 	return c.JSON(http.StatusInternalServerError, map[string]string{
 		"error": err.Error(),
 	})
