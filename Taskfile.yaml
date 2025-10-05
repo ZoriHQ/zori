@@ -79,6 +79,7 @@ tasks:
     cmds:
       - swag init -g main.go --parseDependency --parseInternal --parseDepth 2 --parseFuncBody
       - npx api-spec-converter --syntax=json --from=swagger_2 --to=openapi_3 docs/swagger.json > docs/openapi.json
+      - npx api-spec-converter --syntax=yaml --from=swagger_2 --to=openapi_3 docs/swagger.yaml > docs/openapi.yaml
       - rm docs/swagger.yaml
       - rm docs/swagger.json
     silent: false
