@@ -6,15 +6,17 @@ import (
 
 	"marker/internal/config"
 	"marker/internal/server"
+	"marker/internal/server/middlewares"
 	"marker/internal/storage/postgres"
 	"marker/services/auth"
+	"marker/services/organizations"
+	"marker/services/projects"
 
 	"go.uber.org/fx"
 )
 
 func NewApplication() *fx.App {
 	return fx.New(
-		// Core providers
 		fx.Provide(
 			config.NewConfig,
 			postgres.NewPostgresDB,
@@ -22,6 +24,11 @@ func NewApplication() *fx.App {
 		),
 
 		auth.BuildAuthDIContainer(),
+		organizations.BuildOrganizationDIContainer(),
+		projects.BuildProjectsDIContainer(),
+
+		// Jwt middleware must be provided after the auth & org containers are built since it depends on some of the auth services
+		fx.Provide(middlewares.NewJwtMiddleware),
 
 		fx.Invoke(registerDatabaseLifecycle),
 

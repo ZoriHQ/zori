@@ -1,13 +1,14 @@
 package server
 
 import (
+	"marker/internal/ctx"
 	"net/http"
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 )
 
-type HandlerFunc func(*Ctx) (any, error)
+type HandlerFunc func(*ctx.Ctx) (any, error)
 
 type Server struct {
 	Echo *echo.Echo
@@ -53,7 +54,7 @@ func (s *Server) Group(prefix string) *Group {
 
 func (s *Server) wrapHandler(handler HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		ctx := NewCtx(c)
+		ctx := ctx.NewCtx(c)
 
 		result, err := handler(ctx)
 
