@@ -14,6 +14,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as ProtectedRouteImport } from './routes/_protected'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ProtectedProjectsRouteImport } from './routes/_protected.projects'
 import { Route as ProtectedDashboardRouteImport } from './routes/_protected.dashboard'
 
 const RegisterRoute = RegisterRouteImport.update({
@@ -40,6 +41,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProtectedProjectsRoute = ProtectedProjectsRouteImport.update({
+  id: '/projects',
+  path: '/projects',
+  getParentRoute: () => ProtectedRoute,
+} as any)
 const ProtectedDashboardRoute = ProtectedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -52,6 +58,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
   '/dashboard': typeof ProtectedDashboardRoute
+  '/projects': typeof ProtectedProjectsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -59,6 +66,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
   '/dashboard': typeof ProtectedDashboardRoute
+  '/projects': typeof ProtectedProjectsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -68,12 +76,19 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
   '/_protected/dashboard': typeof ProtectedDashboardRoute
+  '/_protected/projects': typeof ProtectedProjectsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/about' | '/login' | '/register' | '/dashboard'
+  fullPaths:
+    | '/'
+    | '/about'
+    | '/login'
+    | '/register'
+    | '/dashboard'
+    | '/projects'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/about' | '/login' | '/register' | '/dashboard'
+  to: '/' | '/about' | '/login' | '/register' | '/dashboard' | '/projects'
   id:
     | '__root__'
     | '/'
@@ -82,6 +97,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/register'
     | '/_protected/dashboard'
+    | '/_protected/projects'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -129,6 +145,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_protected/projects': {
+      id: '/_protected/projects'
+      path: '/projects'
+      fullPath: '/projects'
+      preLoaderRoute: typeof ProtectedProjectsRouteImport
+      parentRoute: typeof ProtectedRoute
+    }
     '/_protected/dashboard': {
       id: '/_protected/dashboard'
       path: '/dashboard'
@@ -141,10 +164,12 @@ declare module '@tanstack/react-router' {
 
 interface ProtectedRouteChildren {
   ProtectedDashboardRoute: typeof ProtectedDashboardRoute
+  ProtectedProjectsRoute: typeof ProtectedProjectsRoute
 }
 
 const ProtectedRouteChildren: ProtectedRouteChildren = {
   ProtectedDashboardRoute: ProtectedDashboardRoute,
+  ProtectedProjectsRoute: ProtectedProjectsRoute,
 }
 
 const ProtectedRouteWithChildren = ProtectedRoute._addFileChildren(

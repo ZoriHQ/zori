@@ -6,6 +6,7 @@ import (
 	"zori/internal/ctx"
 	"zori/internal/storage/postgres"
 	"zori/internal/storage/postgres/models"
+	"zori/services/projects/helpers"
 	"zori/services/projects/types"
 
 	"github.com/uptrace/bun"
@@ -25,7 +26,7 @@ func (p *ProjectData) ListOrganizationProjects(orgID string) ([]*models.Project,
 		Model(&projects).
 		Where("organization_id = ?", orgID).
 		Order("created_at DESC").
-		Scan(context.Background())
+		Scan(context.Background(), &projects)
 	return projects, err
 }
 
@@ -40,14 +41,20 @@ func (p *ProjectData) GetProject(ctx context.Context, projectID string, orgID st
 }
 
 func (p *ProjectData) CreateProject(c *ctx.Ctx, req *types.CreateProjectRequest) (*models.Project, error) {
+	projectToken, err := helpers.GenerateToken(25)
+	if err != nil {
+		return nil, err
+	}
+
 	project := &models.Project{
 		Name:           req.Name,
 		Domain:         req.WebsiteURL,
+		ProjectToken:   projectToken,
 		OrganizationID: c.OrgID(),
 		AllowLocalHost: req.AllowLocalHost,
 	}
 
-	_, err := p.db.NewInsert().
+	_, err = p.db.NewInsert().
 		Model(project).
 		Returning("*").
 		Exec(context.Background())

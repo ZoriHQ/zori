@@ -54,9 +54,13 @@ func (s *Server) Group(prefix string) *Group {
 
 func wrapHandler[T any](s *Server, handler HandlerFunc[T]) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		ctx := ctx.NewCtx(c)
+		appctx, ok := c.Get("ctx").(*ctx.Ctx)
+		if !ok {
+			appctx = ctx.NewCtx(c)
+			c.Set("ctx", appctx)
+		}
 
-		result, err := handler(ctx)
+		result, err := handler(appctx)
 
 		if err != nil {
 			return s.handleError(c, err)
