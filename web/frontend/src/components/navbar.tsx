@@ -1,20 +1,8 @@
 'use client'
 
-import {
-  forwardRef,
-  type HTMLAttributes,
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-} from 'react'
+import { forwardRef, useCallback, useEffect, useRef, useState } from 'react'
 
-import {
-  ChevronDownIcon,
-  ChevronsUpDown,
-  SettingsIcon,
-  type SVGProps,
-} from 'lucide-react'
+import { ChevronDownIcon, ChevronsUpDown, SettingsIcon } from 'lucide-react'
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -45,6 +33,8 @@ import {
   DropdownMenuTrigger,
 } from './ui/dropdown-menu'
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar'
+import type { SVGProps } from 'lucide-react'
+import type { HTMLAttributes } from 'react'
 import { cn } from '@/lib/utils'
 
 // Hamburger icon component

@@ -9,9 +9,14 @@ interface ProjectsStatsProps {
 }
 
 export function ProjectsStats({ projects }: ProjectsStatsProps) {
-  const activeProjects = projects.filter((p) => p.status === 'active' || !p.status).length
+  const activeProjects = projects.filter(
+    (p) => p.status === 'active' || !p.status,
+  ).length
   const totalVisitors = projects.reduce((sum, p) => sum + (p.visitors || 0), 0)
-  const totalPageViews = projects.reduce((sum, p) => sum + (p.pageViews || 0), 0)
+  const totalPageViews = projects.reduce(
+    (sum, p) => sum + (p.pageViews || 0),
+    0,
+  )
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">

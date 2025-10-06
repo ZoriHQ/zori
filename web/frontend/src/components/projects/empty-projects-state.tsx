@@ -1,5 +1,3 @@
-import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
 import {
   IconChartLine,
   IconCode,
@@ -7,12 +5,16 @@ import {
   IconRocket,
   IconWorld,
 } from '@tabler/icons-react'
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
 
 interface EmptyProjectsStateProps {
   onCreateProject: () => void
 }
 
-export function EmptyProjectsState({ onCreateProject }: EmptyProjectsStateProps) {
+export function EmptyProjectsState({
+  onCreateProject,
+}: EmptyProjectsStateProps) {
   return (
     <div className="flex flex-col items-center justify-center min-h-[600px] px-4">
       <div className="max-w-2xl mx-auto text-center space-y-6">
@@ -27,12 +29,6 @@ export function EmptyProjectsState({ onCreateProject }: EmptyProjectsStateProps)
         </div>
 
         {/* Title and description */}
-        <div className="space-y-2">
-          <h2 className="text-2xl font-bold">Create Your First Analytics Project</h2>
-          <p className="text-muted-foreground max-w-md mx-auto">
-            Start tracking your website's performance with Zori Analytics. Get insights about your visitors, page views, and user behavior.
-          </p>
-        </div>
 
         {/* Features */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
@@ -56,7 +52,9 @@ export function EmptyProjectsState({ onCreateProject }: EmptyProjectsStateProps)
                 <IconCode className="w-5 h-5 text-purple-600 dark:text-purple-400" />
               </div>
               <div>
-                <h3 className="font-semibold text-sm mb-1">Simple Integration</h3>
+                <h3 className="font-semibold text-sm mb-1">
+                  Simple Integration
+                </h3>
                 <p className="text-xs text-muted-foreground">
                   Just one script tag to add to your website
                 </p>
@@ -100,7 +98,9 @@ export function EmptyProjectsState({ onCreateProject }: EmptyProjectsStateProps)
               </span>
               <div>
                 <p className="font-medium text-sm">Create a project</p>
-                <p className="text-xs text-muted-foreground">Enter your project name and website URL</p>
+                <p className="text-xs text-muted-foreground">
+                  Enter your project name and website URL
+                </p>
               </div>
             </li>
             <li className="flex items-start gap-3">
@@ -109,7 +109,9 @@ export function EmptyProjectsState({ onCreateProject }: EmptyProjectsStateProps)
               </span>
               <div>
                 <p className="font-medium text-sm">Add tracking script</p>
-                <p className="text-xs text-muted-foreground">Copy and paste the script into your website's HTML</p>
+                <p className="text-xs text-muted-foreground">
+                  Copy and paste the script into your website's HTML
+                </p>
               </div>
             </li>
             <li className="flex items-start gap-3">
@@ -118,7 +120,9 @@ export function EmptyProjectsState({ onCreateProject }: EmptyProjectsStateProps)
               </span>
               <div>
                 <p className="font-medium text-sm">View analytics</p>
-                <p className="text-xs text-muted-foreground">Watch your data flow in real-time</p>
+                <p className="text-xs text-muted-foreground">
+                  Watch your data flow in real-time
+                </p>
               </div>
             </li>
           </ol>

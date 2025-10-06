@@ -7,10 +7,5 @@
   "git": true,
   "version": 1,
   "framework": "react-cra",
-  "chosenAddOns": [
-    "eslint",
-    "cloudflare",
-    "start",
-    "shadcn"
-  ]
+  "chosenAddOns": ["eslint", "cloudflare", "start", "shadcn"]
 }

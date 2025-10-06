@@ -5,6 +5,7 @@ import { RouterProvider } from '@tanstack/react-router'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { createAppRouter } from './router'
+import { ThemeProvider } from '@/components/theme-provider'
 import { getAuthState } from './lib/auth-context'
 import { auth } from './lib/auth'
 import './index.css'
@@ -36,7 +37,9 @@ const router = createAppRouter(queryClient)
 function RootApp() {
   return (
     <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
+      <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
+        <RouterProvider router={router} />
+      </ThemeProvider>
       {import.meta.env.DEV && <ReactQueryDevtools />}
     </QueryClientProvider>
   )

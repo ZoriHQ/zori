@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { IconCode, IconCopy, IconPlus, IconWorld } from '@tabler/icons-react'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
@@ -12,13 +14,6 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet'
-import {
-  IconCode,
-  IconCopy,
-  IconPlus,
-  IconWorld,
-} from '@tabler/icons-react'
-import { toast } from 'sonner'
 import { useCreateProject } from '@/hooks/use-projects'
 
 interface CreateProjectSheetProps {
@@ -108,7 +103,8 @@ export function CreateProjectSheet({
             <SheetHeader>
               <SheetTitle>Create Analytics Project</SheetTitle>
               <SheetDescription>
-                Set up tracking for a new website. You'll get a script to add to your site.
+                Set up tracking for a new website. You'll get a script to add to
+                your site.
               </SheetDescription>
             </SheetHeader>
             <div className="grid gap-4 py-4">
@@ -169,10 +165,7 @@ export function CreateProjectSheet({
               </div>
             </div>
             <SheetFooter>
-              <Button
-                variant="outline"
-                onClick={() => handleOpenChange(false)}
-              >
+              <Button variant="outline" onClick={() => handleOpenChange(false)}>
                 Cancel
               </Button>
               <Button
@@ -194,7 +187,8 @@ export function CreateProjectSheet({
             <SheetHeader>
               <SheetTitle>Project Created Successfully!</SheetTitle>
               <SheetDescription>
-                Add this tracking script to your website to start collecting analytics data.
+                Add this tracking script to your website to start collecting
+                analytics data.
               </SheetDescription>
             </SheetHeader>
             <div className="grid gap-4 py-4">
@@ -203,14 +197,10 @@ export function CreateProjectSheet({
                 <div className="rounded-lg border p-3 space-y-2">
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Name:</span>
-                    <span className="font-medium">
-                      {createdProject?.name}
-                    </span>
+                    <span className="font-medium">{createdProject?.name}</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">
-                      Website:
-                    </span>
+                    <span className="text-muted-foreground">Website:</span>
                     <span className="font-medium">
                       {createdProject?.domain}
                     </span>
@@ -237,11 +227,7 @@ export function CreateProjectSheet({
               <div className="grid gap-2">
                 <div className="flex items-center justify-between">
                   <Label>Tracking Script</Label>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleCopyScript}
-                  >
+                  <Button variant="ghost" size="sm" onClick={handleCopyScript}>
                     <IconCopy className="mr-2 h-4 w-4" />
                     Copy Script
                   </Button>
@@ -254,9 +240,7 @@ export function CreateProjectSheet({
                 </div>
                 <p className="text-sm text-muted-foreground">
                   Add this script to the{' '}
-                  <code className="bg-muted px-1 rounded">
-                    &lt;head&gt;
-                  </code>{' '}
+                  <code className="bg-muted px-1 rounded">&lt;head&gt;</code>{' '}
                   section of your website
                 </p>
               </div>
