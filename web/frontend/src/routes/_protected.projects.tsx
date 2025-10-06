@@ -1,5 +1,13 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
+import {
+  IconGrid3x3,
+  IconList,
+  IconPlus,
+  IconSearch,
+} from '@tabler/icons-react'
+import { useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -9,17 +17,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import {
-  IconGrid3x3,
-  IconList,
-  IconPlus,
-  IconSearch,
-} from '@tabler/icons-react'
-import { useProjects } from '@/hooks/use-projects'
+import { useDeleteProject, useProjects } from '@/hooks/use-projects'
 import {
   CreateProjectSheet,
+  DeleteProjectDialog,
   EmptyProjectsState,
   ProjectCard,
+  ProjectOnboarding,
   ProjectsStats,
   ProjectsTable,
 } from '@/components/projects'
@@ -34,10 +38,20 @@ function ProjectsPage() {
   const [statusFilter, setStatusFilter] = useState('all')
   const [selectedProjects, setSelectedProjects] = useState<Array<string>>([])
   const [isCreateSheetOpen, setIsCreateSheetOpen] = useState(false)
+  const [deleteDialog, setDeleteDialog] = useState<{
+    open: boolean
+    projectId: string
+    projectName: string
+  }>({
+    open: false,
+    projectId: '',
+    projectName: '',
+  })
 
   const { data: projectsData, isLoading } = useProjects()
+  const queryClient = useQueryClient()
+  const deleteProjectMutation = useDeleteProject()
 
-  // Use real data if available
   const projects = projectsData?.projects || []
 
   const filteredProjects = projects.filter((project: any) => {
@@ -89,8 +103,30 @@ function ProjectsPage() {
   }
 
   const handleDelete = (projectId: string) => {
-    console.log('Delete project:', projectId)
-    // Call delete API with confirmation
+    const project = projects.find((p: any) => p.id === projectId)
+    if (project) {
+      setDeleteDialog({
+        open: true,
+        projectId,
+        projectName: project.name ?? '',
+      })
+    }
+  }
+
+  const confirmDelete = async () => {
+    try {
+      await deleteProjectMutation.mutateAsync({
+        projectId: deleteDialog.projectId,
+      })
+
+      await queryClient.invalidateQueries({ queryKey: ['projects'] })
+
+      toast.success(`${deleteDialog.projectName} has been permanently deleted.`)
+
+      setDeleteDialog({ open: false, projectId: '', projectName: '' })
+    } catch (error) {
+      toast.error('Failed to delete the project. Please try again.')
+    }
   }
 
   // Show loading state
@@ -104,19 +140,8 @@ function ProjectsPage() {
     )
   }
 
-  // Show empty state when no projects
-  if (!projects || projects.length === 0) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <EmptyProjectsState
-          onCreateProject={() => setIsCreateSheetOpen(true)}
-        />
-        <CreateProjectSheet
-          open={isCreateSheetOpen}
-          onOpenChange={setIsCreateSheetOpen}
-        />
-      </div>
-    )
+  if (projects.length === 0) {
+    return <ProjectOnboarding />
   }
 
   return (
@@ -140,48 +165,6 @@ function ProjectsPage() {
               </Button>
             }
           />
-        </div>
-
-        {/* Stats */}
-        <ProjectsStats projects={projects} />
-
-        {/* Filters and Search */}
-        <div className="flex flex-col sm:flex-row gap-4 mb-6">
-          <div className="relative flex-1">
-            <IconSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-            <Input
-              placeholder="Search projects..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-full sm:w-[180px]">
-              <SelectValue placeholder="Filter by status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Projects</SelectItem>
-              <SelectItem value="active">Active</SelectItem>
-              <SelectItem value="inactive">Inactive</SelectItem>
-            </SelectContent>
-          </Select>
-          <div className="flex gap-2">
-            <Button
-              variant={view === 'grid' ? 'default' : 'outline'}
-              size="icon"
-              onClick={() => setView('grid')}
-            >
-              <IconGrid3x3 className="h-4 w-4" />
-            </Button>
-            <Button
-              variant={view === 'list' ? 'default' : 'outline'}
-              size="icon"
-              onClick={() => setView('list')}
-            >
-              <IconList className="h-4 w-4" />
-            </Button>
-          </div>
         </div>
       </div>
 
@@ -213,6 +196,18 @@ function ProjectsPage() {
           onDelete={handleDelete}
         />
       )}
+
+      <DeleteProjectDialog
+        open={deleteDialog.open}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDeleteDialog({ open: false, projectId: '', projectName: '' })
+          }
+        }}
+        projectName={deleteDialog.projectName}
+        isDeleting={deleteProjectMutation.isPending}
+        onConfirm={confirmDelete}
+      />
     </div>
   )
 }

@@ -1,3 +1,16 @@
+import {
+  IconArchive,
+  IconCalendar,
+  IconChartLine,
+  IconCode,
+  IconDots,
+  IconEdit,
+  IconExternalLink,
+  IconPlus,
+  IconStar,
+  IconTrash,
+  IconWorld,
+} from '@tabler/icons-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -17,19 +30,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import {
-  IconArchive,
-  IconCalendar,
-  IconChartLine,
-  IconCode,
-  IconDots,
-  IconEdit,
-  IconExternalLink,
-  IconPlus,
-  IconStar,
-  IconTrash,
-  IconWorld,
-} from '@tabler/icons-react'
 
 interface ProjectCardProps {
   project: {
@@ -206,7 +206,9 @@ export function ProjectCard({
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex-1">
-                      <p className="text-sm font-medium">{project.owner.name}</p>
+                      <p className="text-sm font-medium">
+                        {project.owner.name}
+                      </p>
                       <p className="text-xs text-muted-foreground">Owner</p>
                     </div>
                   </div>

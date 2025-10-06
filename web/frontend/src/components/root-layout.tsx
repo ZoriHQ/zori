@@ -13,7 +13,11 @@ const queryClient = new QueryClient({
         // Don't retry on 4xx errors
         if (error instanceof Error) {
           const message = error.message
-          if (message.includes('401') || message.includes('403') || message.includes('404')) {
+          if (
+            message.includes('401') ||
+            message.includes('403') ||
+            message.includes('404')
+          ) {
             return false
           }
         }
@@ -33,8 +37,6 @@ export function RootLayout({ children }: { children: React.ReactNode }) {
   }, [])
 
   return (
-    <QueryClientProvider client={queryClient}>
-      {children}
-    </QueryClientProvider>
+    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
   )
 }

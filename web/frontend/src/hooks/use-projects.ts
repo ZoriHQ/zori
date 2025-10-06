@@ -45,10 +45,14 @@ export function useUpdateProject(projectId: string) {
   })
 }
 
-export function useDeleteProject(projectId: string) {
+export function useDeleteProject() {
   const zClient = useApiClient()
 
-  return useMutation<Zoriapi.V1.Projects.ProjectDeleteResponse, Error>({
-    mutationFn: () => zClient.v1.projects.delete(projectId),
+  return useMutation<
+    Zoriapi.V1.Projects.ProjectDeleteResponse,
+    Error,
+    { projectId: string }
+  >({
+    mutationFn: ({ projectId }) => zClient.v1.projects.delete(projectId),
   })
 }

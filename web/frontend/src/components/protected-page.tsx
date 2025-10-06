@@ -1,8 +1,14 @@
 'use client'
 
-import { useAuthGuard, useAuth } from '@/lib/use-auth'
 import { Loader2Icon } from 'lucide-react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { useAuth, useAuthGuard } from '@/lib/use-auth'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { useLogout } from '@/lib/use-logout'
 
@@ -135,14 +141,15 @@ export function ProtectedPage() {
             <div>
               <span className="font-medium">Session Info:</span>{' '}
               <span className="text-muted-foreground text-sm">
-                Your session is active and tokens are being automatically refreshed
+                Your session is active and tokens are being automatically
+                refreshed
               </span>
             </div>
             <div className="pt-4">
               <p className="text-sm text-muted-foreground">
                 This is a protected page. You can only access it when logged in.
-                Try logging out and visiting this page again - you'll be redirected
-                to the login page.
+                Try logging out and visiting this page again - you'll be
+                redirected to the login page.
               </p>
             </div>
           </CardContent>

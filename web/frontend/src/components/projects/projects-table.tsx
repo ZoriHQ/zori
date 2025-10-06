@@ -1,3 +1,13 @@
+import {
+  IconArchive,
+  IconChartLine,
+  IconCode,
+  IconDots,
+  IconEdit,
+  IconStar,
+  IconTrash,
+  IconWorld,
+} from '@tabler/icons-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -19,16 +29,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import {
-  IconArchive,
-  IconChartLine,
-  IconCode,
-  IconDots,
-  IconEdit,
-  IconStar,
-  IconTrash,
-  IconWorld,
-} from '@tabler/icons-react'
 
 interface ProjectsTableProps {
   projects: Array<{
@@ -48,7 +48,7 @@ interface ProjectsTableProps {
       initials: string
     }>
   }>
-  selectedProjects: string[]
+  selectedProjects: Array<string>
   onSelectProject: (projectId: string, checked: boolean) => void
   onSelectAll: (checked: boolean) => void
   onViewAnalytics?: (projectId: string) => void
@@ -157,19 +157,17 @@ export function ProjectsTable({
                 </TableCell>
                 <TableCell>
                   <div className="flex -space-x-1">
-                    {(project.team || [])
-                      .slice(0, 3)
-                      .map((member, index) => (
-                        <Avatar
-                          key={index}
-                          className="h-6 w-6 border border-background"
-                        >
-                          <AvatarImage src={member.avatar} />
-                          <AvatarFallback className="text-xs">
-                            {member.initials}
-                          </AvatarFallback>
-                        </Avatar>
-                      ))}
+                    {(project.team || []).slice(0, 3).map((member, index) => (
+                      <Avatar
+                        key={index}
+                        className="h-6 w-6 border border-background"
+                      >
+                        <AvatarImage src={member.avatar} />
+                        <AvatarFallback className="text-xs">
+                          {member.initials}
+                        </AvatarFallback>
+                      </Avatar>
+                    ))}
                     {project.team && project.team.length > 3 && (
                       <div className="h-6 w-6 rounded-full bg-muted border border-background flex items-center justify-center">
                         <span className="text-xs">
@@ -189,7 +187,9 @@ export function ProjectsTable({
                     <DropdownMenuContent align="end">
                       <DropdownMenuLabel>Actions</DropdownMenuLabel>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={() => onViewAnalytics?.(project.id)}>
+                      <DropdownMenuItem
+                        onClick={() => onViewAnalytics?.(project.id)}
+                      >
                         <IconChartLine className="mr-2 h-4 w-4" />
                         View Analytics
                       </DropdownMenuItem>
