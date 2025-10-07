@@ -1,5 +1,3 @@
-'use client'
-
 import { useForm } from '@tanstack/react-form'
 import { z } from 'zod'
 import { EyeIcon, EyeOffIcon, Loader2Icon } from 'lucide-react'
