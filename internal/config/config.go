@@ -16,6 +16,9 @@ type Config struct {
 	JWTAccessTokenTTL  time.Duration `env:"JWT_ACCESS_TOKEN_TTL" envDefault:"15m"`
 	JWTRefreshTokenTTL time.Duration `env:"JWT_REFRESH_TOKEN_TTL" envDefault:"168h"`
 
+	NatsCredentialsContent string `env:"NATS_CREDENTIALS_CONTENT,required"`
+	NatsStreamURL          string `env:"NATS_STREAM_URL,required"`
+
 	// Bcrypt Configuration
 	BcryptCost int `env:"BCRYPT_COST" envDefault:"12"`
 }

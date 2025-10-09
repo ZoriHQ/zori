@@ -8,9 +8,16 @@ vars:
 tasks:
   # Server tasks
   server:
-    desc: Start the HTTP server (default port 8080)
+    desc: Start the HTTP server (default port 1323)
     cmds:
       - go run . server
+
+  ingestion:
+    aliases:
+      - i
+    desc: Start the IngestionHTTP server (default port 1324)
+    cmds:
+      - go run . ingestion
 
   server:port:
     desc: Start the HTTP server on custom port
