@@ -28,11 +28,14 @@ func NewApplication() *fx.App {
 		organizations.BuildOrganizationDIContainer(),
 		projects.BuildProjectsDIContainer(),
 
-		// Jwt middleware must be provided after the auth & org containers are built since it depends on some of the auth services
 		fx.Provide(middlewares.NewJwtMiddleware),
 
 		fx.Invoke(registerDatabaseLifecycle),
 		fx.Invoke(server.RegisterSwaggerRoutes),
+
+		projects.BuildProjectWebDIContainer(),
+		organizations.BuildOrganizationWebDIContainer(),
+		auth.BuildAuthWebDIContainer(),
 
 		fx.Invoke(func(lc fx.Lifecycle, srv *server.Server) {
 			lc.Append(fx.Hook{

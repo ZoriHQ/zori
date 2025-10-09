@@ -14,6 +14,11 @@ func BuildProjectsDIContainer() fx.Option {
 			data.NewProjectData,
 			services.NewProjectService,
 		),
+	)
+}
+
+func BuildProjectWebDIContainer() fx.Option {
+	return fx.Module("project_web",
 		fx.Invoke(web.RegisterRoutes),
 	)
 }

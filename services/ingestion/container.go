@@ -1,3 +1,13 @@
 package ingestion
 
-func BuildDiContainer() {}
+import (
+	"zori/services/ingestion/web"
+
+	"go.uber.org/fx"
+)
+
+func BuildIngestionDiContainer() fx.Option {
+	return fx.Module("ingestion",
+		fx.Provide(web.NewIngestionServer),
+	)
+}

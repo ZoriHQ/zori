@@ -15,6 +15,11 @@ func BuildAuthDIContainer() fx.Option {
 			services.NewJWTService,
 			services.NewAuthService,
 		),
+	)
+}
+
+func BuildAuthWebDIContainer() fx.Option {
+	return fx.Module("auth_web",
 		fx.Invoke(web.RegisterRoutes),
 	)
 }

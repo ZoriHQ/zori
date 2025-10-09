@@ -1,3 +1,0 @@
-package web
-
-func RegisterRoutes() {}

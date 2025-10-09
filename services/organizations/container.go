@@ -16,6 +16,11 @@ func BuildOrganizationDIContainer() fx.Option {
 			services.NewOrganizationService,
 			services.NewAccountService,
 		),
+	)
+}
+
+func BuildOrganizationWebDIContainer() fx.Option {
+	return fx.Module("organization_web",
 		fx.Invoke(web.RegisterRoutes),
 	)
 }
