@@ -20,6 +20,15 @@ func NewProjectData(db *postgres.PostgresDB) *ProjectData {
 	return &ProjectData{db: db.DB}
 }
 
+func (p *ProjectData) GetProjectByPublishableToken(token string) (*models.Project, error) {
+	project := &models.Project{}
+	err := p.db.NewSelect().
+		Model(project).
+		Where("project_token = ?", token).
+		Scan(context.Background())
+	return project, err
+}
+
 func (p *ProjectData) ListOrganizationProjects(orgID string) ([]*models.Project, error) {
 	var projects []*models.Project
 	err := p.db.NewSelect().
