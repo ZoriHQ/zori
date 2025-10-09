@@ -1,19 +1,24 @@
 package web
 
 import (
+	"encoding/json"
 	"fmt"
 	"zori/services/ingestion/services"
+	"zori/services/ingestion/types"
+	projectsServices "zori/services/projects/services"
 
 	"github.com/valyala/fasthttp"
 )
 
 type IngestionServer struct {
-	ingestor *services.Ingestor
+	ingestor       *services.Ingestor
+	projectService *projectsServices.ProjectService
 }
 
-func NewIngestionServer(ingestor *services.Ingestor) *IngestionServer {
+func NewIngestionServer(ingestor *services.Ingestor, projectService *projectsServices.ProjectService) *IngestionServer {
 	return &IngestionServer{
-		ingestor: ingestor,
+		ingestor:       ingestor,
+		projectService: projectService,
 	}
 }
 
@@ -41,6 +46,28 @@ func (h *IngestionServer) Injest(ctx *fasthttp.RequestCtx) {
 	}
 
 	projectToken := string(projectTokenBytes)
+
+	project, err := h.projectService.GetProjectByPublishableToken(projectToken)
+	if err != nil {
+		ctx.Error("Invalid Project Token", fasthttp.StatusUnauthorized)
+		return
+	}
+
+	var clientEvent types.ClientEventV1
+	if err = json.Unmarshal(ctx.PostBody(), &clientEvent); err != nil {
+		ctx.Error("Failed to decode event payload", fasthttp.StatusBadRequest)
+		return
+	}
+
+	if clientEvent.VisitorID != string(visitorIDCookieBytes) {
+		ctx.Error("Missing or Invalid Visitor ID", fasthttp.StatusBadRequest)
+		return
+	}
+
+	clientEvent.UserAgent = string(ctx.UserAgent())
+	clientEvent.IP = ctx.RemoteIP().String()
+
+	go h.ingestor.Ingest(project, &clientEvent)
 
 	fmt.Fprintf(ctx, "ACCEPTED %d", len(ctx.PostBody()))
 }

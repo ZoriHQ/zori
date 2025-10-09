@@ -12,8 +12,9 @@ type ClientEventV1 struct {
 	// This id is created based on the fingerprint of the browser and device.
 	VisitorID          string    `json:"visitor_id"`
 	ClientTimeStampUTC time.Time `json:"client_timestamp_utc"`
-	UserAgent          string    `json:"user_agent"`
-	IP                 string    `json:"ip"`
+	// UserAgent and IP will be overridden by the server.
+	UserAgent string `json:"user_agent"`
+	IP        string `json:"ip"`
 	// Referrer is the URL of the page that linked to the current page.
 	// Used to determine the source of traffic
 	Referrer string `json:"referrer"`

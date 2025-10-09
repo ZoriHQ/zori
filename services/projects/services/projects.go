@@ -31,6 +31,10 @@ func NewProjectService(data *data.ProjectData) *ProjectService {
 	return &ProjectService{data: data}
 }
 
+func (p *ProjectService) GetProjectByPublishableToken(token string) (*models.Project, error) {
+	return p.data.GetProjectByPublishableToken(token)
+}
+
 // @Summary List organization projects
 // @Description Get a list of all projects belonging to the authenticated user's organization
 // @Tags Projects
