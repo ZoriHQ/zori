@@ -36,10 +36,24 @@ func (h *IngestionServer) Injest(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
+	var clientEvent types.ClientEventV1
+	if err := json.Unmarshal(ctx.PostBody(), &clientEvent); err != nil {
+		ctx.Error("Failed to decode event payload", fasthttp.StatusBadRequest)
+		return
+	}
+
 	visitorIDCookieBytes := ctx.Request.Header.Cookie("visitor_id")
 	if visitorIDCookieBytes == nil {
-		ctx.Error("Bad Request - No Visitor ID", fasthttp.StatusBadRequest)
-		return
+		// if visitor id is not present in cookies, we assume this is the first time the user is visiting the site
+		firstTimeVisitorCookie := fasthttp.Cookie{}
+		firstTimeVisitorCookie.SetKey("visitor_id")
+		firstTimeVisitorCookie.SetValue(clientEvent.VisitorID)
+		firstTimeVisitorCookie.SetMaxAge(3600000)
+		firstTimeVisitorCookie.SetDomain("zorihq.com")
+		firstTimeVisitorCookie.SetPath(("/"))
+		firstTimeVisitorCookie.SetSecure(false)
+		ctx.Response.Header.SetCookie(&firstTimeVisitorCookie)
+		visitorIDCookieBytes = firstTimeVisitorCookie.Value()
 	}
 
 	projectTokenBytes := ctx.Request.Header.Peek("x-zori-pt")
@@ -53,12 +67,6 @@ func (h *IngestionServer) Injest(ctx *fasthttp.RequestCtx) {
 	project, err := h.projectService.GetProjectByPublishableToken(projectToken)
 	if err != nil {
 		ctx.Error("Invalid Project Token", fasthttp.StatusUnauthorized)
-		return
-	}
-
-	var clientEvent types.ClientEventV1
-	if err = json.Unmarshal(ctx.PostBody(), &clientEvent); err != nil {
-		ctx.Error("Failed to decode event payload", fasthttp.StatusBadRequest)
 		return
 	}
 
