@@ -35,7 +35,7 @@ func (h *IngestionServer) Injest(ctx *fasthttp.RequestCtx) {
 
 	visitorIDCookieBytes := ctx.Request.Header.Cookie("visitor_id")
 	if visitorIDCookieBytes == nil {
-		ctx.Error("Bad Request", fasthttp.StatusBadRequest)
+		ctx.Error("Bad Request - No Visitor ID", fasthttp.StatusBadRequest)
 		return
 	}
 
@@ -65,7 +65,16 @@ func (h *IngestionServer) Injest(ctx *fasthttp.RequestCtx) {
 	}
 
 	clientEvent.UserAgent = string(ctx.UserAgent())
-	clientEvent.IP = ctx.RemoteIP().String()
+
+	// trying to extract user IP
+	cloudFlareHeaderIP := ctx.Request.Header.Peek("cf-connecting-ip")
+	if cloudFlareHeaderIP != nil {
+		clientEvent.IP = string(cloudFlareHeaderIP)
+	} else if xForwardedForHeader := ctx.Request.Header.Peek(fasthttp.HeaderXForwardedFor); xForwardedForHeader != nil {
+		clientEvent.IP = string(xForwardedForHeader)
+	} else {
+		clientEvent.IP = ctx.RemoteIP().String()
+	}
 
 	go h.ingestor.Ingest(project, &clientEvent)
 

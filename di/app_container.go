@@ -6,10 +6,13 @@ import (
 
 	_ "zori/docs" // Import generated swagger docs
 	"zori/internal/config"
+	"zori/internal/natsstream"
 	"zori/internal/server"
 	"zori/internal/server/middlewares"
+	"zori/internal/storage/clickhouse"
 	"zori/internal/storage/postgres"
 	"zori/services/auth"
+	"zori/services/events"
 	"zori/services/organizations"
 	"zori/services/projects"
 
@@ -21,9 +24,10 @@ func NewApplication() *fx.App {
 		fx.Provide(
 			config.NewConfig,
 			postgres.NewPostgresDB,
+			clickhouse.NewClickhouseDB,
 			server.New,
 		),
-
+		fx.Provide(natsstream.NewStream),
 		auth.BuildAuthDIContainer(),
 		organizations.BuildOrganizationDIContainer(),
 		projects.BuildProjectsDIContainer(),
@@ -36,6 +40,7 @@ func NewApplication() *fx.App {
 		projects.BuildProjectWebDIContainer(),
 		organizations.BuildOrganizationWebDIContainer(),
 		auth.BuildAuthWebDIContainer(),
+		events.BuildEventsDIContainer(),
 
 		fx.Invoke(func(lc fx.Lifecycle, srv *server.Server) {
 			lc.Append(fx.Hook{

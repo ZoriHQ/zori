@@ -18,12 +18,13 @@ type ClientEventV1 struct {
 	// Referrer is the URL of the page that linked to the current page.
 	// Used to determine the source of traffic
 	Referrer string `json:"referrer"`
+	PageURL  string `json:"page_url"`
 	// ClickOn represents the element that was clicked on.
 	// ClickOn is used to help us build custom funnels and goals for user conversion.
 	ClickOn *string `json:"click_on"`
 	// ClickPosition represents the position of the click on the element.
 	// ClickPosition is used to track the exact location of the click within the element in order to build heatmaps and analyze user behavior.
-	ClickPosition    *[2]float64       `json:"click_position"`
+	ClickPosition    *[]float64        `json:"click_position"`
 	UTMParameters    map[string]string `json:"utm_parameters"`
 	CustomProperties map[string]any    `json:"custom_properties"`
 }
