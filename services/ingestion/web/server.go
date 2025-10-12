@@ -24,7 +24,7 @@ func NewIngestionServer(ingestor *services.Ingestor, projectService *projectsSer
 
 func (h *IngestionServer) Injest(ctx *fasthttp.RequestCtx) {
 	ctx.Response.Header.Set("Access-Control-Allow-Credentials", "true")
-	ctx.Response.Header.SetBytesV("Access-Control-Allow-Origin", ctx.Request.Header.Peek("Origin"))
+	ctx.Response.Header.SetBytesV("Access-Control-Allow-Origin", []byte("*"))
 
 	if string(ctx.Path()) != "/ingest" {
 		ctx.Error("Not Found", fasthttp.StatusNotFound)
@@ -33,6 +33,14 @@ func (h *IngestionServer) Injest(ctx *fasthttp.RequestCtx) {
 
 	if !ctx.IsPost() {
 		ctx.Error("Bad Request", fasthttp.StatusBadRequest)
+		return
+	}
+
+	if ctx.IsOptions() {
+		ctx.Response.Header.SetBytesV("Access-Control-Allow-Methods", []byte("POST"))
+		ctx.Response.Header.SetBytesV("Access-Control-Allow-Headers", []byte("Content-Type, X-Zori-PT"))
+		ctx.Response.Header.SetBytesV("Access-Control-Max-Age", []byte("86400"))
+		ctx.Response.SetStatusCode(fasthttp.StatusNoContent)
 		return
 	}
 
@@ -49,7 +57,7 @@ func (h *IngestionServer) Injest(ctx *fasthttp.RequestCtx) {
 		firstTimeVisitorCookie.SetKey("visitor_id")
 		firstTimeVisitorCookie.SetValue(clientEvent.VisitorID)
 		firstTimeVisitorCookie.SetMaxAge(3600000)
-		firstTimeVisitorCookie.SetDomain("zorihq.com")
+		firstTimeVisitorCookie.SetDomain(".zorihq.com")
 		firstTimeVisitorCookie.SetPath(("/"))
 		firstTimeVisitorCookie.SetSecure(false)
 		ctx.Response.Header.SetCookie(&firstTimeVisitorCookie)
