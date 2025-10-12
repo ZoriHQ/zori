@@ -8,8 +8,10 @@ import (
 )
 
 type Config struct {
-	ClickHouseURL string `env:"CLICKHOUSE_URL,required"`
-	PostgresURL   string `env:"POSTGRES_URL,required"`
+	ClickHouseURL      string `env:"CLICKHOUSE_URL,required"`
+	ClickHouseUsername string `env:"CLICKHOUSE_USERNAME,required"`
+	ClickHousePassword string `env:"CLICKHOUSE_PASSWORD,required"`
+	PostgresURL        string `env:"POSTGRES_URL,required"`
 
 	// JWT Configuration
 	JWTSecretKey       string        `env:"JWT_SECRET_KEY" envDefault:"your-super-secret-key-change-in-production-min-32-chars"`

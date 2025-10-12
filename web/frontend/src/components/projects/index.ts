@@ -1,7 +1,0 @@
-export { CreateProjectSheet } from './create-project-sheet'
-export { DeleteProjectDialog } from './delete-project-dialog'
-export { EmptyProjectsState } from './empty-projects-state'
-export { ProjectCard } from './project-card'
-export { ProjectsStats } from './projects-stats'
-export { ProjectsTable } from './projects-table'
-export { ProjectOnboarding } from './onboarding/project-onboarding'

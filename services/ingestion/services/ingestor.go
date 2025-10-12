@@ -29,7 +29,7 @@ func (i *Ingestor) Ingest(project *models.Project, clientEvent *types.ClientEven
 		return err
 	}
 
-	if _, err := i.natsStream.GetJetStream().Publish("events:raw", eventFrameBytes); err != nil {
+	if err = i.natsStream.GetConnection().Publish("events:raw", eventFrameBytes); err != nil {
 		return err
 	}
 
