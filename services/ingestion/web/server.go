@@ -23,6 +23,9 @@ func NewIngestionServer(ingestor *services.Ingestor, projectService *projectsSer
 }
 
 func (h *IngestionServer) Injest(ctx *fasthttp.RequestCtx) {
+	ctx.Response.Header.Set("Access-Control-Allow-Credentials", "true")
+	ctx.Response.Header.SetBytesV("Access-Control-Allow-Origin", ctx.Request.Header.Peek("Origin"))
+
 	if string(ctx.Path()) != "/ingest" {
 		ctx.Error("Not Found", fasthttp.StatusNotFound)
 		return
