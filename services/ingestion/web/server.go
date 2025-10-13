@@ -3,6 +3,7 @@ package web
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 	"zori/services/ingestion/services"
 	"zori/services/ingestion/types"
 	projectsServices "zori/services/projects/services"
@@ -25,22 +26,22 @@ func NewIngestionServer(ingestor *services.Ingestor, projectService *projectsSer
 func (h *IngestionServer) Injest(ctx *fasthttp.RequestCtx) {
 	ctx.Response.Header.Set("Access-Control-Allow-Credentials", "true")
 	ctx.Response.Header.SetBytesV("Access-Control-Allow-Origin", []byte("*"))
+	ctx.Response.Header.SetBytesV("Access-Control-Allow-Methods", []byte("POST"))
+	ctx.Response.Header.SetBytesV("Access-Control-Allow-Headers", []byte("Content-Type, X-Zori-PT, x-zori-version"))
+	ctx.Response.Header.SetBytesV("Access-Control-Max-Age", []byte("86400"))
 
 	if string(ctx.Path()) != "/ingest" {
 		ctx.Error("Not Found", fasthttp.StatusNotFound)
 		return
 	}
 
-	if !ctx.IsPost() {
-		ctx.Error("Bad Request", fasthttp.StatusBadRequest)
+	if ctx.IsOptions() {
+		ctx.Response.SetStatusCode(fasthttp.StatusNoContent)
 		return
 	}
 
-	if ctx.IsOptions() {
-		ctx.Response.Header.SetBytesV("Access-Control-Allow-Methods", []byte("POST"))
-		ctx.Response.Header.SetBytesV("Access-Control-Allow-Headers", []byte("Content-Type, X-Zori-PT"))
-		ctx.Response.Header.SetBytesV("Access-Control-Max-Age", []byte("86400"))
-		ctx.Response.SetStatusCode(fasthttp.StatusNoContent)
+	if !ctx.IsPost() {
+		ctx.Error("Bad Request", fasthttp.StatusBadRequest)
 		return
 	}
 
@@ -78,6 +79,24 @@ func (h *IngestionServer) Injest(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
+	fmt.Println("Host of the request origin", string(ctx.Request.Host()))
+
+	// checking for localhost events
+	requestHost := string(ctx.Request.Host())
+	if strings.Contains(requestHost, "localhost") && project.AllowLocalHost {
+		localhostParts := strings.Split(requestHost, ":")
+		if len(localhostParts) == 2 {
+			host := localhostParts[1]
+			if host != "localhost" {
+				ctx.Error("Invalid Host", fasthttp.StatusBadRequest)
+				return
+			}
+		}
+	} else if strings.Contains(requestHost, "localhost") && !project.AllowLocalHost {
+		ctx.Error("Localhost events are now allowed for the project", fasthttp.StatusBadRequest)
+		return
+	}
+
 	if clientEvent.VisitorID != string(visitorIDCookieBytes) {
 		ctx.Error("Missing or Invalid Visitor ID", fasthttp.StatusBadRequest)
 		return
@@ -94,6 +113,8 @@ func (h *IngestionServer) Injest(ctx *fasthttp.RequestCtx) {
 	} else {
 		clientEvent.IP = ctx.RemoteIP().String()
 	}
+
+	fmt.Println("Ingested....")
 
 	go h.ingestor.Ingest(project, &clientEvent)
 
