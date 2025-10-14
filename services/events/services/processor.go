@@ -176,7 +176,6 @@ func (p *Processor) Stop() error {
 }
 
 func (p *Processor) processEvent(eventFrame *types.ClientEventFrameV1) error {
-
 	for _, stage := range p.stages {
 		if err := stage.ProcessFrame(eventFrame); err != nil {
 			return err

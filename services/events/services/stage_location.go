@@ -3,6 +3,7 @@ package services
 import (
 	"log"
 	"net/netip"
+	"strings"
 	"zori/services/ingestion/types"
 
 	"github.com/Cleverse/go-utilities/nullable"
@@ -29,6 +30,10 @@ func (s StageLocation) ProcessFrame(event *types.ClientEventFrameV1) error {
 	if event.IP == "" {
 		return nil
 	}
+
+	// When reading IP from headers, we could receive multiple IPs, for headers like X-Forwarded-For
+	ipList := strings.Split(event.IP, ", ")
+	event.IP = ipList[len(ipList)-1]
 
 	if event.IP != "" {
 		parsedIp, err := netip.ParseAddr(event.IP)
