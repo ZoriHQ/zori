@@ -32,7 +32,7 @@ func (s StageLocation) ProcessFrame(event *types.ClientEventFrameV1) error {
 	}
 
 	// When reading IP from headers, we could receive multiple IPs, for headers like X-Forwarded-For
-	ipList := strings.Split(event.IP, ", ")
+	ipList := strings.Split(event.IP, ",")
 	event.IP = ipList[0]
 
 	if event.IP != "" {
