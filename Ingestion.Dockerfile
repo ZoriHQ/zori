@@ -29,6 +29,6 @@ RUN chown -R appuser:appgroup /app
 USER appuser
 
 ENTRYPOINT ["./zori"]
-CMD ["server"]
+CMD ["i"]
 
-EXPOSE 1323
+EXPOSE 1324
