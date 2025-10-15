@@ -2,7 +2,6 @@ package clickhouse
 
 import (
 	"context"
-	"crypto/tls"
 
 	"zori/internal/config"
 
@@ -25,9 +24,7 @@ func NewClickhouseDB(cfg *config.Config) *ClickhouseDB {
 			Password: cfg.ClickHousePassword,
 		},
 		Protocol: goclick.Native,
-		TLS:      &tls.Config{},
-		// TODO:: move to configs
-		Debug: true,
+		Debug:    true,
 	})
 
 	if err != nil {
