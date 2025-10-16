@@ -27,6 +27,5 @@ func (s StagePage) ProcessFrame(event *types.ClientEventFrameV1) error {
 	}
 
 	event.PagePath = nullable.FromString(parsedPageURL.Path).Ptr()
-
 	return nil
 }

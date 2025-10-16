@@ -19,6 +19,7 @@ type ClientEventV1 struct {
 	// Used to determine the source of traffic
 	Referrer string `json:"referrer"`
 	PageURL  string `json:"page_url"`
+	Host     string `json:"host"`
 	// ClickOn represents the element that was clicked on.
 	// ClickOn is used to help us build custom funnels and goals for user conversion.
 	ClickOn *string `json:"click_on"`
