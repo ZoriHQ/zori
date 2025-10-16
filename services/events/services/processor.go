@@ -133,7 +133,7 @@ func (p *Processor) Start() error {
 			`INSERT INTO events (
 				ip, visitor_id, browser_name, os_name, device_type, client_generated_event_id, event_name, location_country_iso, location_city, client_timestamp_utc,
 				server_timestamp_utc, user_agent, host, page_url, page_path, referrer_url, referrer_domain, referrer_path, utm_parameters, click_on, click_position_x, click_position_y, project_id,
-				organization_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, true,
+				organization_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, true,
 			eventFrame.IP,
 			eventFrame.VisitorID,
 			eventFrame.BrowserName,
