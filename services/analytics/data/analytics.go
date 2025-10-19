@@ -46,10 +46,9 @@ func (a *AnalyticsData) GetVisitorsByDevice(ctx context.Context, projectID strin
 	query := fmt.Sprintf(`
 		SELECT
 			%s(client_timestamp_utc) as time_bucket,
-			countIf(device_type = 'mobile') as mobile,
-			countIf(device_type = 'desktop') as desktop,
-			countIf(device_type = 'tablet') as tablet,
-			countIf(device_type IS NULL OR (device_type != 'mobile' AND device_type != 'desktop' AND device_type != 'tablet')) as unknown
+			countIf(device_type = 'Mobile') as mobile,
+			countIf(device_type = 'Desktop') as desktop,
+			countIf(device_type IS NULL OR (device_type != 'Mobile' AND device_type != 'Desktop')) as unknown
 		FROM events
 		WHERE project_id = ?
 			AND client_timestamp_utc >= ?
@@ -67,7 +66,7 @@ func (a *AnalyticsData) GetVisitorsByDevice(ctx context.Context, projectID strin
 	var dataPoints []types.VisitorDataPoint
 	for rows.Next() {
 		var dp types.VisitorDataPoint
-		if err := rows.Scan(&dp.Timestamp, &dp.Mobile, &dp.Desktop, &dp.Tablet, &dp.Unknown); err != nil {
+		if err := rows.Scan(&dp.Timestamp, &dp.Mobile, &dp.Desktop, &dp.Unknown); err != nil {
 			return nil, fmt.Errorf("failed to scan row: %w", err)
 		}
 		dataPoints = append(dataPoints, dp)
@@ -88,12 +87,20 @@ func (a *AnalyticsData) GetUniqueVisitorsByOrigin(ctx context.Context, projectID
 	}
 
 	query := `
+		WITH totals AS (
+			SELECT uniq(visitor_id) as total_visitors
+			FROM events
+			WHERE project_id = ?
+				AND client_timestamp_utc >= ?
+				AND client_timestamp_utc <= now()
+		)
 		SELECT
 			CASE
 				WHEN referrer_domain IS NULL OR referrer_domain = '' THEN 'Direct'
 				ELSE referrer_domain
 			END as origin,
-			uniq(visitor_id) as unique_visitors
+			uniq(visitor_id) as unique_visitors,
+			(uniq(visitor_id) * 100.0 / (SELECT total_visitors FROM totals)) as percentage
 		FROM events
 		WHERE project_id = ?
 			AND client_timestamp_utc >= ?
@@ -103,7 +110,7 @@ func (a *AnalyticsData) GetUniqueVisitorsByOrigin(ctx context.Context, projectID
 		LIMIT 20
 	`
 
-	rows, err := a.clickDb.Db().Query(ctx, query, projectID, startTime)
+	rows, err := a.clickDb.Db().Query(ctx, query, projectID, startTime, projectID, startTime)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query visitors by origin: %w", err)
 	}
@@ -112,7 +119,7 @@ func (a *AnalyticsData) GetUniqueVisitorsByOrigin(ctx context.Context, projectID
 	var dataPoints []types.OriginDataPoint
 	for rows.Next() {
 		var dp types.OriginDataPoint
-		if err := rows.Scan(&dp.Origin, &dp.UniqueVisitors); err != nil {
+		if err := rows.Scan(&dp.Origin, &dp.UniqueVisitors, &dp.Percentage); err != nil {
 			return nil, fmt.Errorf("failed to scan row: %w", err)
 		}
 		dataPoints = append(dataPoints, dp)
@@ -133,12 +140,20 @@ func (a *AnalyticsData) GetUniqueVisitorsByCountry(ctx context.Context, projectI
 	}
 
 	query := `
+		WITH totals AS (
+			SELECT uniq(visitor_id) as total_visitors
+			FROM events
+			WHERE project_id = ?
+				AND client_timestamp_utc >= ?
+				AND client_timestamp_utc <= now()
+		)
 		SELECT
 			CASE
 				WHEN location_country_iso IS NULL OR location_country_iso = '' THEN 'Unknown'
 				ELSE location_country_iso
 			END as country_code,
-			uniq(visitor_id) as unique_visitors
+			uniq(visitor_id) as unique_visitors,
+			(uniq(visitor_id) * 100.0 / (SELECT total_visitors FROM totals)) as percentage
 		FROM events
 		WHERE project_id = ?
 			AND client_timestamp_utc >= ?
@@ -148,7 +163,7 @@ func (a *AnalyticsData) GetUniqueVisitorsByCountry(ctx context.Context, projectI
 		LIMIT 50
 	`
 
-	rows, err := a.clickDb.Db().Query(ctx, query, projectID, startTime)
+	rows, err := a.clickDb.Db().Query(ctx, query, projectID, startTime, projectID, startTime)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query visitors by country: %w", err)
 	}
@@ -157,7 +172,7 @@ func (a *AnalyticsData) GetUniqueVisitorsByCountry(ctx context.Context, projectI
 	var dataPoints []types.CountryDataPoint
 	for rows.Next() {
 		var dp types.CountryDataPoint
-		if err := rows.Scan(&dp.CountryCode, &dp.UniqueVisitors); err != nil {
+		if err := rows.Scan(&dp.CountryCode, &dp.UniqueVisitors, &dp.Percentage); err != nil {
 			return nil, fmt.Errorf("failed to scan row: %w", err)
 		}
 		dataPoints = append(dataPoints, dp)
@@ -424,8 +439,8 @@ func (a *AnalyticsData) GetUniqueVisitorsTimeline(ctx context.Context, projectID
 	query := fmt.Sprintf(`
 		SELECT
 			%s(client_timestamp_utc) as time_bucket,
-			uniqIf(visitor_id, device_type = 'mobile') as mobile,
-			uniqIf(visitor_id, device_type = 'desktop') as desktop
+			uniqIf(visitor_id, device_type = 'Mobile') as mobile,
+			uniqIf(visitor_id, device_type = 'Desktop') as desktop
 		FROM events
 		WHERE project_id = ?
 			AND client_timestamp_utc >= ?

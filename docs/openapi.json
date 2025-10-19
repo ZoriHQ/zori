@@ -1648,6 +1648,9 @@
           "country_code": {
             "type": "string"
           },
+          "percentage": {
+            "type": "number"
+          },
           "unique_visitors": {
             "type": "integer"
           }
@@ -1690,6 +1693,9 @@
         "properties": {
           "origin": {
             "type": "string"
+          },
+          "percentage": {
+            "type": "number"
           },
           "unique_visitors": {
             "type": "integer"
@@ -1837,9 +1843,6 @@
             "type": "integer"
           },
           "mobile": {
-            "type": "integer"
-          },
-          "tablet": {
             "type": "integer"
           },
           "timestamp": {
