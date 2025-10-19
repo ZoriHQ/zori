@@ -159,3 +159,114 @@ func (s *AnalyticsService) GetRecentEvents(c *ctx.Ctx) (*types.RecentEventsRespo
 		Total:  len(events),
 	}, nil
 }
+
+// GetTopVisitors returns the most active visitors for a project
+// @Summary Get top visitors
+// @Description Get a list of the most active visitors ranked by event count
+// @Tags Analytics
+// @Accept json
+// @Produce json
+// @Security ApiKeyAuth
+// @Param project_id query string true "Project ID"
+// @Param time_range query string true "Time range" Enums(last_hour, today, last_7_days, last_30_days, last_90_days)
+// @Param limit query int false "Maximum number of visitors to return (default: 50)"
+// @Success 200 {object} types.TopVisitorsResponse "List of top visitors"
+// @Failure 400 {object} map[string]interface{} "Invalid request parameters"
+// @Failure 401 {object} map[string]interface{} "Unauthorized - Invalid or missing JWT token"
+// @Failure 500 {object} map[string]interface{} "Internal server error"
+// @Router /api/v1/analytics/visitors/top [get]
+func (s *AnalyticsService) GetTopVisitors(c *ctx.Ctx) (*types.TopVisitorsResponse, error) {
+	var req types.TopVisitorsRequest
+	if err := c.Echo.Bind(&req); err != nil {
+		return nil, echo.NewHTTPError(400, "Invalid request parameters")
+	}
+
+	// Validate time range
+	if req.TimeRange == "" {
+		req.TimeRange = types.TimeRangeLast7Days
+	}
+
+	// Default limit
+	if req.Limit <= 0 {
+		req.Limit = 50
+	}
+
+	visitors, err := s.data.GetTopVisitors(c.Echo.Request().Context(), req.ProjectID, req.TimeRange, req.Limit)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get top visitors: %w", err)
+	}
+
+	return &types.TopVisitorsResponse{
+		Visitors: visitors,
+		Total:    len(visitors),
+	}, nil
+}
+
+// GetVisitorProfile returns detailed profile for a single visitor
+// @Summary Get visitor profile
+// @Description Get detailed information about a specific visitor including their event history and aggregated statistics
+// @Tags Analytics
+// @Accept json
+// @Produce json
+// @Security ApiKeyAuth
+// @Param project_id query string true "Project ID"
+// @Param visitor_id query string true "Visitor ID"
+// @Success 200 {object} types.VisitorProfileResponse "Visitor profile details"
+// @Failure 400 {object} map[string]interface{} "Invalid request parameters"
+// @Failure 401 {object} map[string]interface{} "Unauthorized - Invalid or missing JWT token"
+// @Failure 404 {object} map[string]interface{} "Visitor not found"
+// @Failure 500 {object} map[string]interface{} "Internal server error"
+// @Router /api/v1/analytics/visitors/profile [get]
+func (s *AnalyticsService) GetVisitorProfile(c *ctx.Ctx) (*types.VisitorProfileResponse, error) {
+	projectID := c.Echo.QueryParam("project_id")
+	if projectID == "" {
+		return nil, echo.NewHTTPError(400, "project_id is required")
+	}
+
+	visitorID := c.Echo.QueryParam("visitor_id")
+	if visitorID == "" {
+		return nil, echo.NewHTTPError(400, "visitor_id is required")
+	}
+
+	profile, err := s.data.GetVisitorProfile(c.Echo.Request().Context(), projectID, visitorID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get visitor profile: %w", err)
+	}
+
+	return profile, nil
+}
+
+// GetUniqueVisitorsTimeline returns unique visitors over time split by device type
+// @Summary Get unique visitors timeline
+// @Description Get unique visitor counts over time, split by mobile and desktop devices for chart visualization
+// @Tags Analytics
+// @Accept json
+// @Produce json
+// @Security ApiKeyAuth
+// @Param project_id query string true "Project ID"
+// @Param time_range query string true "Time range" Enums(last_hour, today, last_7_days, last_30_days, last_90_days)
+// @Success 200 {object} types.UniqueVisitorsTimelineResponse "Unique visitors timeline data"
+// @Failure 400 {object} map[string]interface{} "Invalid request parameters"
+// @Failure 401 {object} map[string]interface{} "Unauthorized - Invalid or missing JWT token"
+// @Failure 500 {object} map[string]interface{} "Internal server error"
+// @Router /api/v1/analytics/visitors/timeline [get]
+func (s *AnalyticsService) GetUniqueVisitorsTimeline(c *ctx.Ctx) (*types.UniqueVisitorsTimelineResponse, error) {
+	var req types.VisitorsRequest
+	if err := c.Echo.Bind(&req); err != nil {
+		return nil, echo.NewHTTPError(400, "Invalid request parameters")
+	}
+
+	// Validate time range
+	if req.TimeRange == "" {
+		req.TimeRange = types.TimeRangeLast7Days
+	}
+
+	dataPoints, err := s.data.GetUniqueVisitorsTimeline(c.Echo.Request().Context(), req.ProjectID, req.TimeRange)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get unique visitors timeline: %w", err)
+	}
+
+	return &types.UniqueVisitorsTimelineResponse{
+		Data: dataPoints,
+	}, nil
+}

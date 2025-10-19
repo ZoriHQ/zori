@@ -14,6 +14,9 @@ func RegisterRoutes(s *server.Server, analyticsService *services.AnalyticsServic
 	server.GroupGET(analyticsRouteGroup, "/visitors/device", analyticsService.GetVisitorsByDevice)
 	server.GroupGET(analyticsRouteGroup, "/visitors/origin", analyticsService.GetUniqueVisitorsByOrigin)
 	server.GroupGET(analyticsRouteGroup, "/visitors/country", analyticsService.GetUniqueVisitorsByCountry)
+	server.GroupGET(analyticsRouteGroup, "/visitors/top", analyticsService.GetTopVisitors)
+	server.GroupGET(analyticsRouteGroup, "/visitors/profile", analyticsService.GetVisitorProfile)
+	server.GroupGET(analyticsRouteGroup, "/visitors/timeline", analyticsService.GetUniqueVisitorsTimeline)
 
 	// Events endpoints
 	server.GroupGET(analyticsRouteGroup, "/events/recent", analyticsService.GetRecentEvents)

@@ -41,12 +41,22 @@ resources:
           visitors_by_country_response: "#/components/schemas/types.VisitorsByCountryResponse"
           recent_event: "#/components/schemas/types.RecentEvent"
           recent_events_response: "#/components/schemas/types.RecentEventsResponse"
+          top_visitor: "#/components/schemas/types.TopVisitor"
+          top_visitors_response: "#/components/schemas/types.TopVisitorsResponse"
+          visitor_profile_response: "#/components/schemas/types.VisitorProfileResponse"
+          visitor_event: "#/components/schemas/types.VisitorEvent"
+          events_over_time_data_point: "#/components/schemas/types.EventsOverTimeDataPoint"
+          unique_visitors_data_point: "#/components/schemas/types.UniqueVisitorsDataPoint"
+          unique_visitors_timeline_response: "#/components/schemas/types.UniqueVisitorsTimelineResponse"
         subresources:
           visitors:
             methods:
               by_device: get /api/v1/analytics/visitors/device
               by_origin: get /api/v1/analytics/visitors/origin
               by_country: get /api/v1/analytics/visitors/country
+              top: get /api/v1/analytics/visitors/top
+              profile: get /api/v1/analytics/visitors/profile
+              timeline: get /api/v1/analytics/visitors/timeline
           events:
             methods:
               recent: get /api/v1/analytics/events/recent
