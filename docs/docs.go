@@ -24,6 +24,286 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/api/v1/analytics/events/recent": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Get a list of the most recent events (default: 15 events)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Analytics"
+                ],
+                "summary": "Get recent events",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Project ID",
+                        "name": "project_id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Maximum number of events to return (default: 15)",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of recent events",
+                        "schema": {
+                            "$ref": "#/definitions/types.RecentEventsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request parameters",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - Invalid or missing JWT token",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/analytics/visitors/country": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Get unique visitor counts grouped by country code",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Analytics"
+                ],
+                "summary": "Get unique visitors by country",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Project ID",
+                        "name": "project_id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "last_hour",
+                            "today",
+                            "last_7_days",
+                            "last_30_days",
+                            "last_90_days"
+                        ],
+                        "type": "string",
+                        "description": "Time range",
+                        "name": "time_range",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Unique visitors grouped by country",
+                        "schema": {
+                            "$ref": "#/definitions/types.VisitorsByCountryResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request parameters",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - Invalid or missing JWT token",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/analytics/visitors/device": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Get visitor counts grouped by device type (mobile, desktop, tablet) over a specified time range",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Analytics"
+                ],
+                "summary": "Get visitors by device type",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Project ID",
+                        "name": "project_id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "last_hour",
+                            "today",
+                            "last_7_days",
+                            "last_30_days",
+                            "last_90_days"
+                        ],
+                        "type": "string",
+                        "description": "Time range",
+                        "name": "time_range",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Visitors grouped by device type",
+                        "schema": {
+                            "$ref": "#/definitions/types.VisitorsByDeviceResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request parameters",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - Invalid or missing JWT token",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/analytics/visitors/origin": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Get unique visitor counts grouped by referrer domain (traffic source)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Analytics"
+                ],
+                "summary": "Get unique visitors by traffic origin",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Project ID",
+                        "name": "project_id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "last_hour",
+                            "today",
+                            "last_7_days",
+                            "last_30_days",
+                            "last_90_days"
+                        ],
+                        "type": "string",
+                        "description": "Time range",
+                        "name": "time_range",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Unique visitors grouped by origin",
+                        "schema": {
+                            "$ref": "#/definitions/types.VisitorsByOriginResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request parameters",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - Invalid or missing JWT token",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/auth/login": {
             "post": {
                 "description": "Authenticate a user with email and password",
@@ -704,6 +984,10 @@ const docTemplate = `{
                     "type": "boolean",
                     "example": false
                 },
+                "created_at": {
+                    "type": "string",
+                    "example": "2024-01-15T10:30:00Z"
+                },
                 "domain": {
                     "type": "string",
                     "example": "https://example.com"
@@ -726,6 +1010,14 @@ const docTemplate = `{
                 "organization_id": {
                     "type": "string",
                     "example": "660e8400-e29b-41d4-a716-446655440001"
+                },
+                "project_token": {
+                    "type": "string",
+                    "example": "zori_pt_1234567890"
+                },
+                "updated_at": {
+                    "type": "string",
+                    "example": "2024-01-15T10:30:00Z"
                 }
             }
         },
@@ -812,6 +1104,10 @@ const docTemplate = `{
                     "type": "boolean",
                     "example": false
                 },
+                "created_at": {
+                    "type": "string",
+                    "example": "2024-01-15T10:30:00Z"
+                },
                 "domain": {
                     "type": "string",
                     "example": "https://example.com"
@@ -834,6 +1130,14 @@ const docTemplate = `{
                 "organization_id": {
                     "type": "string",
                     "example": "660e8400-e29b-41d4-a716-446655440001"
+                },
+                "project_token": {
+                    "type": "string",
+                    "example": "zori_pt_1234567890"
+                },
+                "updated_at": {
+                    "type": "string",
+                    "example": "2024-01-15T10:30:00Z"
                 }
             }
         },
@@ -910,6 +1214,17 @@ const docTemplate = `{
                 }
             }
         },
+        "types.CountryDataPoint": {
+            "type": "object",
+            "properties": {
+                "country_code": {
+                    "type": "string"
+                },
+                "unique_visitors": {
+                    "type": "integer"
+                }
+            }
+        },
         "types.CreateProjectRequest": {
             "type": "object",
             "required": [
@@ -931,6 +1246,66 @@ const docTemplate = `{
                 }
             }
         },
+        "types.OriginDataPoint": {
+            "type": "object",
+            "properties": {
+                "origin": {
+                    "type": "string"
+                },
+                "unique_visitors": {
+                    "type": "integer"
+                }
+            }
+        },
+        "types.RecentEvent": {
+            "type": "object",
+            "properties": {
+                "browser_name": {
+                    "type": "string"
+                },
+                "client_timestamp_utc": {
+                    "type": "string"
+                },
+                "device_type": {
+                    "type": "string"
+                },
+                "event_name": {
+                    "type": "string"
+                },
+                "location_city": {
+                    "type": "string"
+                },
+                "location_country_iso": {
+                    "type": "string"
+                },
+                "page_path": {
+                    "type": "string"
+                },
+                "page_url": {
+                    "type": "string"
+                },
+                "referrer_url": {
+                    "type": "string"
+                },
+                "visitor_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "types.RecentEventsResponse": {
+            "type": "object",
+            "properties": {
+                "events": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/types.RecentEvent"
+                    }
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
         "types.UpdateProjectRequest": {
             "type": "object",
             "properties": {
@@ -945,6 +1320,59 @@ const docTemplate = `{
                 "website_url": {
                     "type": "string",
                     "example": "https://updated-example.com"
+                }
+            }
+        },
+        "types.VisitorDataPoint": {
+            "type": "object",
+            "properties": {
+                "desktop": {
+                    "type": "integer"
+                },
+                "mobile": {
+                    "type": "integer"
+                },
+                "tablet": {
+                    "type": "integer"
+                },
+                "timestamp": {
+                    "type": "string"
+                },
+                "unknown": {
+                    "type": "integer"
+                }
+            }
+        },
+        "types.VisitorsByCountryResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/types.CountryDataPoint"
+                    }
+                }
+            }
+        },
+        "types.VisitorsByDeviceResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/types.VisitorDataPoint"
+                    }
+                }
+            }
+        },
+        "types.VisitorsByOriginResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/types.OriginDataPoint"
+                    }
                 }
             }
         }
