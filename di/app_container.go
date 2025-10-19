@@ -11,6 +11,7 @@ import (
 	"zori/internal/server/middlewares"
 	"zori/internal/storage/clickhouse"
 	"zori/internal/storage/postgres"
+	"zori/services/analytics"
 	"zori/services/auth"
 	"zori/services/events"
 	"zori/services/organizations"
@@ -31,6 +32,7 @@ func NewApplication() *fx.App {
 		auth.BuildAuthDIContainer(),
 		organizations.BuildOrganizationDIContainer(),
 		projects.BuildProjectsDIContainer(),
+		analytics.BuildAnalyticsDIContainer(),
 
 		fx.Provide(middlewares.NewJwtMiddleware),
 
@@ -40,6 +42,7 @@ func NewApplication() *fx.App {
 		projects.BuildProjectWebDIContainer(),
 		organizations.BuildOrganizationWebDIContainer(),
 		auth.BuildAuthWebDIContainer(),
+		analytics.BuildAnalyticsWebDIContainer(),
 		events.BuildEventsDIContainer(),
 
 		fx.Invoke(func(lc fx.Lifecycle, srv *server.Server) {
