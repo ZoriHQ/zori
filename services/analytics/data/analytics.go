@@ -226,3 +226,232 @@ func (a *AnalyticsData) GetRecentEvents(ctx context.Context, projectID string, l
 
 	return events, nil
 }
+
+// GetTopVisitors returns the most active visitors for a project within a time range
+func (a *AnalyticsData) GetTopVisitors(ctx context.Context, projectID string, timeRange types.TimeRange, limit int) ([]types.TopVisitor, error) {
+	startTime, _, err := GetTimeRangeBounds(timeRange)
+	if err != nil {
+		return nil, err
+	}
+
+	if limit <= 0 {
+		limit = 50
+	}
+
+	query := `
+		SELECT
+			visitor_id,
+			count() as event_count,
+			max(client_timestamp_utc) as last_seen,
+			min(client_timestamp_utc) as first_seen,
+			any(location_country_iso) as location_country_iso,
+			any(location_city) as location_city,
+			any(device_type) as device_type,
+			any(browser_name) as browser_name
+		FROM events
+		WHERE project_id = ?
+			AND client_timestamp_utc >= ?
+			AND client_timestamp_utc <= now()
+		GROUP BY visitor_id
+		ORDER BY event_count DESC
+		LIMIT ?
+	`
+
+	rows, err := a.clickDb.Db().Query(ctx, query, projectID, startTime, limit)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query top visitors: %w", err)
+	}
+	defer rows.Close()
+
+	var visitors []types.TopVisitor
+	for rows.Next() {
+		var visitor types.TopVisitor
+		if err := rows.Scan(
+			&visitor.VisitorID,
+			&visitor.EventCount,
+			&visitor.LastSeen,
+			&visitor.FirstSeen,
+			&visitor.LocationCountryISO,
+			&visitor.LocationCity,
+			&visitor.DeviceType,
+			&visitor.BrowserName,
+		); err != nil {
+			return nil, fmt.Errorf("failed to scan row: %w", err)
+		}
+		visitors = append(visitors, visitor)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating rows: %w", err)
+	}
+
+	return visitors, nil
+}
+
+// GetVisitorProfile returns detailed profile for a single visitor
+func (a *AnalyticsData) GetVisitorProfile(ctx context.Context, projectID string, visitorID string) (*types.VisitorProfileResponse, error) {
+	// Get visitor summary stats
+	summaryQuery := `
+		SELECT
+			visitor_id,
+			min(client_timestamp_utc) as first_seen,
+			max(client_timestamp_utc) as last_seen,
+			count() as total_events,
+			any(location_country_iso) as location_country_iso,
+			any(location_city) as location_city
+		FROM events
+		WHERE project_id = ?
+			AND visitor_id = ?
+		GROUP BY visitor_id
+	`
+
+	var profile types.VisitorProfileResponse
+	row := a.clickDb.Db().QueryRow(ctx, summaryQuery, projectID, visitorID)
+	if err := row.Scan(
+		&profile.VisitorID,
+		&profile.FirstSeen,
+		&profile.LastSeen,
+		&profile.TotalEvents,
+		&profile.LocationCountryISO,
+		&profile.LocationCity,
+	); err != nil {
+		return nil, fmt.Errorf("failed to get visitor summary: %w", err)
+	}
+
+	// Get first traffic origin (from the very first event)
+	firstEventQuery := `
+		SELECT
+			referrer_domain,
+			referrer_url
+		FROM events
+		WHERE project_id = ?
+			AND visitor_id = ?
+		ORDER BY client_timestamp_utc ASC
+		LIMIT 1
+	`
+
+	firstEventRow := a.clickDb.Db().QueryRow(ctx, firstEventQuery, projectID, visitorID)
+	if err := firstEventRow.Scan(&profile.FirstTrafficOrigin, &profile.FirstReferrerURL); err != nil {
+		// It's okay if there's no first event, just continue
+		profile.FirstTrafficOrigin = nil
+		profile.FirstReferrerURL = nil
+	}
+
+	// Get visitor events
+	eventsQuery := `
+		SELECT
+			event_name,
+			client_timestamp_utc,
+			page_url,
+			page_path,
+			referrer_url,
+			device_type,
+			browser_name
+		FROM events
+		WHERE project_id = ?
+			AND visitor_id = ?
+		ORDER BY client_timestamp_utc DESC
+		LIMIT 100
+	`
+
+	eventsRows, err := a.clickDb.Db().Query(ctx, eventsQuery, projectID, visitorID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query visitor events: %w", err)
+	}
+	defer eventsRows.Close()
+
+	var events []types.VisitorEvent
+	for eventsRows.Next() {
+		var event types.VisitorEvent
+		if err := eventsRows.Scan(
+			&event.EventName,
+			&event.ClientTimestampUTC,
+			&event.PageURL,
+			&event.PagePath,
+			&event.ReferrerURL,
+			&event.DeviceType,
+			&event.BrowserName,
+		); err != nil {
+			return nil, fmt.Errorf("failed to scan event row: %w", err)
+		}
+		events = append(events, event)
+	}
+	profile.Events = events
+
+	// Get events over time (last 30 days, grouped by day)
+	now := time.Now().UTC()
+	startTime := now.AddDate(0, 0, -30)
+
+	eventsOverTimeQuery := `
+		SELECT
+			toStartOfDay(client_timestamp_utc) as time_bucket,
+			count() as event_count
+		FROM events
+		WHERE project_id = ?
+			AND visitor_id = ?
+			AND client_timestamp_utc >= ?
+			AND client_timestamp_utc <= now()
+		GROUP BY time_bucket
+		ORDER BY time_bucket ASC
+	`
+
+	timeRows, err := a.clickDb.Db().Query(ctx, eventsOverTimeQuery, projectID, visitorID, startTime)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query events over time: %w", err)
+	}
+	defer timeRows.Close()
+
+	var eventsOverTime []types.EventsOverTimeDataPoint
+	for timeRows.Next() {
+		var dp types.EventsOverTimeDataPoint
+		if err := timeRows.Scan(&dp.Timestamp, &dp.EventCount); err != nil {
+			return nil, fmt.Errorf("failed to scan events over time row: %w", err)
+		}
+		eventsOverTime = append(eventsOverTime, dp)
+	}
+	profile.EventsOverTime = eventsOverTime
+
+	return &profile, nil
+}
+
+// GetUniqueVisitorsTimeline returns unique visitor counts over time split by device type
+func (a *AnalyticsData) GetUniqueVisitorsTimeline(ctx context.Context, projectID string, timeRange types.TimeRange) ([]types.UniqueVisitorsDataPoint, error) {
+	startTime, intervalFunc, err := GetTimeRangeBounds(timeRange)
+	if err != nil {
+		return nil, err
+	}
+
+	query := fmt.Sprintf(`
+		SELECT
+			%s(client_timestamp_utc) as time_bucket,
+			uniqIf(visitor_id, device_type = 'mobile') as mobile,
+			uniqIf(visitor_id, device_type = 'desktop') as desktop
+		FROM events
+		WHERE project_id = ?
+			AND client_timestamp_utc >= ?
+			AND client_timestamp_utc <= now()
+		GROUP BY time_bucket
+		ORDER BY time_bucket ASC
+	`, intervalFunc)
+
+	rows, err := a.clickDb.Db().Query(ctx, query, projectID, startTime)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query unique visitors timeline: %w", err)
+	}
+	defer rows.Close()
+
+	var dataPoints []types.UniqueVisitorsDataPoint
+	for rows.Next() {
+		var dp types.UniqueVisitorsDataPoint
+		if err := rows.Scan(&dp.Timestamp, &dp.Mobile, &dp.Desktop); err != nil {
+			return nil, fmt.Errorf("failed to scan row: %w", err)
+		}
+		dataPoints = append(dataPoints, dp)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating rows: %w", err)
+	}
+
+	return dataPoints, nil
+}
