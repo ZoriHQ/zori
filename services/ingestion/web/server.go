@@ -79,7 +79,14 @@ func (h *IngestionServer) Injest(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	fmt.Println("Host of the request origin", string(ctx.Request.Host()))
+	if project.FirstEventReceivedAt == nil {
+		go func() {
+			err = h.projectService.SetFirstEventReceivedNow(project.ID)
+			if err != nil {
+				ctx.Error("Failed to update project", fasthttp.StatusInternalServerError)
+			}
+		}()
+	}
 
 	// checking for localhost events
 	requestHost := string(ctx.Request.Host())
@@ -113,8 +120,6 @@ func (h *IngestionServer) Injest(ctx *fasthttp.RequestCtx) {
 	} else {
 		clientEvent.IP = ctx.RemoteIP().String()
 	}
-
-	fmt.Println("Ingested....")
 
 	go h.ingestor.Ingest(project, &clientEvent)
 

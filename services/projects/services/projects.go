@@ -35,6 +35,15 @@ func (p *ProjectService) GetProjectByPublishableToken(token string) (*models.Pro
 	return p.data.GetProjectByPublishableToken(token)
 }
 
+func (p *ProjectService) SetFirstEventReceivedNow(projectID string) error {
+	err := p.data.SetFirstEventReceived(projectID)
+	if err != nil {
+		return fmt.Errorf("failed to update project: %w", err)
+	}
+
+	return nil
+}
+
 // @Summary List organization projects
 // @Description Get a list of all projects belonging to the authenticated user's organization
 // @Tags Projects

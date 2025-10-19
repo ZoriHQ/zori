@@ -109,12 +109,11 @@ func (p *ProjectData) DeleteProject(c *ctx.Ctx, projectID string) error {
 	return err
 }
 
-func (p *ProjectData) SetFirstEventReceived(c *ctx.Ctx, projectID string) error {
+func (p *ProjectData) SetFirstEventReceived(projectID string) error {
 	_, err := p.db.NewUpdate().
 		Model(&models.Project{}).
 		Set("first_event_received_at = ?", time.Now()).
 		Where("id = ?", projectID).
-		Where("organization_id = ?", c.OrgID()).
 		Exec(context.Background())
 	return err
 }
