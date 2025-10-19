@@ -1442,6 +1442,9 @@ const docTemplate = `{
                 "country_code": {
                     "type": "string"
                 },
+                "percentage": {
+                    "type": "number"
+                },
                 "unique_visitors": {
                     "type": "integer"
                 }
@@ -1484,6 +1487,9 @@ const docTemplate = `{
             "properties": {
                 "origin": {
                     "type": "string"
+                },
+                "percentage": {
+                    "type": "number"
                 },
                 "unique_visitors": {
                     "type": "integer"
@@ -1631,9 +1637,6 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "mobile": {
-                    "type": "integer"
-                },
-                "tablet": {
                     "type": "integer"
                 },
                 "timestamp": {

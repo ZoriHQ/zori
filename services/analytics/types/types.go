@@ -6,9 +6,9 @@ import "time"
 type TimeRange string
 
 const (
-	TimeRangeLastHour  TimeRange = "last_hour"
-	TimeRangeToday     TimeRange = "today"
-	TimeRangeLast7Days TimeRange = "last_7_days"
+	TimeRangeLastHour   TimeRange = "last_hour"
+	TimeRangeToday      TimeRange = "today"
+	TimeRangeLast7Days  TimeRange = "last_7_days"
 	TimeRangeLast30Days TimeRange = "last_30_days"
 	TimeRangeLast90Days TimeRange = "last_90_days"
 )
@@ -29,7 +29,6 @@ type VisitorDataPoint struct {
 	Timestamp time.Time `json:"timestamp"`
 	Mobile    uint64    `json:"mobile"`
 	Desktop   uint64    `json:"desktop"`
-	Tablet    uint64    `json:"tablet,omitempty"`
 	Unknown   uint64    `json:"unknown,omitempty"`
 }
 
@@ -52,8 +51,9 @@ type VisitorsByOriginResponse struct {
 
 // OriginDataPoint represents visitors from a specific origin
 type OriginDataPoint struct {
-	Origin         string `json:"origin"`
-	UniqueVisitors uint64 `json:"unique_visitors"`
+	Origin         string  `json:"origin"`
+	UniqueVisitors uint64  `json:"unique_visitors"`
+	Percentage     float64 `json:"percentage"`
 }
 
 // VisitorsByCountryResponse represents unique visitors grouped by country
@@ -63,8 +63,9 @@ type VisitorsByCountryResponse struct {
 
 // CountryDataPoint represents visitors from a specific country
 type CountryDataPoint struct {
-	CountryCode    string `json:"country_code"`
-	UniqueVisitors uint64 `json:"unique_visitors"`
+	CountryCode    string  `json:"country_code"`
+	UniqueVisitors uint64  `json:"unique_visitors"`
+	Percentage     float64 `json:"percentage"`
 }
 
 // RecentEventsResponse represents the most recent events
@@ -114,15 +115,15 @@ type TopVisitor struct {
 
 // VisitorProfileResponse represents a single visitor's profile
 type VisitorProfileResponse struct {
-	VisitorID          string         `json:"visitor_id"`
-	FirstSeen          time.Time      `json:"first_seen"`
-	LastSeen           time.Time      `json:"last_seen"`
-	TotalEvents        uint64         `json:"total_events"`
-	FirstTrafficOrigin *string        `json:"first_traffic_origin,omitempty"`
-	FirstReferrerURL   *string        `json:"first_referrer_url,omitempty"`
-	LocationCountryISO *string        `json:"location_country_iso,omitempty"`
-	LocationCity       *string        `json:"location_city,omitempty"`
-	Events             []VisitorEvent `json:"events"`
+	VisitorID          string                    `json:"visitor_id"`
+	FirstSeen          time.Time                 `json:"first_seen"`
+	LastSeen           time.Time                 `json:"last_seen"`
+	TotalEvents        uint64                    `json:"total_events"`
+	FirstTrafficOrigin *string                   `json:"first_traffic_origin,omitempty"`
+	FirstReferrerURL   *string                   `json:"first_referrer_url,omitempty"`
+	LocationCountryISO *string                   `json:"location_country_iso,omitempty"`
+	LocationCity       *string                   `json:"location_city,omitempty"`
+	Events             []VisitorEvent            `json:"events"`
 	EventsOverTime     []EventsOverTimeDataPoint `json:"events_over_time"`
 }
 
