@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	_ "zori/docs" // Import generated swagger docs
+	"zori/internal/cache"
 	"zori/internal/config"
 	"zori/internal/natsstream"
 	"zori/internal/server"
@@ -28,6 +29,7 @@ func NewIngestionApplication() *fx.App {
 		),
 
 		fx.Provide(natsstream.NewStream),
+		fx.Provide(cache.NewCacheService),
 
 		auth.BuildAuthDIContainer(),
 		organizations.BuildOrganizationDIContainer(),

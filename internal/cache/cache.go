@@ -13,7 +13,7 @@ type CacheService struct {
 	redisClient redis.UniversalClient
 }
 
-func NewCacheService(conf config.Config) *CacheService {
+func NewCacheService(conf *config.Config) *CacheService {
 	rdb := redis.NewUniversalClient(&redis.UniversalOptions{
 		Addrs:    []string{conf.RedisADDS},
 		Password: conf.RedisPASS,
@@ -33,11 +33,14 @@ func NewCacheService(conf config.Config) *CacheService {
 func (s *CacheService) Get(ctx context.Context, key string) (*string, error) {
 	var result string
 	err := s.redisClient.Get(ctx, key).Scan(&result)
-	if err != nil {
+	switch {
+	case err == redis.Nil:
+		return nil, nil
+	case err != nil:
 		return nil, err
+	default:
+		return &result, nil
 	}
-
-	return &result, nil
 }
 
 func (s *CacheService) Set(ctx context.Context, key string, value any, ttl time.Duration) error {
