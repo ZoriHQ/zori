@@ -93,7 +93,7 @@ func (h *IngestionServer) Injest(ctx *fasthttp.RequestCtx) {
 	if strings.Contains(requestHost, "localhost") && project.AllowLocalHost {
 		localhostParts := strings.Split(requestHost, ":")
 		if len(localhostParts) == 2 {
-			host := localhostParts[1]
+			host := localhostParts[0]
 			if host != "localhost" {
 				ctx.Error("Invalid Host", fasthttp.StatusBadRequest)
 				return
