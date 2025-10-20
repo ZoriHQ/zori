@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS sessions (
     ended_at SimpleAggregateFunction(max, DateTime64(3, 'UTC')),
 
     -- Session metrics
-    page_count AggregateFunction(count, String),
+    page_count SimpleAggregateFunction(sum, UInt64),
 
     -- Entry and exit pages
     entry_page SimpleAggregateFunction(any, String),
@@ -62,7 +62,7 @@ SELECT
     organization_id,
     minSimpleState(client_timestamp_utc) as started_at,
     maxSimpleState(client_timestamp_utc) as ended_at,
-    countState(page_url) as page_count,
+    sumSimpleState(toUInt32(1)) as page_count,
     anySimpleState(page_url) as entry_page,
     anyLastSimpleState(page_url) as exit_page,
     anySimpleState(utm_parameters['utm_source']) as utm_source,
@@ -87,11 +87,11 @@ DROP VIEW IF EXISTS sessions_mv;
 -- +goose StatementEnd
 
 -- +goose StatementBegin
-DROP INDEX IF EXISTS idx_sessions_started_at;
+DROP INDEX IF EXISTS idx_sessions_started_at ON sessions;
 -- +goose StatementEnd
 
 -- +goose StatementBegin
-DROP INDEX IF EXISTS idx_sessions_visitor_id;
+DROP INDEX IF EXISTS idx_sessions_visitor_id ON sessions;
 -- +goose StatementEnd
 
 -- +goose StatementBegin
