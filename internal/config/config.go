@@ -14,6 +14,9 @@ type Config struct {
 	ClickHouseDatabase string `env:"CLICKHOUSE_DATABASE" envDefault:"default"`
 	PostgresURL        string `env:"POSTGRES_URL,required"`
 
+	RedisADDS string `env:"REDIS_ADDRS,required"`
+	RedisPASS string `env:"REDIS_PASSWORD,required"`
+
 	// JWT Configuration
 	JWTSecretKey       string        `env:"JWT_SECRET_KEY" envDefault:"your-super-secret-key-change-in-production-min-32-chars"`
 	JWTAccessTokenTTL  time.Duration `env:"JWT_ACCESS_TOKEN_TTL" envDefault:"15m"`
@@ -24,6 +27,9 @@ type Config struct {
 
 	// Bcrypt Configuration
 	BcryptCost int `env:"BCRYPT_COST" envDefault:"12"`
+
+	// Encryption Configuration (for payment provider credentials)
+	EncryptionKey string `env:"ENCRYPTION_KEY,required"`
 }
 
 func NewConfig() *Config {

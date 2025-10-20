@@ -133,3 +133,12 @@ func (p *ProjectData) CountOrganizationProjects(ctx context.Context, orgID strin
 		Where("organization_id = ?", orgID).
 		Count(ctx)
 }
+
+func (p *ProjectData) GetProjectByID(ctx context.Context, projectID string) (*models.Project, error) {
+	project := &models.Project{}
+	err := p.db.NewSelect().
+		Model(project).
+		Where("id = ?", projectID).
+		Scan(ctx)
+	return project, err
+}

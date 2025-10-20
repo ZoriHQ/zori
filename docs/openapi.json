@@ -1574,6 +1574,385 @@
         "summary": "Register a new account"
       }
     },
+    "/api/v1/payment-providers": {
+      "get": {
+        "parameters": [
+          {
+            "description": "Filter by project ID",
+            "in": "query",
+            "name": "project_id",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/types.ListPaymentProvidersResponse"
+                }
+              }
+            },
+            "description": "List of payment providers"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "tags": [
+          "Payment Providers"
+        ],
+        "description": "Get all payment providers for the organization",
+        "summary": "List payment providers"
+      },
+      "post": {
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/types.PaymentProviderResponse"
+                }
+              }
+            },
+            "description": "Created payment provider"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Invalid request or validation failed"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Project not found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Provider already exists for this project"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "tags": [
+          "Payment Providers"
+        ],
+        "description": "Connect a new payment provider to a project",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/types.CreatePaymentProviderRequest"
+              }
+            }
+          },
+          "description": "Payment provider details",
+          "required": true
+        },
+        "summary": "Create a new payment provider"
+      }
+    },
+    "/api/v1/payment-providers/{id}": {
+      "delete": {
+        "parameters": [
+          {
+            "description": "Provider ID",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Deletion confirmation"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Provider not found"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "tags": [
+          "Payment Providers"
+        ],
+        "description": "Disconnect a payment provider from a project",
+        "summary": "Delete a payment provider"
+      },
+      "get": {
+        "parameters": [
+          {
+            "description": "Provider ID",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/types.PaymentProviderResponse"
+                }
+              }
+            },
+            "description": "Payment provider details"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Provider not found"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "tags": [
+          "Payment Providers"
+        ],
+        "description": "Get a single payment provider by ID",
+        "summary": "Get a payment provider"
+      },
+      "put": {
+        "parameters": [
+          {
+            "description": "Provider ID",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/types.PaymentProviderResponse"
+                }
+              }
+            },
+            "description": "Updated payment provider"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Invalid request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Provider not found"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "tags": [
+          "Payment Providers"
+        ],
+        "description": "Update payment provider credentials or settings",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/types.UpdatePaymentProviderRequest"
+              }
+            }
+          },
+          "description": "Update details",
+          "required": true
+        },
+        "summary": "Update a payment provider"
+      }
+    },
     "/api/v1/projects": {
       "post": {
         "responses": {
@@ -2052,6 +2431,23 @@
         },
         "type": "object"
       },
+      "models.ProviderType": {
+        "enum": [
+          "stripe",
+          "paddle",
+          "paypal",
+          "lemon_squeezy",
+          "square"
+        ],
+        "type": "string",
+        "x-enum-varnames": [
+          "ProviderTypeStripe",
+          "ProviderTypePaddle",
+          "ProviderTypePayPal",
+          "ProviderTypeLemonSqueezy",
+          "ProviderTypeSquare"
+        ]
+      },
       "services.AuthResponse": {
         "properties": {
           "access_token": {
@@ -2358,6 +2754,46 @@
         },
         "type": "object"
       },
+      "types.CreatePaymentProviderRequest": {
+        "properties": {
+          "api_key": {
+            "example": "sk_test_xxxxx",
+            "minLength": 10,
+            "type": "string"
+          },
+          "project_id": {
+            "example": "550e8400-e29b-41d4-a716-446655440000",
+            "type": "string"
+          },
+          "provider_type": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/models.ProviderType"
+              }
+            ],
+            "enum": [
+              "stripe",
+              "paddle",
+              "paypal",
+              "lemon_squeezy",
+              "square"
+            ],
+            "example": "stripe"
+          },
+          "webhook_secret": {
+            "example": "whsec_xxxxx",
+            "minLength": 10,
+            "type": "string"
+          }
+        },
+        "required": [
+          "api_key",
+          "project_id",
+          "provider_type",
+          "webhook_secret"
+        ],
+        "type": "object"
+      },
       "types.CreateProjectRequest": {
         "properties": {
           "allow_localhost": {
@@ -2432,6 +2868,21 @@
         },
         "type": "object"
       },
+      "types.ListPaymentProvidersResponse": {
+        "properties": {
+          "providers": {
+            "items": {
+              "$ref": "#/components/schemas/types.PaymentProviderResponse"
+            },
+            "type": "array"
+          },
+          "total": {
+            "example": 3,
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
       "types.OriginDataPoint": {
         "properties": {
           "origin": {
@@ -2442,6 +2893,47 @@
           },
           "unique_visitors": {
             "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "types.PaymentProviderResponse": {
+        "properties": {
+          "created_at": {
+            "example": "2024-01-15T10:30:00Z",
+            "type": "string"
+          },
+          "id": {
+            "example": "550e8400-e29b-41d4-a716-446655440000",
+            "type": "string"
+          },
+          "is_active": {
+            "example": true,
+            "type": "boolean"
+          },
+          "last_synced_at": {
+            "example": "2024-01-15T10:30:00Z",
+            "type": "string"
+          },
+          "organization_id": {
+            "example": "770e8400-e29b-41d4-a716-446655440002",
+            "type": "string"
+          },
+          "project_id": {
+            "example": "660e8400-e29b-41d4-a716-446655440001",
+            "type": "string"
+          },
+          "provider_type": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/models.ProviderType"
+              }
+            ],
+            "example": "stripe"
+          },
+          "updated_at": {
+            "example": "2024-01-15T10:30:00Z",
+            "type": "string"
           }
         },
         "type": "object"
@@ -2590,6 +3082,25 @@
               "$ref": "#/components/schemas/types.UniqueVisitorsDataPoint"
             },
             "type": "array"
+          }
+        },
+        "type": "object"
+      },
+      "types.UpdatePaymentProviderRequest": {
+        "properties": {
+          "api_key": {
+            "example": "sk_test_xxxxx",
+            "minLength": 10,
+            "type": "string"
+          },
+          "is_active": {
+            "example": true,
+            "type": "boolean"
+          },
+          "webhook_secret": {
+            "example": "whsec_xxxxx",
+            "minLength": 10,
+            "type": "string"
           }
         },
         "type": "object"
