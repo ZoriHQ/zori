@@ -1,12 +1,12 @@
 package web
 
 import (
+	"zori/internal/server"
 	"zori/services/payments/services"
-
-	"github.com/labstack/echo/v4"
 )
 
-func RegisterWebhookRoutes(e *echo.Echo, webhookHandler *services.WebhookHandler) {
-	webhookGroup := e.Group("/webhooks")
+func RegisterWebhookRoutes(server *server.Server, webhookHandler *services.WebhookHandler) {
+	webhookGroup := server.Echo.Group("/webhooks")
+
 	webhookGroup.POST("/stripe/:project_id", webhookHandler.HandleStripeWebhook)
 }

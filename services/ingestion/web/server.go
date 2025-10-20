@@ -4,6 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
+	"zori/internal/cache"
+	"zori/internal/storage/postgres/models"
 	"zori/services/ingestion/services"
 	"zori/services/ingestion/types"
 	projectsServices "zori/services/projects/services"
@@ -14,12 +17,14 @@ import (
 type IngestionServer struct {
 	ingestor       *services.Ingestor
 	projectService *projectsServices.ProjectService
+	cacheService   *cache.CacheService
 }
 
-func NewIngestionServer(ingestor *services.Ingestor, projectService *projectsServices.ProjectService) *IngestionServer {
+func NewIngestionServer(ingestor *services.Ingestor, projectService *projectsServices.ProjectService, cacheService *cache.CacheService) *IngestionServer {
 	return &IngestionServer{
 		ingestor:       ingestor,
 		projectService: projectService,
+		cacheService:   cacheService,
 	}
 }
 
@@ -73,10 +78,32 @@ func (h *IngestionServer) Injest(ctx *fasthttp.RequestCtx) {
 
 	projectToken := string(projectTokenBytes)
 
-	project, err := h.projectService.GetProjectByPublishableToken(projectToken)
+	projectFromCache, err := h.cacheService.Get(ctx, cache.ProjectCacheKey.FromValue(projectToken))
 	if err != nil {
 		ctx.Error("Invalid Project Token", fasthttp.StatusUnauthorized)
 		return
+	}
+
+	var project models.Project
+	if projectFromCache == nil {
+		projectPointer, err := h.projectService.GetProjectByPublishableToken(projectToken)
+		if err != nil {
+			ctx.Error("Invalid Project Token", fasthttp.StatusUnauthorized)
+			return
+		}
+
+		err = h.cacheService.Set(ctx, cache.ProjectCacheKey.FromValue(projectToken), *projectPointer, time.Minute)
+		if err != nil {
+			ctx.Error("Failed to cache project", fasthttp.StatusInternalServerError)
+			return
+		}
+
+		project = *projectPointer
+	} else {
+		if err = json.Unmarshal([]byte(*projectFromCache), &project); err != nil {
+			ctx.Error("Failed to unmarshal project", fasthttp.StatusInternalServerError)
+			return
+		}
 	}
 
 	if project.FirstEventReceivedAt == nil {
@@ -121,7 +148,7 @@ func (h *IngestionServer) Injest(ctx *fasthttp.RequestCtx) {
 		clientEvent.IP = ctx.RemoteIP().String()
 	}
 
-	go h.ingestor.Ingest(project, &clientEvent)
+	go h.ingestor.Ingest(&project, &clientEvent)
 
 	fmt.Fprintf(ctx, "ACCEPTED %d", len(ctx.PostBody()))
 }
