@@ -48,6 +48,17 @@ resources:
           events_over_time_data_point: "#/components/schemas/types.EventsOverTimeDataPoint"
           unique_visitors_data_point: "#/components/schemas/types.UniqueVisitorsDataPoint"
           unique_visitors_timeline_response: "#/components/schemas/types.UniqueVisitorsTimelineResponse"
+          dashboard_metrics_response: "#/components/schemas/types.DashboardMetricsResponse"
+          session_metrics_response: "#/components/schemas/types.SessionMetricsResponse"
+          bounce_rate_response: "#/components/schemas/types.BounceRateResponse"
+          bounce_rate_by_page_metric: "#/components/schemas/types.BounceRateByPageMetric"
+          active_users_response: "#/components/schemas/types.ActiveUsersResponse"
+          return_rate_response: "#/components/schemas/types.ReturnRateResponse"
+          churn_rate_response: "#/components/schemas/types.ChurnRateResponse"
+          cohort_analysis_response: "#/components/schemas/types.CohortAnalysisResponse"
+          cohort_data: "#/components/schemas/types.CohortData"
+        methods:
+          dashboard: get /api/v1/analytics/dashboard
         subresources:
           visitors:
             methods:
@@ -60,6 +71,18 @@ resources:
           events:
             methods:
               recent: get /api/v1/analytics/events/recent
+          sessions:
+            methods:
+              metrics: get /api/v1/analytics/sessions/metrics
+              bounce_rate: get /api/v1/analytics/sessions/bounce-rate
+          users:
+            methods:
+              active: get /api/v1/analytics/users/active
+          retention:
+            methods:
+              return_rate: get /api/v1/analytics/retention/return-rate
+              churn_rate: get /api/v1/analytics/retention/churn-rate
+              cohorts: get /api/v1/analytics/retention/cohorts
       projects:
         # Configure the models--named types--defined in the resource. Each key in the
         # object is the name of the model and the value is either the name of a schema in
