@@ -20,7 +20,8 @@ func NewClickhouseDB(cfg *config.Config) *ClickhouseDB {
 	clickDbConn, err := goclick.Open(&goclick.Options{
 		Addr: []string{cfg.ClickHouseURL},
 		Auth: goclick.Auth{
-			Username: "default",
+			Username: cfg.ClickHouseUsername,
+			Database: cfg.ClickHouseDatabase,
 			Password: cfg.ClickHousePassword,
 		},
 		Protocol: goclick.Native,

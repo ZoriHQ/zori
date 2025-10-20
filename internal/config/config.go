@@ -11,6 +11,7 @@ type Config struct {
 	ClickHouseURL      string `env:"CLICKHOUSE_URL,required"`
 	ClickHouseUsername string `env:"CLICKHOUSE_USERNAME,required"`
 	ClickHousePassword string `env:"CLICKHOUSE_PASSWORD,required"`
+	ClickHouseDatabase string `env:"CLICKHOUSE_DATABASE" envDefault:"default"`
 	PostgresURL        string `env:"POSTGRES_URL,required"`
 
 	// JWT Configuration
