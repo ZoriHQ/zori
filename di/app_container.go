@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	_ "zori/docs" // Import generated swagger docs
+	"zori/internal/cache"
 	"zori/internal/config"
 	"zori/internal/natsstream"
 	"zori/internal/server"
@@ -15,6 +16,7 @@ import (
 	"zori/services/auth"
 	"zori/services/events"
 	"zori/services/organizations"
+	"zori/services/payments"
 	"zori/services/projects"
 
 	"go.uber.org/fx"
@@ -29,10 +31,12 @@ func NewApplication() *fx.App {
 			server.New,
 		),
 		fx.Provide(natsstream.NewStream),
+		fx.Provide(cache.NewCacheService),
 		auth.BuildAuthDIContainer(),
 		organizations.BuildOrganizationDIContainer(),
 		projects.BuildProjectsDIContainer(),
 		analytics.BuildAnalyticsDIContainer(),
+		payments.BuildPaymentsDIContainer(),
 
 		fx.Provide(middlewares.NewJwtMiddleware),
 
@@ -43,7 +47,9 @@ func NewApplication() *fx.App {
 		organizations.BuildOrganizationWebDIContainer(),
 		auth.BuildAuthWebDIContainer(),
 		analytics.BuildAnalyticsWebDIContainer(),
+		payments.BuildPaymentsWebDIContainer(),
 		events.BuildEventsDIContainer(),
+		payments.BuildPaymentsProcessorDIContainer(),
 
 		fx.Invoke(func(lc fx.Lifecycle, srv *server.Server) {
 			lc.Append(fx.Hook{

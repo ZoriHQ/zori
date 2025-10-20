@@ -12,6 +12,7 @@ import (
 	"zori/services/ingestion"
 	"zori/services/ingestion/web"
 	"zori/services/organizations"
+	"zori/services/payments"
 	"zori/services/projects"
 
 	"github.com/valyala/fasthttp"
@@ -31,9 +32,11 @@ func NewIngestionApplication() *fx.App {
 		auth.BuildAuthDIContainer(),
 		organizations.BuildOrganizationDIContainer(),
 		projects.BuildProjectsDIContainer(),
+		payments.BuildPaymentsDIContainer(),
 
 		fx.Invoke(registerDatabaseLifecycle),
 		ingestion.BuildIngestionDiContainer(),
+		payments.BuildPaymentsWebhookDIContainer(),
 
 		fx.Invoke(func(lc fx.Lifecycle, ingestionServer *web.IngestionServer) {
 			lc.Append(fx.Hook{
