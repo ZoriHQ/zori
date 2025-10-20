@@ -270,3 +270,224 @@ func (s *AnalyticsService) GetUniqueVisitorsTimeline(c *ctx.Ctx) (*types.UniqueV
 		Data: dataPoints,
 	}, nil
 }
+
+// GetSessionMetrics returns session duration and pages per session metrics
+// @Summary Get session metrics
+// @Description Get session metrics including average duration and pages per session
+// @Tags Analytics
+// @Accept json
+// @Produce json
+// @Security ApiKeyAuth
+// @Param project_id query string true "Project ID"
+// @Param time_range query string true "Time range" Enums(last_hour, today, last_7_days, last_30_days, last_90_days)
+// @Success 200 {object} types.SessionMetricsResponse "Session metrics"
+// @Failure 400 {object} map[string]interface{} "Invalid request parameters"
+// @Failure 401 {object} map[string]interface{} "Unauthorized - Invalid or missing JWT token"
+// @Failure 500 {object} map[string]interface{} "Internal server error"
+// @Router /api/v1/analytics/sessions/metrics [get]
+func (s *AnalyticsService) GetSessionMetrics(c *ctx.Ctx) (*types.SessionMetricsResponse, error) {
+	var req types.SessionMetricsRequest
+	if err := c.Echo.Bind(&req); err != nil {
+		return nil, echo.NewHTTPError(400, "Invalid request parameters")
+	}
+
+	if req.TimeRange == "" {
+		req.TimeRange = types.TimeRangeLast7Days
+	}
+
+	metrics, err := s.data.GetSessionMetrics(c.Echo.Request().Context(), req.ProjectID, req.TimeRange)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get session metrics: %w", err)
+	}
+
+	return metrics, nil
+}
+
+// GetBounceRate returns bounce rate metrics overall and by page
+// @Summary Get bounce rate
+// @Description Get bounce rate metrics including overall bounce rate and per-page breakdown
+// @Tags Analytics
+// @Accept json
+// @Produce json
+// @Security ApiKeyAuth
+// @Param project_id query string true "Project ID"
+// @Param time_range query string true "Time range" Enums(last_hour, today, last_7_days, last_30_days, last_90_days)
+// @Param limit query int false "Limit for per-page breakdown (default: 20)"
+// @Success 200 {object} types.BounceRateResponse "Bounce rate metrics"
+// @Failure 400 {object} map[string]interface{} "Invalid request parameters"
+// @Failure 401 {object} map[string]interface{} "Unauthorized - Invalid or missing JWT token"
+// @Failure 500 {object} map[string]interface{} "Internal server error"
+// @Router /api/v1/analytics/sessions/bounce-rate [get]
+func (s *AnalyticsService) GetBounceRate(c *ctx.Ctx) (*types.BounceRateResponse, error) {
+	var req types.BounceRateRequest
+	if err := c.Echo.Bind(&req); err != nil {
+		return nil, echo.NewHTTPError(400, "Invalid request parameters")
+	}
+
+	if req.TimeRange == "" {
+		req.TimeRange = types.TimeRangeLast7Days
+	}
+
+	bounceRate, err := s.data.GetBounceRate(c.Echo.Request().Context(), req.ProjectID, req.TimeRange, req.Limit)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get bounce rate: %w", err)
+	}
+
+	return bounceRate, nil
+}
+
+// GetActiveUsers returns DAU/WAU/MAU metrics
+// @Summary Get active users
+// @Description Get daily, weekly, and monthly active user counts
+// @Tags Analytics
+// @Accept json
+// @Produce json
+// @Security ApiKeyAuth
+// @Param project_id query string true "Project ID"
+// @Success 200 {object} types.ActiveUsersResponse "Active user metrics"
+// @Failure 400 {object} map[string]interface{} "Invalid request parameters"
+// @Failure 401 {object} map[string]interface{} "Unauthorized - Invalid or missing JWT token"
+// @Failure 500 {object} map[string]interface{} "Internal server error"
+// @Router /api/v1/analytics/users/active [get]
+func (s *AnalyticsService) GetActiveUsers(c *ctx.Ctx) (*types.ActiveUsersResponse, error) {
+	var req types.ActiveUsersRequest
+	if err := c.Echo.Bind(&req); err != nil {
+		return nil, echo.NewHTTPError(400, "Invalid request parameters")
+	}
+
+	activeUsers, err := s.data.GetActiveUsers(c.Echo.Request().Context(), req.ProjectID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get active users: %w", err)
+	}
+
+	return activeUsers, nil
+}
+
+// GetReturnRate returns user return rate metrics
+// @Summary Get return rate
+// @Description Get metrics about user return rate and time between sessions
+// @Tags Analytics
+// @Accept json
+// @Produce json
+// @Security ApiKeyAuth
+// @Param project_id query string true "Project ID"
+// @Param time_range query string true "Time range" Enums(last_hour, today, last_7_days, last_30_days, last_90_days)
+// @Success 200 {object} types.ReturnRateResponse "Return rate metrics"
+// @Failure 400 {object} map[string]interface{} "Invalid request parameters"
+// @Failure 401 {object} map[string]interface{} "Unauthorized - Invalid or missing JWT token"
+// @Failure 500 {object} map[string]interface{} "Internal server error"
+// @Router /api/v1/analytics/retention/return-rate [get]
+func (s *AnalyticsService) GetReturnRate(c *ctx.Ctx) (*types.ReturnRateResponse, error) {
+	var req types.ReturnRateRequest
+	if err := c.Echo.Bind(&req); err != nil {
+		return nil, echo.NewHTTPError(400, "Invalid request parameters")
+	}
+
+	if req.TimeRange == "" {
+		req.TimeRange = types.TimeRangeLast30Days
+	}
+
+	returnRate, err := s.data.GetReturnRate(c.Echo.Request().Context(), req.ProjectID, req.TimeRange)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get return rate: %w", err)
+	}
+
+	return returnRate, nil
+}
+
+// GetChurnRate returns user churn rate metrics
+// @Summary Get churn rate
+// @Description Get metrics about user churn based on inactivity threshold
+// @Tags Analytics
+// @Accept json
+// @Produce json
+// @Security ApiKeyAuth
+// @Param project_id query string true "Project ID"
+// @Param time_range query string true "Time range" Enums(last_hour, today, last_7_days, last_30_days, last_90_days)
+// @Param churn_threshold_days query int false "Days of inactivity to consider churned (default: 30)"
+// @Success 200 {object} types.ChurnRateResponse "Churn rate metrics"
+// @Failure 400 {object} map[string]interface{} "Invalid request parameters"
+// @Failure 401 {object} map[string]interface{} "Unauthorized - Invalid or missing JWT token"
+// @Failure 500 {object} map[string]interface{} "Internal server error"
+// @Router /api/v1/analytics/retention/churn-rate [get]
+func (s *AnalyticsService) GetChurnRate(c *ctx.Ctx) (*types.ChurnRateResponse, error) {
+	var req types.ChurnRateRequest
+	if err := c.Echo.Bind(&req); err != nil {
+		return nil, echo.NewHTTPError(400, "Invalid request parameters")
+	}
+
+	if req.TimeRange == "" {
+		req.TimeRange = types.TimeRangeLast90Days
+	}
+
+	churnRate, err := s.data.GetChurnRate(c.Echo.Request().Context(), req.ProjectID, req.TimeRange, req.ChurnThresholdDays)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get churn rate: %w", err)
+	}
+
+	return churnRate, nil
+}
+
+// GetCohortAnalysis returns cohort retention analysis
+// @Summary Get cohort analysis
+// @Description Get cohort retention analysis showing how user groups retain over time
+// @Tags Analytics
+// @Accept json
+// @Produce json
+// @Security ApiKeyAuth
+// @Param project_id query string true "Project ID"
+// @Param time_range query string true "Time range" Enums(last_hour, today, last_7_days, last_30_days, last_90_days)
+// @Success 200 {object} types.CohortAnalysisResponse "Cohort analysis data"
+// @Failure 400 {object} map[string]interface{} "Invalid request parameters"
+// @Failure 401 {object} map[string]interface{} "Unauthorized - Invalid or missing JWT token"
+// @Failure 500 {object} map[string]interface{} "Internal server error"
+// @Router /api/v1/analytics/retention/cohorts [get]
+func (s *AnalyticsService) GetCohortAnalysis(c *ctx.Ctx) (*types.CohortAnalysisResponse, error) {
+	var req types.CohortAnalysisRequest
+	if err := c.Echo.Bind(&req); err != nil {
+		return nil, echo.NewHTTPError(400, "Invalid request parameters")
+	}
+
+	if req.TimeRange == "" {
+		req.TimeRange = types.TimeRangeLast90Days
+	}
+
+	cohorts, err := s.data.GetCohortAnalysis(c.Echo.Request().Context(), req.ProjectID, req.TimeRange)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get cohort analysis: %w", err)
+	}
+
+	return cohorts, nil
+}
+
+// GetDashboardMetrics returns combined key metrics for a dashboard
+// @Summary Get dashboard metrics
+// @Description Get combined key metrics including sessions, active users, bounce rate, and retention for dashboard display
+// @Tags Analytics
+// @Accept json
+// @Produce json
+// @Security ApiKeyAuth
+// @Param project_id query string true "Project ID"
+// @Param time_range query string true "Time range" Enums(last_hour, today, last_7_days, last_30_days, last_90_days)
+// @Success 200 {object} types.DashboardMetricsResponse "Dashboard metrics"
+// @Failure 400 {object} map[string]interface{} "Invalid request parameters"
+// @Failure 401 {object} map[string]interface{} "Unauthorized - Invalid or missing JWT token"
+// @Failure 500 {object} map[string]interface{} "Internal server error"
+// @Router /api/v1/analytics/dashboard [get]
+func (s *AnalyticsService) GetDashboardMetrics(c *ctx.Ctx) (*types.DashboardMetricsResponse, error) {
+	var req types.DashboardMetricsRequest
+	if err := c.Echo.Bind(&req); err != nil {
+		return nil, echo.NewHTTPError(400, "Invalid request parameters")
+	}
+
+	if req.TimeRange == "" {
+		req.TimeRange = types.TimeRangeLast7Days
+	}
+
+	dashboard, err := s.data.GetDashboardMetrics(c.Echo.Request().Context(), req.ProjectID, req.TimeRange)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get dashboard metrics: %w", err)
+	}
+
+	return dashboard, nil
+}

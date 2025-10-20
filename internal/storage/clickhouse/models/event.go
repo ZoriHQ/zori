@@ -13,6 +13,7 @@ type Event struct {
 	EventName              *string `ch:"event_name"`
 	ClientGeneratedEventID string  `ch:"client_generated_event_id"`
 	VisitorID              string  `ch:"visitor_id"`
+	SessionID              string  `ch:"session_id"`
 
 	// Timestamps
 	ClientTimestampUTC time.Time `ch:"client_timestamp_utc"`

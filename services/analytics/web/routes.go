@@ -20,4 +20,19 @@ func RegisterRoutes(s *server.Server, analyticsService *services.AnalyticsServic
 
 	// Events endpoints
 	server.GroupGET(analyticsRouteGroup, "/events/recent", analyticsService.GetRecentEvents)
+
+	// Session endpoints
+	server.GroupGET(analyticsRouteGroup, "/sessions/metrics", analyticsService.GetSessionMetrics)
+	server.GroupGET(analyticsRouteGroup, "/sessions/bounce-rate", analyticsService.GetBounceRate)
+
+	// User activity endpoints
+	server.GroupGET(analyticsRouteGroup, "/users/active", analyticsService.GetActiveUsers)
+
+	// Retention endpoints
+	server.GroupGET(analyticsRouteGroup, "/retention/return-rate", analyticsService.GetReturnRate)
+	server.GroupGET(analyticsRouteGroup, "/retention/churn-rate", analyticsService.GetChurnRate)
+	server.GroupGET(analyticsRouteGroup, "/retention/cohorts", analyticsService.GetCohortAnalysis)
+
+	// Dashboard endpoint
+	server.GroupGET(analyticsRouteGroup, "/dashboard", analyticsService.GetDashboardMetrics)
 }
