@@ -24,7 +24,8 @@ type Event struct {
 	IP          string `ch:"ip"`
 	ReferrerURL string `ch:"referrer_url"`
 	PageURL     string `ch:"page_url"`
-	PathPath    string `ch:"path_path"`
+	PagePath    string `ch:"page_path"`
+	Host        string `ch:"host"` // Domain name (e.g., "mention.click")
 
 	// Processed Request Medata
 	ReferrerDomain *string `ch:"referrer_domain"`
@@ -34,10 +35,14 @@ type Event struct {
 	OsName      *string `ch:"os_name"`
 	DeviceType  *string `ch:"device_type"`
 
-	// Interaction data
-	ClickOn        *string  `ch:"click_on"`
-	ClickPositionX *float64 `ch:"click_position_x"`
-	ClickPositionY *float64 `ch:"click_position_y"`
+	// Interaction data - Click element details
+	ClickElementTag       *string `ch:"click_element_tag"`       // HTML tag of clicked element
+	ClickElementSelector  *string `ch:"click_element_selector"`  // CSS selector of clicked element
+	ClickElementText      *string `ch:"click_element_text"`      // Text content of clicked element
+	ClickPositionX        *float64 `ch:"click_position_x"`        // X coordinate of click
+	ClickPositionY        *float64 `ch:"click_position_y"`        // Y coordinate of click
+	ClickScreenWidth      *uint16  `ch:"click_screen_width"`      // Browser viewport width
+	ClickScreenHeight     *uint16  `ch:"click_screen_height"`     // Browser viewport height
 
 	//UTM parameters
 	UTMParameters map[string]string `ch:"utm_parameters"`

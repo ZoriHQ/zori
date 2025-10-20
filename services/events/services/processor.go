@@ -93,13 +93,28 @@ func (p *Processor) Start() error {
 		}
 
 		var (
-			clickPositionX *float64
-			clickPositionY *float64
+			clickPositionX     *float64
+			clickPositionY     *float64
+			clickScreenWidth   *uint16
+			clickScreenHeight  *uint16
+			clickElementTag    *string
+			clickElementSelector *string
+			clickElementText   *string
 		)
-		if eventFrame.ClickPosition != nil && len(*eventFrame.ClickPosition) > 0 {
-			pos := *eventFrame.ClickPosition
-			clickPositionX = &pos[0]
-			clickPositionY = &pos[1]
+
+		// Handle new click position format
+		if eventFrame.ClickPosition != nil {
+			clickPositionX = &eventFrame.ClickPosition.X
+			clickPositionY = &eventFrame.ClickPosition.Y
+			clickScreenWidth = &eventFrame.ClickPosition.ScreenWidth
+			clickScreenHeight = &eventFrame.ClickPosition.ScreenHeight
+		}
+
+		// Handle new click element format
+		if eventFrame.ClickElement != nil {
+			clickElementTag = &eventFrame.ClickElement.Tag
+			clickElementSelector = &eventFrame.ClickElement.Selector
+			clickElementText = &eventFrame.ClickElement.Text
 		}
 
 		// eventModelClick := models.Event{
@@ -131,9 +146,13 @@ func (p *Processor) Start() error {
 
 		if err := p.clickDb.Db().AsyncInsert(context.Background(),
 			`INSERT INTO events (
-				ip, visitor_id, session_id, browser_name, os_name, device_type, client_generated_event_id, event_name, location_country_iso, location_city, client_timestamp_utc,
-				server_timestamp_utc, user_agent, host, page_url, page_path, referrer_url, referrer_domain, referrer_path, utm_parameters, click_on, click_position_x, click_position_y, project_id,
-				organization_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, true,
+				ip, visitor_id, session_id, browser_name, os_name, device_type, client_generated_event_id, event_name,
+				location_country_iso, location_city, client_timestamp_utc, server_timestamp_utc, user_agent, host,
+				page_url, page_path, referrer_url, referrer_domain, referrer_path, utm_parameters,
+				click_element_tag, click_element_selector, click_element_text,
+				click_position_x, click_position_y, click_screen_width, click_screen_height,
+				project_id, organization_id
+			) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, true,
 			eventFrame.IP,
 			eventFrame.VisitorID,
 			eventFrame.SessionID,
@@ -154,9 +173,13 @@ func (p *Processor) Start() error {
 			eventFrame.ReferredDomain,
 			eventFrame.ReferrerPath,
 			eventFrame.UTMParameters,
-			eventFrame.ClickOn,
+			clickElementTag,
+			clickElementSelector,
+			clickElementText,
 			clickPositionX,
 			clickPositionY,
+			clickScreenWidth,
+			clickScreenHeight,
 			eventFrame.ProjectID,
 			eventFrame.OrganizationID,
 		); err != nil {

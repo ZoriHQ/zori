@@ -2,6 +2,21 @@ package types
 
 import "time"
 
+// ClickElement represents detailed information about a clicked element
+type ClickElement struct {
+	Tag      string `json:"tag"`      // HTML tag name (e.g., "button", "a", "div")
+	Selector string `json:"selector"` // CSS selector (e.g., "#submit-btn", ".cta-button")
+	Text     string `json:"text"`     // Text content of the element
+}
+
+// ClickPosition represents the exact position of a click event
+type ClickPosition struct {
+	X            float64 `json:"x"`             // X coordinate of the click
+	Y            float64 `json:"y"`             // Y coordinate of the click
+	ScreenWidth  uint16  `json:"screen_width"`  // Browser viewport width
+	ScreenHeight uint16  `json:"screen_height"` // Browser viewport height
+}
+
 // ClientEventV1 represents an event sent from a tracking script to Zori for ingestion.
 type ClientEventV1 struct {
 	// EventName is a name of the event, it can be nil if the event is not a custom event.
@@ -19,16 +34,18 @@ type ClientEventV1 struct {
 	UserAgent string `json:"user_agent"`
 	IP        string `json:"ip"`
 	// Referrer is the URL of the page that linked to the current page.
-	// Used to determine the source of traffic
-	Referrer string `json:"referrer"`
-	PageURL  string `json:"page_url"`
-	Host     string `json:"host"`
-	// ClickOn represents the element that was clicked on.
-	// ClickOn is used to help us build custom funnels and goals for user conversion.
-	ClickOn *string `json:"click_on"`
-	// ClickPosition represents the position of the click on the element.
-	// ClickPosition is used to track the exact location of the click within the element in order to build heatmaps and analyze user behavior.
-	ClickPosition    *[]float64        `json:"click_position"`
+	// Used to determine the source of traffic (can be null)
+	Referrer *string `json:"referrer"`
+	// PageURL is the path of the current page (e.g., "/", "/about")
+	PageURL string `json:"page_url"`
+	// Host is the domain name (e.g., "mention.click", "example.com")
+	Host string `json:"host"`
+	// ClickElement contains detailed information about the clicked element
+	// Used to build custom funnels and goals for user conversion
+	ClickElement *ClickElement `json:"click_element"`
+	// ClickPosition represents the exact position of the click within the viewport
+	// Used to build heatmaps and analyze user behavior
+	ClickPosition    *ClickPosition    `json:"click_position"`
 	UTMParameters    map[string]string `json:"utm_parameters"`
 	CustomProperties map[string]any    `json:"custom_properties"`
 }
