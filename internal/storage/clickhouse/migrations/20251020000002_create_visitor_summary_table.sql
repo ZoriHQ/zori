@@ -14,8 +14,8 @@ CREATE TABLE IF NOT EXISTS visitor_summary (
     last_seen SimpleAggregateFunction(max, DateTime64(3, 'UTC')),
 
     -- Aggregate metrics
-    total_sessions AggregateFunction(uniq, String),
-    total_events AggregateFunction(count, String),
+    total_sessions SimpleAggregateFunction(sum, UInt64),
+    total_events SimpleAggregateFunction(sum, UInt64),
 
     -- Location (from most recent event)
     location_country_iso SimpleAggregateFunction(anyLast, Nullable(String)),
@@ -52,8 +52,8 @@ SELECT
     organization_id,
     minSimpleState(client_timestamp_utc) as first_seen,
     maxSimpleState(client_timestamp_utc) as last_seen,
-    uniqState(session_id) as total_sessions,
-    countState(client_generated_event_id) as total_events,
+    sumSimpleState(toUInt64(session_id != '' ? 1 : 0)) as total_sessions,
+    sumSimpleState(toUInt64(1)) as total_events,
     anyLastSimpleState(location_country_iso) as location_country_iso,
     anyLastSimpleState(location_city) as location_city,
     anyLastSimpleState(device_type) as device_type,

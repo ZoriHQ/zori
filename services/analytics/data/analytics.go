@@ -573,9 +573,9 @@ func (a *AnalyticsData) GetBounceRate(ctx context.Context, projectID string, tim
 func (a *AnalyticsData) GetActiveUsers(ctx context.Context, projectID string) (*types.ActiveUsersResponse, error) {
 	query := `
 		SELECT
-			uniqMergeIf(total_sessions, maxMerge(last_seen) >= now() - INTERVAL 1 DAY) as dau,
-			uniqMergeIf(total_sessions, maxMerge(last_seen) >= now() - INTERVAL 7 DAY) as wau,
-			uniqMergeIf(total_sessions, maxMerge(last_seen) >= now() - INTERVAL 30 DAY) as mau
+			countIf(last_seen >= now() - INTERVAL 1 DAY) as dau,
+			countIf(last_seen >= now() - INTERVAL 7 DAY) as wau,
+			countIf(last_seen >= now() - INTERVAL 30 DAY) as mau
 		FROM visitor_summary
 		WHERE project_id = ?
 	`
@@ -600,13 +600,12 @@ func (a *AnalyticsData) GetReturnRate(ctx context.Context, projectID string, tim
 		WITH user_stats AS (
 			SELECT
 				visitor_id,
-				uniqMerge(total_sessions) as session_count,
-				minMerge(first_seen) as first_seen,
-				maxMerge(last_seen) as last_seen
+				total_sessions as session_count,
+				first_seen as first_seen,
+				last_seen as last_seen
 			FROM visitor_summary
 			WHERE project_id = ?
-				AND minMerge(first_seen) >= ?
-			GROUP BY visitor_id
+				AND first_seen >= ?
 		)
 		SELECT
 			COUNT(DISTINCT visitor_id) as total_users,
@@ -669,12 +668,11 @@ func (a *AnalyticsData) GetChurnRate(ctx context.Context, projectID string, time
 		WITH user_stats AS (
 			SELECT
 				visitor_id,
-				minMerge(first_seen) as first_seen,
-				maxMerge(last_seen) as last_seen
+				first_seen as first_seen,
+				last_seen as last_seen
 			FROM visitor_summary
 			WHERE project_id = ?
-				AND minMerge(first_seen) >= ?
-			GROUP BY visitor_id
+				AND first_seen >= ?
 		)
 		SELECT
 			COUNT(DISTINCT visitor_id) as total_users,
@@ -711,13 +709,12 @@ func (a *AnalyticsData) GetCohortAnalysis(ctx context.Context, projectID string,
 		WITH user_cohorts AS (
 			SELECT
 				visitor_id,
-				toStartOfWeek(minMerge(first_seen)) as cohort_week,
-				minMerge(first_seen) as first_seen,
-				maxMerge(last_seen) as last_seen
+				toStartOfWeek(first_seen) as cohort_week,
+				first_seen as first_seen,
+				last_seen as last_seen
 			FROM visitor_summary
 			WHERE project_id = ?
-				AND minMerge(first_seen) >= ?
-			GROUP BY visitor_id
+				AND first_seen >= ?
 		)
 		SELECT
 			cohort_week,
