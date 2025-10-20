@@ -20,6 +20,92 @@
     }
   ],
   "paths": {
+    "/api/v1/analytics/dashboard": {
+      "get": {
+        "parameters": [
+          {
+            "description": "Project ID",
+            "in": "query",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Time range",
+            "in": "query",
+            "name": "time_range",
+            "required": true,
+            "schema": {
+              "enum": [
+                "last_hour",
+                "today",
+                "last_7_days",
+                "last_30_days",
+                "last_90_days"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/types.DashboardMetricsResponse"
+                }
+              }
+            },
+            "description": "Dashboard metrics"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Invalid request parameters"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Unauthorized - Invalid or missing JWT token"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "tags": [
+          "Analytics"
+        ],
+        "description": "Get combined key metrics including sessions, active users, bounce rate, and retention for dashboard display",
+        "summary": "Get dashboard metrics"
+      }
+    },
     "/api/v1/analytics/events/recent": {
       "get": {
         "parameters": [
@@ -96,6 +182,522 @@
         ],
         "description": "Get a list of the most recent events (default: 15 events)",
         "summary": "Get recent events"
+      }
+    },
+    "/api/v1/analytics/retention/churn-rate": {
+      "get": {
+        "parameters": [
+          {
+            "description": "Project ID",
+            "in": "query",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Time range",
+            "in": "query",
+            "name": "time_range",
+            "required": true,
+            "schema": {
+              "enum": [
+                "last_hour",
+                "today",
+                "last_7_days",
+                "last_30_days",
+                "last_90_days"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Days of inactivity to consider churned (default: 30)",
+            "in": "query",
+            "name": "churn_threshold_days",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/types.ChurnRateResponse"
+                }
+              }
+            },
+            "description": "Churn rate metrics"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Invalid request parameters"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Unauthorized - Invalid or missing JWT token"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "tags": [
+          "Analytics"
+        ],
+        "description": "Get metrics about user churn based on inactivity threshold",
+        "summary": "Get churn rate"
+      }
+    },
+    "/api/v1/analytics/retention/cohorts": {
+      "get": {
+        "parameters": [
+          {
+            "description": "Project ID",
+            "in": "query",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Time range",
+            "in": "query",
+            "name": "time_range",
+            "required": true,
+            "schema": {
+              "enum": [
+                "last_hour",
+                "today",
+                "last_7_days",
+                "last_30_days",
+                "last_90_days"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/types.CohortAnalysisResponse"
+                }
+              }
+            },
+            "description": "Cohort analysis data"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Invalid request parameters"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Unauthorized - Invalid or missing JWT token"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "tags": [
+          "Analytics"
+        ],
+        "description": "Get cohort retention analysis showing how user groups retain over time",
+        "summary": "Get cohort analysis"
+      }
+    },
+    "/api/v1/analytics/retention/return-rate": {
+      "get": {
+        "parameters": [
+          {
+            "description": "Project ID",
+            "in": "query",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Time range",
+            "in": "query",
+            "name": "time_range",
+            "required": true,
+            "schema": {
+              "enum": [
+                "last_hour",
+                "today",
+                "last_7_days",
+                "last_30_days",
+                "last_90_days"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/types.ReturnRateResponse"
+                }
+              }
+            },
+            "description": "Return rate metrics"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Invalid request parameters"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Unauthorized - Invalid or missing JWT token"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "tags": [
+          "Analytics"
+        ],
+        "description": "Get metrics about user return rate and time between sessions",
+        "summary": "Get return rate"
+      }
+    },
+    "/api/v1/analytics/sessions/bounce-rate": {
+      "get": {
+        "parameters": [
+          {
+            "description": "Project ID",
+            "in": "query",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Time range",
+            "in": "query",
+            "name": "time_range",
+            "required": true,
+            "schema": {
+              "enum": [
+                "last_hour",
+                "today",
+                "last_7_days",
+                "last_30_days",
+                "last_90_days"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Limit for per-page breakdown (default: 20)",
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/types.BounceRateResponse"
+                }
+              }
+            },
+            "description": "Bounce rate metrics"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Invalid request parameters"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Unauthorized - Invalid or missing JWT token"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "tags": [
+          "Analytics"
+        ],
+        "description": "Get bounce rate metrics including overall bounce rate and per-page breakdown",
+        "summary": "Get bounce rate"
+      }
+    },
+    "/api/v1/analytics/sessions/metrics": {
+      "get": {
+        "parameters": [
+          {
+            "description": "Project ID",
+            "in": "query",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Time range",
+            "in": "query",
+            "name": "time_range",
+            "required": true,
+            "schema": {
+              "enum": [
+                "last_hour",
+                "today",
+                "last_7_days",
+                "last_30_days",
+                "last_90_days"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/types.SessionMetricsResponse"
+                }
+              }
+            },
+            "description": "Session metrics"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Invalid request parameters"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Unauthorized - Invalid or missing JWT token"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "tags": [
+          "Analytics"
+        ],
+        "description": "Get session metrics including average duration and pages per session",
+        "summary": "Get session metrics"
+      }
+    },
+    "/api/v1/analytics/users/active": {
+      "get": {
+        "parameters": [
+          {
+            "description": "Project ID",
+            "in": "query",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/types.ActiveUsersResponse"
+                }
+              }
+            },
+            "description": "Active user metrics"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Invalid request parameters"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Unauthorized - Invalid or missing JWT token"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "tags": [
+          "Analytics"
+        ],
+        "description": "Get daily, weekly, and monthly active user counts",
+        "summary": "Get active users"
       }
     },
     "/api/v1/analytics/visitors/country": {
@@ -1643,6 +2245,105 @@
         ],
         "type": "object"
       },
+      "types.ActiveUsersResponse": {
+        "properties": {
+          "dau": {
+            "type": "integer"
+          },
+          "mau": {
+            "type": "integer"
+          },
+          "wau": {
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "types.BounceRateByPageMetric": {
+        "properties": {
+          "bounce_rate": {
+            "type": "number"
+          },
+          "page": {
+            "type": "string"
+          },
+          "sessions": {
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "types.BounceRateResponse": {
+        "properties": {
+          "by_page": {
+            "items": {
+              "$ref": "#/components/schemas/types.BounceRateByPageMetric"
+            },
+            "type": "array"
+          },
+          "overall_bounce_rate": {
+            "type": "number"
+          }
+        },
+        "type": "object"
+      },
+      "types.ChurnRateResponse": {
+        "properties": {
+          "churn_rate_percent": {
+            "type": "number"
+          },
+          "churn_threshold_days": {
+            "type": "integer"
+          },
+          "churned_users": {
+            "type": "integer"
+          },
+          "total_users": {
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "types.CohortAnalysisResponse": {
+        "properties": {
+          "cohorts": {
+            "items": {
+              "$ref": "#/components/schemas/types.CohortData"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object"
+      },
+      "types.CohortData": {
+        "properties": {
+          "cohort_period": {
+            "type": "string"
+          },
+          "cohort_size": {
+            "type": "integer"
+          },
+          "month_1_retention": {
+            "type": "number"
+          },
+          "month_2_retention": {
+            "type": "number"
+          },
+          "month_3_retention": {
+            "type": "number"
+          },
+          "week_1_retention": {
+            "type": "number"
+          },
+          "week_2_retention": {
+            "type": "number"
+          },
+          "week_4_retention": {
+            "type": "number"
+          }
+        },
+        "type": "object"
+      },
       "types.CountryDataPoint": {
         "properties": {
           "country_code": {
@@ -1676,6 +2377,48 @@
           "name",
           "website_url"
         ],
+        "type": "object"
+      },
+      "types.DashboardMetricsResponse": {
+        "properties": {
+          "avg_pages_per_session": {
+            "type": "number"
+          },
+          "avg_session_duration_seconds": {
+            "type": "number"
+          },
+          "bounce_rate": {
+            "description": "Engagement metrics",
+            "type": "number"
+          },
+          "dau": {
+            "description": "Active users",
+            "type": "integer"
+          },
+          "mau": {
+            "type": "integer"
+          },
+          "return_rate": {
+            "type": "number"
+          },
+          "sessions_today": {
+            "description": "Sessions",
+            "type": "integer"
+          },
+          "total_events": {
+            "description": "Total metrics",
+            "type": "integer"
+          },
+          "total_sessions_in_period": {
+            "type": "integer"
+          },
+          "unique_visitors": {
+            "type": "integer"
+          },
+          "wau": {
+            "type": "integer"
+          }
+        },
         "type": "object"
       },
       "types.EventsOverTimeDataPoint": {
@@ -1747,6 +2490,37 @@
             "type": "array"
           },
           "total": {
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "types.ReturnRateResponse": {
+        "properties": {
+          "avg_time_between_sessions_hours": {
+            "type": "number"
+          },
+          "return_rate_percent": {
+            "type": "number"
+          },
+          "returning_users": {
+            "type": "integer"
+          },
+          "total_users": {
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "types.SessionMetricsResponse": {
+        "properties": {
+          "average_pages_per_session": {
+            "type": "number"
+          },
+          "average_session_duration_seconds": {
+            "type": "number"
+          },
+          "total_sessions": {
             "type": "integer"
           }
         },
