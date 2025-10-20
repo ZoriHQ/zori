@@ -72,11 +72,11 @@ DROP VIEW IF EXISTS visitor_summary_mv;
 -- +goose StatementEnd
 
 -- +goose StatementBegin
-DROP INDEX IF EXISTS idx_visitor_summary_first_seen;
+DROP INDEX IF EXISTS idx_visitor_summary_first_seen ON visitor_summary;
 -- +goose StatementEnd
 
 -- +goose StatementBegin
-DROP INDEX IF EXISTS idx_visitor_summary_last_seen;
+DROP INDEX IF EXISTS idx_visitor_summary_last_seen ON visitor_summary;
 -- +goose StatementEnd
 
 -- +goose StatementBegin

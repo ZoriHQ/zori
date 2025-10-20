@@ -481,12 +481,12 @@ func (a *AnalyticsData) GetSessionMetrics(ctx context.Context, projectID string,
 	query := `
 		SELECT
 			COUNT(*) as total_sessions,
-			AVG(dateDiff('second', minMerge(started_at), maxMerge(ended_at))) as avg_duration_seconds,
-			AVG(countMerge(page_count)) as avg_pages_per_session
+			AVG(dateDiff('second', started_at, ended_at)) as avg_duration_seconds,
+			AVG(page_count) as avg_pages_per_session
 		FROM sessions
 		WHERE project_id = ?
-			AND minMerge(started_at) >= ?
-			AND minMerge(started_at) <= now()
+			AND started_at >= ?
+			AND started_at <= now()
 	`
 
 	var response types.SessionMetricsResponse
@@ -516,11 +516,11 @@ func (a *AnalyticsData) GetBounceRate(ctx context.Context, projectID string, tim
 	// Overall bounce rate
 	overallQuery := `
 		SELECT
-			countIf(countMerge(page_count) <= 1) * 100.0 / COUNT(*) as bounce_rate
+			countIf(page_count <= 1) * 100.0 / COUNT(*) as bounce_rate
 		FROM sessions
 		WHERE project_id = ?
-			AND minMerge(started_at) >= ?
-			AND minMerge(started_at) <= now()
+			AND started_at >= ?
+			AND started_at <= now()
 	`
 
 	var overallBounceRate float64
@@ -532,13 +532,13 @@ func (a *AnalyticsData) GetBounceRate(ctx context.Context, projectID string, tim
 	// Bounce rate by page
 	byPageQuery := `
 		SELECT
-			anyMerge(entry_page) as page,
+			entry_page as page,
 			COUNT(*) as sessions,
-			countIf(countMerge(page_count) <= 1) * 100.0 / COUNT(*) as bounce_rate
+			countIf(page_count <= 1) * 100.0 / COUNT(*) as bounce_rate
 		FROM sessions
 		WHERE project_id = ?
-			AND minMerge(started_at) >= ?
-			AND minMerge(started_at) <= now()
+			AND started_at >= ?
+			AND started_at <= now()
 		GROUP BY entry_page
 		ORDER BY sessions DESC
 		LIMIT ?
@@ -626,12 +626,11 @@ func (a *AnalyticsData) GetReturnRate(ctx context.Context, projectID string, tim
 		WITH session_times AS (
 			SELECT
 				visitor_id,
-				minMerge(started_at) as session_start,
-				ROW_NUMBER() OVER (PARTITION BY visitor_id ORDER BY minMerge(started_at)) as session_num
+				started_at as session_start,
+				ROW_NUMBER() OVER (PARTITION BY visitor_id ORDER BY started_at) as session_num
 			FROM sessions
 			WHERE project_id = ?
-				AND minMerge(started_at) >= ?
-			GROUP BY visitor_id, session_id
+				AND started_at >= ?
 		),
 		session_gaps AS (
 			SELECT
@@ -825,7 +824,7 @@ func (a *AnalyticsData) GetDashboardMetrics(ctx context.Context, projectID strin
 		SELECT COUNT(*) as sessions_today
 		FROM sessions
 		WHERE project_id = ?
-			AND minMerge(started_at) >= ?
+			AND started_at >= ?
 	`
 	var sessionsToday uint64
 	todayRow := a.clickDb.Db().QueryRow(ctx, sessionsTodayQuery, projectID, todayStart)
