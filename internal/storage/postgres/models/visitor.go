@@ -1,45 +1,10 @@
 package models
 
 import (
-	"database/sql/driver"
-	"encoding/json"
-	"errors"
 	"time"
 
 	"github.com/uptrace/bun"
 )
-
-// JSONB represents a PostgreSQL JSONB column
-type JSONB map[string]interface{}
-
-// Value implements the driver.Valuer interface
-func (j JSONB) Value() (driver.Value, error) {
-	if j == nil {
-		return nil, nil
-	}
-	return json.Marshal(j)
-}
-
-// Scan implements the sql.Scanner interface
-func (j *JSONB) Scan(value interface{}) error {
-	if value == nil {
-		*j = nil
-		return nil
-	}
-
-	bytes, ok := value.([]byte)
-	if !ok {
-		return errors.New("failed to unmarshal JSONB value")
-	}
-
-	result := make(map[string]interface{})
-	if err := json.Unmarshal(bytes, &result); err != nil {
-		return err
-	}
-
-	*j = result
-	return nil
-}
 
 // Visitor represents an identified visitor in PostgreSQL
 type Visitor struct {
@@ -63,7 +28,7 @@ type Visitor struct {
 	Phone *string `bun:"phone"`
 
 	// Metadata stored as JSONB for flexibility
-	CustomTraits JSONB `bun:"custom_traits,type:jsonb,default:'{}'"`
+	CustomTraits map[string]interface{} `bun:"custom_traits,type:jsonb,default:'{}'"`
 
 	// Timestamps
 	FirstIdentifiedAt *time.Time `bun:"first_identified_at"`
