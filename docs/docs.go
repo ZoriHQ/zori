@@ -382,6 +382,156 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/analytics/revenue/by-utm": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Get revenue metrics grouped by UTM source, medium, or campaign",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Analytics"
+                ],
+                "summary": "Get revenue by UTM parameters",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Project ID",
+                        "name": "project_id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "last_hour",
+                            "today",
+                            "last_7_days",
+                            "last_30_days",
+                            "last_90_days"
+                        ],
+                        "type": "string",
+                        "description": "Time range",
+                        "name": "time_range",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "UTM type: source, medium, or campaign (default: source)",
+                        "name": "utm_type",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Revenue by UTM parameters",
+                        "schema": {
+                            "$ref": "#/definitions/types.RevenueByUTMResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request parameters",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - Invalid or missing JWT token",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/analytics/revenue/timeline": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Get revenue metrics over time for chart visualization",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Analytics"
+                ],
+                "summary": "Get revenue timeline",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Project ID",
+                        "name": "project_id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "last_hour",
+                            "today",
+                            "last_7_days",
+                            "last_30_days",
+                            "last_90_days"
+                        ],
+                        "type": "string",
+                        "description": "Time range",
+                        "name": "time_range",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Revenue timeline data",
+                        "schema": {
+                            "$ref": "#/definitions/types.RevenueTimelineResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request parameters",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - Invalid or missing JWT token",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/analytics/sessions/bounce-rate": {
             "get": {
                 "security": [
@@ -2506,6 +2656,14 @@ const docTemplate = `{
                 "avg_pages_per_session": {
                     "type": "number"
                 },
+                "avg_revenue_per_identified_customer": {
+                    "description": "Average revenue for identified visitors only",
+                    "type": "integer"
+                },
+                "avg_revenue_per_visitor": {
+                    "description": "Average revenue per paying visitor",
+                    "type": "integer"
+                },
                 "avg_session_duration_seconds": {
                     "type": "number"
                 },
@@ -2513,11 +2671,22 @@ const docTemplate = `{
                     "description": "Engagement metrics",
                     "type": "number"
                 },
+                "conversion_to_paying": {
+                    "description": "paying_visitors / unique_visitors * 100",
+                    "type": "number"
+                },
+                "currency": {
+                    "type": "string"
+                },
                 "dau": {
                     "description": "Active users",
                     "type": "integer"
                 },
                 "mau": {
+                    "type": "integer"
+                },
+                "paying_visitors": {
+                    "description": "Number of unique visitors who paid",
                     "type": "integer"
                 },
                 "return_rate": {
@@ -2529,6 +2698,14 @@ const docTemplate = `{
                 },
                 "total_events": {
                     "description": "Total metrics",
+                    "type": "integer"
+                },
+                "total_payments": {
+                    "description": "Count of successful payments",
+                    "type": "integer"
+                },
+                "total_revenue": {
+                    "description": "Revenue metrics",
                     "type": "integer"
                 },
                 "total_sessions_in_period": {
@@ -2619,11 +2796,35 @@ const docTemplate = `{
         "types.OriginDataPoint": {
             "type": "object",
             "properties": {
+                "avg_revenue_per_visitor": {
+                    "description": "Average revenue per paying visitor",
+                    "type": "integer"
+                },
+                "conversion_rate": {
+                    "description": "paying_visitors / unique_visitors * 100",
+                    "type": "number"
+                },
+                "currency": {
+                    "type": "string"
+                },
                 "origin": {
                     "type": "string"
                 },
+                "paying_visitors": {
+                    "type": "integer"
+                },
+                "payment_count": {
+                    "type": "integer"
+                },
                 "percentage": {
                     "type": "number"
+                },
+                "revenue_percentage": {
+                    "type": "number"
+                },
+                "total_revenue": {
+                    "description": "Revenue in smallest currency unit (cents)",
+                    "type": "integer"
                 },
                 "unique_visitors": {
                     "type": "integer"
@@ -2743,6 +2944,46 @@ const docTemplate = `{
                 }
             }
         },
+        "types.RevenueByUTMResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/types.UTMRevenueDataPoint"
+                    }
+                }
+            }
+        },
+        "types.RevenueTimelineDataPoint": {
+            "type": "object",
+            "properties": {
+                "currency": {
+                    "type": "string"
+                },
+                "payment_count": {
+                    "type": "integer"
+                },
+                "timestamp": {
+                    "type": "string"
+                },
+                "total_revenue": {
+                    "description": "Revenue in smallest currency unit (cents)",
+                    "type": "integer"
+                }
+            }
+        },
+        "types.RevenueTimelineResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/types.RevenueTimelineDataPoint"
+                    }
+                }
+            }
+        },
         "types.SessionMetricsResponse": {
             "type": "object",
             "properties": {
@@ -2761,6 +3002,9 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "browser_name": {
+                    "type": "string"
+                },
+                "currency": {
                     "type": "string"
                 },
                 "device_type": {
@@ -2784,6 +3028,13 @@ const docTemplate = `{
                 "location_country_iso": {
                     "type": "string"
                 },
+                "payment_count": {
+                    "type": "integer"
+                },
+                "total_revenue": {
+                    "description": "Total revenue in smallest currency unit (cents)",
+                    "type": "integer"
+                },
                 "user_id": {
                     "type": "string"
                 },
@@ -2803,6 +3054,42 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/types.TopVisitor"
                     }
+                }
+            }
+        },
+        "types.UTMRevenueDataPoint": {
+            "type": "object",
+            "properties": {
+                "avg_revenue_per_visitor": {
+                    "description": "Average revenue per paying visitor",
+                    "type": "integer"
+                },
+                "conversion_rate": {
+                    "description": "paying_visitors / unique_visitors * 100",
+                    "type": "number"
+                },
+                "currency": {
+                    "type": "string"
+                },
+                "paying_visitors": {
+                    "type": "integer"
+                },
+                "payment_count": {
+                    "type": "integer"
+                },
+                "revenue_percentage": {
+                    "type": "number"
+                },
+                "total_revenue": {
+                    "description": "Revenue in smallest currency unit (cents)",
+                    "type": "integer"
+                },
+                "unique_visitors": {
+                    "type": "integer"
+                },
+                "utm_value": {
+                    "description": "The UTM parameter value",
+                    "type": "string"
                 }
             }
         },
@@ -2910,9 +3197,42 @@ const docTemplate = `{
                 }
             }
         },
+        "types.VisitorPayment": {
+            "type": "object",
+            "properties": {
+                "amount": {
+                    "type": "integer"
+                },
+                "currency": {
+                    "type": "string"
+                },
+                "payment_id": {
+                    "type": "string"
+                },
+                "payment_timestamp": {
+                    "type": "string"
+                },
+                "product_name": {
+                    "type": "string"
+                },
+                "provider_type": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
         "types.VisitorProfileResponse": {
             "type": "object",
             "properties": {
+                "avg_order_value": {
+                    "description": "Average payment amount",
+                    "type": "integer"
+                },
+                "currency": {
+                    "type": "string"
+                },
                 "custom_traits": {
                     "type": "object",
                     "additionalProperties": true
@@ -2938,6 +3258,9 @@ const docTemplate = `{
                 "first_identified_at": {
                     "type": "string"
                 },
+                "first_payment_date": {
+                    "type": "string"
+                },
                 "first_referrer_url": {
                     "type": "string"
                 },
@@ -2953,6 +3276,9 @@ const docTemplate = `{
                 "last_identified_at": {
                     "type": "string"
                 },
+                "last_payment_date": {
+                    "type": "string"
+                },
                 "last_seen": {
                     "type": "string"
                 },
@@ -2965,10 +3291,23 @@ const docTemplate = `{
                 "name": {
                     "type": "string"
                 },
+                "payment_count": {
+                    "type": "integer"
+                },
+                "payments": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/types.VisitorPayment"
+                    }
+                },
                 "phone": {
                     "type": "string"
                 },
                 "total_events": {
+                    "type": "integer"
+                },
+                "total_revenue": {
+                    "description": "Revenue fields",
                     "type": "integer"
                 },
                 "user_id": {

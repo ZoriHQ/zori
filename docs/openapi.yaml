@@ -288,6 +288,121 @@ paths:
         - Analytics
       description: Get metrics about user return rate and time between sessions
       summary: Get return rate
+  /api/v1/analytics/revenue/by-utm:
+    get:
+      parameters:
+        - description: Project ID
+          in: query
+          name: project_id
+          required: true
+          schema:
+            type: string
+        - description: Time range
+          in: query
+          name: time_range
+          required: true
+          schema:
+            enum:
+              - last_hour
+              - today
+              - last_7_days
+              - last_30_days
+              - last_90_days
+            type: string
+        - description: 'UTM type: source, medium, or campaign (default: source)'
+          in: query
+          name: utm_type
+          schema:
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/types.RevenueByUTMResponse'
+          description: Revenue by UTM parameters
+        '400':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Invalid request parameters
+        '401':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Unauthorized - Invalid or missing JWT token
+        '500':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Internal server error
+      security:
+        - ApiKeyAuth: []
+      tags:
+        - Analytics
+      description: 'Get revenue metrics grouped by UTM source, medium, or campaign'
+      summary: Get revenue by UTM parameters
+  /api/v1/analytics/revenue/timeline:
+    get:
+      parameters:
+        - description: Project ID
+          in: query
+          name: project_id
+          required: true
+          schema:
+            type: string
+        - description: Time range
+          in: query
+          name: time_range
+          required: true
+          schema:
+            enum:
+              - last_hour
+              - today
+              - last_7_days
+              - last_30_days
+              - last_90_days
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/types.RevenueTimelineResponse'
+          description: Revenue timeline data
+        '400':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Invalid request parameters
+        '401':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Unauthorized - Invalid or missing JWT token
+        '500':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Internal server error
+      security:
+        - ApiKeyAuth: []
+      tags:
+        - Analytics
+      description: Get revenue metrics over time for chart visualization
+      summary: Get revenue timeline
   /api/v1/analytics/sessions/bounce-rate:
     get:
       parameters:
@@ -1865,15 +1980,29 @@ components:
       properties:
         avg_pages_per_session:
           type: number
+        avg_revenue_per_identified_customer:
+          description: Average revenue for identified visitors only
+          type: integer
+        avg_revenue_per_visitor:
+          description: Average revenue per paying visitor
+          type: integer
         avg_session_duration_seconds:
           type: number
         bounce_rate:
           description: Engagement metrics
           type: number
+        conversion_to_paying:
+          description: paying_visitors / unique_visitors * 100
+          type: number
+        currency:
+          type: string
         dau:
           description: Active users
           type: integer
         mau:
+          type: integer
+        paying_visitors:
+          description: Number of unique visitors who paid
           type: integer
         return_rate:
           type: number
@@ -1882,6 +2011,12 @@ components:
           type: integer
         total_events:
           description: Total metrics
+          type: integer
+        total_payments:
+          description: Count of successful payments
+          type: integer
+        total_revenue:
+          description: Revenue metrics
           type: integer
         total_sessions_in_period:
           type: integer
@@ -1941,10 +2076,27 @@ components:
       type: object
     types.OriginDataPoint:
       properties:
+        avg_revenue_per_visitor:
+          description: Average revenue per paying visitor
+          type: integer
+        conversion_rate:
+          description: paying_visitors / unique_visitors * 100
+          type: number
+        currency:
+          type: string
         origin:
           type: string
+        paying_visitors:
+          type: integer
+        payment_count:
+          type: integer
         percentage:
           type: number
+        revenue_percentage:
+          type: number
+        total_revenue:
+          description: Revenue in smallest currency unit (cents)
+          type: integer
         unique_visitors:
           type: integer
       type: object
@@ -2023,6 +2175,32 @@ components:
         total_users:
           type: integer
       type: object
+    types.RevenueByUTMResponse:
+      properties:
+        data:
+          items:
+            $ref: '#/components/schemas/types.UTMRevenueDataPoint'
+          type: array
+      type: object
+    types.RevenueTimelineDataPoint:
+      properties:
+        currency:
+          type: string
+        payment_count:
+          type: integer
+        timestamp:
+          type: string
+        total_revenue:
+          description: Revenue in smallest currency unit (cents)
+          type: integer
+      type: object
+    types.RevenueTimelineResponse:
+      properties:
+        data:
+          items:
+            $ref: '#/components/schemas/types.RevenueTimelineDataPoint'
+          type: array
+      type: object
     types.SessionMetricsResponse:
       properties:
         average_pages_per_session:
@@ -2035,6 +2213,8 @@ components:
     types.TopVisitor:
       properties:
         browser_name:
+          type: string
+        currency:
           type: string
         device_type:
           type: string
@@ -2050,6 +2230,11 @@ components:
           type: string
         location_country_iso:
           type: string
+        payment_count:
+          type: integer
+        total_revenue:
+          description: Total revenue in smallest currency unit (cents)
+          type: integer
         user_id:
           type: string
         visitor_id:
@@ -2063,6 +2248,31 @@ components:
           items:
             $ref: '#/components/schemas/types.TopVisitor'
           type: array
+      type: object
+    types.UTMRevenueDataPoint:
+      properties:
+        avg_revenue_per_visitor:
+          description: Average revenue per paying visitor
+          type: integer
+        conversion_rate:
+          description: paying_visitors / unique_visitors * 100
+          type: number
+        currency:
+          type: string
+        paying_visitors:
+          type: integer
+        payment_count:
+          type: integer
+        revenue_percentage:
+          type: number
+        total_revenue:
+          description: Revenue in smallest currency unit (cents)
+          type: integer
+        unique_visitors:
+          type: integer
+        utm_value:
+          description: The UTM parameter value
+          type: string
       type: object
     types.UniqueVisitorsDataPoint:
       properties:
@@ -2134,8 +2344,30 @@ components:
         referrer_url:
           type: string
       type: object
+    types.VisitorPayment:
+      properties:
+        amount:
+          type: integer
+        currency:
+          type: string
+        payment_id:
+          type: string
+        payment_timestamp:
+          type: string
+        product_name:
+          type: string
+        provider_type:
+          type: string
+        status:
+          type: string
+      type: object
     types.VisitorProfileResponse:
       properties:
+        avg_order_value:
+          description: Average payment amount
+          type: integer
+        currency:
+          type: string
         custom_traits:
           additionalProperties: true
           type: object
@@ -2153,6 +2385,8 @@ components:
           type: string
         first_identified_at:
           type: string
+        first_payment_date:
+          type: string
         first_referrer_url:
           type: string
         first_seen:
@@ -2163,6 +2397,8 @@ components:
           type: boolean
         last_identified_at:
           type: string
+        last_payment_date:
+          type: string
         last_seen:
           type: string
         location_city:
@@ -2171,9 +2407,18 @@ components:
           type: string
         name:
           type: string
+        payment_count:
+          type: integer
+        payments:
+          items:
+            $ref: '#/components/schemas/types.VisitorPayment'
+          type: array
         phone:
           type: string
         total_events:
+          type: integer
+        total_revenue:
+          description: Revenue fields
           type: integer
         user_id:
           type: string
