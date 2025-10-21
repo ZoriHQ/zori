@@ -51,12 +51,7 @@ func RegisterRoutes(
 			KeyPrefix: cachePrefix,
 		}))
 
-	server.GroupGET(analyticsRouteGroup, "/visitors/profile",
-		analyticsService.GetVisitorProfile,
-		cacheMiddleware.Middleware(middlewares.CacheConfig{
-			TTL:       mediumFrequencyTTL,
-			KeyPrefix: cachePrefix,
-		}))
+	server.GroupGET(analyticsRouteGroup, "/visitors/profile", analyticsService.GetVisitorProfile)
 
 	server.GroupGET(analyticsRouteGroup, "/visitors/timeline",
 		analyticsService.GetUniqueVisitorsTimeline,
