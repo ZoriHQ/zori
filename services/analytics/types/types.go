@@ -122,6 +122,13 @@ type VisitorProfileResponse struct {
 	VisitorID          string                    `json:"visitor_id"`
 	UserID             *string                   `json:"user_id,omitempty"`
 	ExternalID         *string                   `json:"external_id,omitempty"`
+	IsIdentified       bool                      `json:"is_identified"`
+	Email              *string                   `json:"email,omitempty"`
+	Name               *string                   `json:"name,omitempty"`
+	Phone              *string                   `json:"phone,omitempty"`
+	CustomTraits       map[string]interface{}    `json:"custom_traits,omitempty"`
+	FirstIdentifiedAt  *time.Time                `json:"first_identified_at,omitempty"`
+	LastIdentifiedAt   *time.Time                `json:"last_identified_at,omitempty"`
 	FirstSeen          time.Time                 `json:"first_seen"`
 	LastSeen           time.Time                 `json:"last_seen"`
 	TotalEvents        uint64                    `json:"total_events"`
@@ -273,4 +280,23 @@ type ActiveUsersRequest struct {
 type DashboardMetricsRequest struct {
 	ProjectID string    `query:"project_id" validate:"required"`
 	TimeRange TimeRange `query:"time_range" validate:"required"`
+}
+
+// ManualIdentifyRequest represents a manual identification request from the dashboard
+type ManualIdentifyRequest struct {
+	ProjectID            string                 `json:"project_id" validate:"required"`
+	VisitorID            string                 `json:"visitor_id" validate:"required"`
+	UserID               *string                `json:"user_id,omitempty"`
+	ExternalID           *string                `json:"external_id,omitempty"`
+	Email                *string                `json:"email,omitempty"`
+	Name                 *string                `json:"name,omitempty"`
+	Phone                *string                `json:"phone,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"additional_properties,omitempty"`
+}
+
+// ManualIdentifyResponse represents the response after manual identification
+type ManualIdentifyResponse struct {
+	Success   bool   `json:"success"`
+	Message   string `json:"message"`
+	VisitorID string `json:"visitor_id"`
 }

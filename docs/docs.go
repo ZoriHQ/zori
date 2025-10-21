@@ -734,6 +734,66 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/analytics/visitors/identify": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Manually identify a visitor by updating their profile information from the dashboard",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Analytics"
+                ],
+                "summary": "Manually identify a visitor",
+                "parameters": [
+                    {
+                        "description": "Identification details",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/types.ManualIdentifyRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Identification successful",
+                        "schema": {
+                            "$ref": "#/definitions/types.ManualIdentifyResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request parameters",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - Invalid or missing JWT token",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/analytics/visitors/origin": {
             "get": {
                 "security": [
@@ -2508,6 +2568,54 @@ const docTemplate = `{
                 }
             }
         },
+        "types.ManualIdentifyRequest": {
+            "type": "object",
+            "required": [
+                "project_id",
+                "visitor_id"
+            ],
+            "properties": {
+                "additional_properties": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "email": {
+                    "type": "string"
+                },
+                "external_id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "phone": {
+                    "type": "string"
+                },
+                "project_id": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "string"
+                },
+                "visitor_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "types.ManualIdentifyResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                },
+                "success": {
+                    "type": "boolean"
+                },
+                "visitor_id": {
+                    "type": "string"
+                }
+            }
+        },
         "types.OriginDataPoint": {
             "type": "object",
             "properties": {
@@ -2578,6 +2686,9 @@ const docTemplate = `{
                 "event_name": {
                     "type": "string"
                 },
+                "external_id": {
+                    "type": "string"
+                },
                 "location_city": {
                     "type": "string"
                 },
@@ -2591,6 +2702,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "referrer_url": {
+                    "type": "string"
+                },
+                "user_id": {
                     "type": "string"
                 },
                 "visitor_id": {
@@ -2655,6 +2769,9 @@ const docTemplate = `{
                 "event_count": {
                     "type": "integer"
                 },
+                "external_id": {
+                    "type": "string"
+                },
                 "first_seen": {
                     "type": "string"
                 },
@@ -2665,6 +2782,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "location_country_iso": {
+                    "type": "string"
+                },
+                "user_id": {
                     "type": "string"
                 },
                 "visitor_id": {
@@ -2793,6 +2913,13 @@ const docTemplate = `{
         "types.VisitorProfileResponse": {
             "type": "object",
             "properties": {
+                "custom_traits": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "email": {
+                    "type": "string"
+                },
                 "events": {
                     "type": "array",
                     "items": {
@@ -2805,6 +2932,12 @@ const docTemplate = `{
                         "$ref": "#/definitions/types.EventsOverTimeDataPoint"
                     }
                 },
+                "external_id": {
+                    "type": "string"
+                },
+                "first_identified_at": {
+                    "type": "string"
+                },
                 "first_referrer_url": {
                     "type": "string"
                 },
@@ -2812,6 +2945,12 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "first_traffic_origin": {
+                    "type": "string"
+                },
+                "is_identified": {
+                    "type": "boolean"
+                },
+                "last_identified_at": {
                     "type": "string"
                 },
                 "last_seen": {
@@ -2823,8 +2962,17 @@ const docTemplate = `{
                 "location_country_iso": {
                     "type": "string"
                 },
+                "name": {
+                    "type": "string"
+                },
+                "phone": {
+                    "type": "string"
+                },
                 "total_events": {
                     "type": "integer"
+                },
+                "user_id": {
+                    "type": "string"
                 },
                 "visitor_id": {
                     "type": "string"

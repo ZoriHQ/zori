@@ -3,18 +3,24 @@ package services
 import (
 	"fmt"
 	"zori/internal/ctx"
+	"zori/internal/storage/postgres/models"
 	"zori/services/analytics/data"
 	"zori/services/analytics/types"
+	ingestionData "zori/services/ingestion/data"
 
 	"github.com/labstack/echo/v4"
 )
 
 type AnalyticsService struct {
-	data *data.AnalyticsData
+	data              *data.AnalyticsData
+	visitorRepository *ingestionData.VisitorRepository
 }
 
-func NewAnalyticsService(data *data.AnalyticsData) *AnalyticsService {
-	return &AnalyticsService{data: data}
+func NewAnalyticsService(data *data.AnalyticsData, visitorRepository *ingestionData.VisitorRepository) *AnalyticsService {
+	return &AnalyticsService{
+		data:              data,
+		visitorRepository: visitorRepository,
+	}
 }
 
 // GetVisitorsByDevice returns visitor statistics grouped by device type over time
@@ -490,4 +496,77 @@ func (s *AnalyticsService) GetDashboardMetrics(c *ctx.Ctx) (*types.DashboardMetr
 	}
 
 	return dashboard, nil
+}
+
+// IdentifyVisitor manually identifies a visitor from the dashboard
+// @Summary Manually identify a visitor
+// @Description Manually identify a visitor by updating their profile information from the dashboard
+// @Tags Analytics
+// @Accept json
+// @Produce json
+// @Security ApiKeyAuth
+// @Param request body types.ManualIdentifyRequest true "Identification details"
+// @Success 200 {object} types.ManualIdentifyResponse "Identification successful"
+// @Failure 400 {object} map[string]interface{} "Invalid request parameters"
+// @Failure 401 {object} map[string]interface{} "Unauthorized - Invalid or missing JWT token"
+// @Failure 500 {object} map[string]interface{} "Internal server error"
+// @Router /api/v1/analytics/visitors/identify [post]
+func (s *AnalyticsService) IdentifyVisitor(c *ctx.Ctx) (*types.ManualIdentifyResponse, error) {
+	var req types.ManualIdentifyRequest
+	if err := c.Echo.Bind(&req); err != nil {
+		return nil, echo.NewHTTPError(400, "Invalid request parameters")
+	}
+
+	// Validate required fields
+	if req.ProjectID == "" {
+		return nil, echo.NewHTTPError(400, "project_id is required")
+	}
+	if req.VisitorID == "" {
+		return nil, echo.NewHTTPError(400, "visitor_id is required")
+	}
+
+	// At least one identity field should be provided
+	if req.UserID == nil && req.ExternalID == nil && req.Email == nil && req.Name == nil && req.Phone == nil && (req.AdditionalProperties == nil || len(req.AdditionalProperties) == 0) {
+		return nil, echo.NewHTTPError(400, "At least one identity field must be provided")
+	}
+
+	// Create visitor model for upsert
+	visitor := &models.Visitor{
+		VisitorID:    req.VisitorID,
+		ProjectID:    req.ProjectID,
+		UserID:       req.UserID,
+		ExternalID:   req.ExternalID,
+		Email:        req.Email,
+		Name:         req.Name,
+		Phone:        req.Phone,
+		CustomTraits: make(map[string]interface{}),
+	}
+
+	// Add additional properties to custom traits
+	if req.AdditionalProperties != nil && len(req.AdditionalProperties) > 0 {
+		visitor.CustomTraits = req.AdditionalProperties
+	}
+
+	// Note: We need to get the organization_id from the project
+	// For now, we'll fetch the existing visitor first or get it from context
+	// This is a simplification - in production you'd fetch project details
+	existingVisitor, err := s.visitorRepository.GetVisitorByID(c.Echo.Request().Context(), req.VisitorID)
+	if err == nil && existingVisitor != nil {
+		visitor.OrganizationID = existingVisitor.OrganizationID
+	} else {
+		// If visitor doesn't exist, we need to get organization_id from project
+		// For now, return an error - this should be handled properly
+		return nil, echo.NewHTTPError(400, "Cannot identify new visitor without project context. Visitor must have at least one event first.")
+	}
+
+	// Upsert visitor identity
+	if err := s.visitorRepository.UpsertVisitor(c.Echo.Request().Context(), visitor); err != nil {
+		return nil, fmt.Errorf("failed to identify visitor: %w", err)
+	}
+
+	return &types.ManualIdentifyResponse{
+		Success:   true,
+		Message:   "Visitor identified successfully",
+		VisitorID: req.VisitorID,
+	}, nil
 }

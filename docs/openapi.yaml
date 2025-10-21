@@ -560,6 +560,51 @@ paths:
         Get visitor counts grouped by device type (mobile, desktop, tablet) over
         a specified time range
       summary: Get visitors by device type
+  /api/v1/analytics/visitors/identify:
+    post:
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/types.ManualIdentifyResponse'
+          description: Identification successful
+        '400':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Invalid request parameters
+        '401':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Unauthorized - Invalid or missing JWT token
+        '500':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Internal server error
+      security:
+        - ApiKeyAuth: []
+      tags:
+        - Analytics
+      description: >-
+        Manually identify a visitor by updating their profile information from
+        the dashboard
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/types.ManualIdentifyRequest'
+        description: Identification details
+        required: true
+      summary: Manually identify a visitor
   /api/v1/analytics/visitors/origin:
     get:
       parameters:
@@ -1862,6 +1907,38 @@ components:
           example: 3
           type: integer
       type: object
+    types.ManualIdentifyRequest:
+      properties:
+        additional_properties:
+          additionalProperties: true
+          type: object
+        email:
+          type: string
+        external_id:
+          type: string
+        name:
+          type: string
+        phone:
+          type: string
+        project_id:
+          type: string
+        user_id:
+          type: string
+        visitor_id:
+          type: string
+      required:
+        - project_id
+        - visitor_id
+      type: object
+    types.ManualIdentifyResponse:
+      properties:
+        message:
+          type: string
+        success:
+          type: boolean
+        visitor_id:
+          type: string
+      type: object
     types.OriginDataPoint:
       properties:
         origin:
@@ -1909,6 +1986,8 @@ components:
           type: string
         event_name:
           type: string
+        external_id:
+          type: string
         location_city:
           type: string
         location_country_iso:
@@ -1918,6 +1997,8 @@ components:
         page_url:
           type: string
         referrer_url:
+          type: string
+        user_id:
           type: string
         visitor_id:
           type: string
@@ -1959,6 +2040,8 @@ components:
           type: string
         event_count:
           type: integer
+        external_id:
+          type: string
         first_seen:
           type: string
         last_seen:
@@ -1966,6 +2049,8 @@ components:
         location_city:
           type: string
         location_country_iso:
+          type: string
+        user_id:
           type: string
         visitor_id:
           type: string
@@ -2051,6 +2136,11 @@ components:
       type: object
     types.VisitorProfileResponse:
       properties:
+        custom_traits:
+          additionalProperties: true
+          type: object
+        email:
+          type: string
         events:
           items:
             $ref: '#/components/schemas/types.VisitorEvent'
@@ -2059,11 +2149,19 @@ components:
           items:
             $ref: '#/components/schemas/types.EventsOverTimeDataPoint'
           type: array
+        external_id:
+          type: string
+        first_identified_at:
+          type: string
         first_referrer_url:
           type: string
         first_seen:
           type: string
         first_traffic_origin:
+          type: string
+        is_identified:
+          type: boolean
+        last_identified_at:
           type: string
         last_seen:
           type: string
@@ -2071,8 +2169,14 @@ components:
           type: string
         location_country_iso:
           type: string
+        name:
+          type: string
+        phone:
+          type: string
         total_events:
           type: integer
+        user_id:
+          type: string
         visitor_id:
           type: string
       type: object

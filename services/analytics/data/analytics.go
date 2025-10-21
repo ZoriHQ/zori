@@ -2,18 +2,24 @@ package data
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"time"
 	"zori/internal/storage/clickhouse"
+	ingestionData "zori/services/ingestion/data"
 	"zori/services/analytics/types"
 )
 
 type AnalyticsData struct {
-	clickDb *clickhouse.ClickhouseDB
+	clickDb           *clickhouse.ClickhouseDB
+	visitorRepository *ingestionData.VisitorRepository
 }
 
-func NewAnalyticsData(clickDb *clickhouse.ClickhouseDB) *AnalyticsData {
-	return &AnalyticsData{clickDb: clickDb}
+func NewAnalyticsData(clickDb *clickhouse.ClickhouseDB, visitorRepository *ingestionData.VisitorRepository) *AnalyticsData {
+	return &AnalyticsData{
+		clickDb:           clickDb,
+		visitorRepository: visitorRepository,
+	}
 }
 
 // GetTimeRangeBounds returns the start time and interval for a given time range
@@ -425,6 +431,28 @@ func (a *AnalyticsData) GetVisitorProfile(ctx context.Context, projectID string,
 		eventsOverTime = append(eventsOverTime, dp)
 	}
 	profile.EventsOverTime = eventsOverTime
+
+	// Fetch visitor identity data from PostgreSQL
+	visitorIdentity, err := a.visitorRepository.GetVisitorByID(ctx, visitorID)
+	if err != nil && err != sql.ErrNoRows {
+		// Log error but don't fail the request - visitor might not be identified yet
+		fmt.Printf("Warning: failed to fetch visitor identity: %v\n", err)
+	}
+
+	// Populate identity fields if visitor is identified
+	if visitorIdentity != nil {
+		profile.IsIdentified = true
+		profile.UserID = visitorIdentity.UserID
+		profile.ExternalID = visitorIdentity.ExternalID
+		profile.Email = visitorIdentity.Email
+		profile.Name = visitorIdentity.Name
+		profile.Phone = visitorIdentity.Phone
+		profile.CustomTraits = visitorIdentity.CustomTraits
+		profile.FirstIdentifiedAt = visitorIdentity.FirstIdentifiedAt
+		profile.LastIdentifiedAt = visitorIdentity.LastIdentifiedAt
+	} else {
+		profile.IsIdentified = false
+	}
 
 	return &profile, nil
 }
