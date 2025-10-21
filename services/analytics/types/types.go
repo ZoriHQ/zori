@@ -78,6 +78,8 @@ type RecentEventsResponse struct {
 type RecentEvent struct {
 	EventName          *string   `json:"event_name"`
 	VisitorID          string    `json:"visitor_id"`
+	UserID             *string   `json:"user_id,omitempty"`
+	ExternalID         *string   `json:"external_id,omitempty"`
 	ClientTimestampUTC time.Time `json:"client_timestamp_utc"`
 	PageURL            string    `json:"page_url"`
 	PagePath           string    `json:"page_path"`
@@ -104,6 +106,8 @@ type TopVisitorsResponse struct {
 // TopVisitor represents a single active visitor
 type TopVisitor struct {
 	VisitorID          string    `json:"visitor_id"`
+	UserID             *string   `json:"user_id,omitempty"`
+	ExternalID         *string   `json:"external_id,omitempty"`
 	EventCount         uint64    `json:"event_count"`
 	LastSeen           time.Time `json:"last_seen"`
 	FirstSeen          time.Time `json:"first_seen"`
@@ -116,6 +120,8 @@ type TopVisitor struct {
 // VisitorProfileResponse represents a single visitor's profile
 type VisitorProfileResponse struct {
 	VisitorID          string                    `json:"visitor_id"`
+	UserID             *string                   `json:"user_id,omitempty"`
+	ExternalID         *string                   `json:"external_id,omitempty"`
 	FirstSeen          time.Time                 `json:"first_seen"`
 	LastSeen           time.Time                 `json:"last_seen"`
 	TotalEvents        uint64                    `json:"total_events"`

@@ -17,4 +17,7 @@ type ClientEventFrameV1 struct {
 	ReferrerPath   *string `json:"referrer_path"`
 
 	PagePath *string `json:"page_path"`
+
+	// Identity fields (processed from ClientEventV1)
+	EmailHash *string `json:"email_hash"` // SHA256 hash of email for privacy-safe storage
 }

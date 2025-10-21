@@ -44,6 +44,7 @@ func NewProcessor(natsStream *natsstream.Stream, clickDb *clickhouse.ClickhouseD
 		NewStagePage(),
 		NewStageUserAgent(),
 		NewStageReferrer(),
+		NewStageIdentity(),
 	}
 
 	p := &Processor{
@@ -151,8 +152,9 @@ func (p *Processor) Start() error {
 				page_url, page_path, referrer_url, referrer_domain, referrer_path, utm_parameters,
 				click_element_tag, click_element_selector, click_element_text,
 				click_position_x, click_position_y, click_screen_width, click_screen_height,
-				project_id, organization_id
-			) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, true,
+				project_id, organization_id,
+				user_id, external_id, email_hash
+			) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, true,
 			eventFrame.IP,
 			eventFrame.VisitorID,
 			eventFrame.SessionID,
@@ -182,6 +184,9 @@ func (p *Processor) Start() error {
 			clickScreenHeight,
 			eventFrame.ProjectID,
 			eventFrame.OrganizationID,
+			eventFrame.UserID,
+			eventFrame.ExternalID,
+			eventFrame.EmailHash,
 		); err != nil {
 			log.Printf("Error inserting event: %v", err)
 			msg.Nak()

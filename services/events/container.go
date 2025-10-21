@@ -10,14 +10,19 @@ import (
 func BuildEventsDIContainer() fx.Option {
 	return fx.Module("events",
 		fx.Provide(services.NewProcessor),
-		fx.Invoke(func(lc fx.Lifecycle, processorService *services.Processor) {
+		fx.Provide(services.NewIdentifyProcessor),
+		fx.Invoke(func(lc fx.Lifecycle, processorService *services.Processor, identifyProcessor *services.IdentifyProcessor) {
 			lc.Append(fx.Hook{
 				OnStart: func(ctx context.Context) error {
 					go processorService.Start()
+					go identifyProcessor.Start()
 					return nil
 				},
 				OnStop: func(ctx context.Context) error {
-					return processorService.Stop()
+					if err := processorService.Stop(); err != nil {
+						return err
+					}
+					return identifyProcessor.Stop()
 				},
 			})
 		}),
