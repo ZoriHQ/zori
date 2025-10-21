@@ -252,7 +252,13 @@ func (h *IngestionServer) Identify(ctx *fasthttp.RequestCtx) {
 	}
 
 	// Process identify event
-	go h.identifier.Identify(ctx, &project, &identifyEvent)
+	go func() {
+		err := h.identifier.Identify(ctx, &project, &identifyEvent)
+		if err != nil {
+			fmt.Println("Identify error: ", err)
+			return
+		}
+	}()
 
 	fmt.Fprintf(ctx, "IDENTIFIED %d", len(ctx.PostBody()))
 }
