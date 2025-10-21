@@ -14,6 +14,7 @@ import (
 func BuildPaymentsDIContainer() fx.Option {
 	return fx.Module("payments",
 		fx.Provide(data.NewPaymentProviderData),
+		fx.Provide(services.NewBackfillService),
 		fx.Provide(services.NewProviderManager),
 		fx.Provide(services.NewWebhookHandler),
 		fx.Provide(services.NewPaymentProcessor),

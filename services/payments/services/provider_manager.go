@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"time"
 	"zori/internal/ctx"
 	"zori/internal/storage/postgres/models"
 	"zori/internal/utils"
@@ -15,20 +16,23 @@ import (
 )
 
 type ProviderManager struct {
-	data          *data.PaymentProviderData
-	projectData   *projectsData.ProjectData
-	encryptor     *utils.Encryptor
+	data            *data.PaymentProviderData
+	projectData     *projectsData.ProjectData
+	encryptor       *utils.Encryptor
+	backfillService *BackfillService
 }
 
 func NewProviderManager(
 	data *data.PaymentProviderData,
 	projectData *projectsData.ProjectData,
 	encryptor *utils.Encryptor,
+	backfillService *BackfillService,
 ) *ProviderManager {
 	return &ProviderManager{
-		data:          data,
-		projectData:   projectData,
-		encryptor:     encryptor,
+		data:            data,
+		projectData:     projectData,
+		encryptor:       encryptor,
+		backfillService: backfillService,
 	}
 }
 
@@ -56,19 +60,16 @@ func (pm *ProviderManager) CreateProvider(c *ctx.Ctx) (*types.PaymentProviderRes
 		return nil, echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	// Verify project exists and belongs to organization
 	project, err := pm.projectData.GetProject(c.Echo.Request().Context(), req.ProjectID, c.OrgID())
 	if err != nil {
 		return nil, echo.NewHTTPError(http.StatusNotFound, "Project not found")
 	}
 
-	// Check if provider already exists for this project
 	existing, err := pm.data.GetProviderByProjectAndType(c.Echo.Request().Context(), req.ProjectID, req.ProviderType)
 	if err == nil && existing != nil {
 		return nil, echo.NewHTTPError(http.StatusConflict, "Provider already exists for this project")
 	}
 
-	// Encrypt sensitive data
 	encryptedAPIKey, err := pm.encryptor.Encrypt(req.APIKey)
 	if err != nil {
 		return nil, fmt.Errorf("failed to encrypt API key: %w", err)
@@ -79,7 +80,6 @@ func (pm *ProviderManager) CreateProvider(c *ctx.Ctx) (*types.PaymentProviderRes
 		return nil, fmt.Errorf("failed to encrypt webhook secret: %w", err)
 	}
 
-	// Create provider
 	provider := &models.PaymentProvider{
 		ProjectID:              project.ID,
 		OrganizationID:         project.OrganizationID,
@@ -91,6 +91,17 @@ func (pm *ProviderManager) CreateProvider(c *ctx.Ctx) (*types.PaymentProviderRes
 
 	if err := pm.data.CreateProvider(c.Echo.Request().Context(), provider); err != nil {
 		return nil, fmt.Errorf("failed to create provider: %w", err)
+	}
+
+	if req.ProviderType == models.ProviderTypeStripe && pm.backfillService != nil {
+		go func() {
+			ctx := context.Background()
+			startDate := time.Now().AddDate(0, -3, 0)
+
+			if err := pm.backfillService.BackfillStripePayments(ctx, provider, project, startDate); err != nil {
+				fmt.Printf("Backfill failed for provider %s: %v\n", provider.ID, err)
+			}
+		}()
 	}
 
 	c.Echo.Response().Status = http.StatusCreated
@@ -190,7 +201,6 @@ func (pm *ProviderManager) UpdateProvider(c *ctx.Ctx) (*types.PaymentProviderRes
 		return nil, echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	// Check if provider exists
 	exists, err := pm.data.ProviderExists(c.Echo.Request().Context(), providerID, c.OrgID())
 	if err != nil {
 		return nil, fmt.Errorf("failed to check provider existence: %w", err)
@@ -247,7 +257,6 @@ func (pm *ProviderManager) DeleteProvider(c *ctx.Ctx) (map[string]string, error)
 		return nil, echo.NewHTTPError(http.StatusBadRequest, "Provider ID is required")
 	}
 
-	// Check if provider exists
 	exists, err := pm.data.ProviderExists(c.Echo.Request().Context(), providerID, c.OrgID())
 	if err != nil {
 		return nil, fmt.Errorf("failed to check provider existence: %w", err)
@@ -265,17 +274,14 @@ func (pm *ProviderManager) DeleteProvider(c *ctx.Ctx) (map[string]string, error)
 	}, nil
 }
 
-// DecryptAPIKey is a helper to decrypt API keys (used by other services)
 func (pm *ProviderManager) DecryptAPIKey(encrypted string) (string, error) {
 	return pm.encryptor.Decrypt(encrypted)
 }
 
-// DecryptWebhookSecret is a helper to decrypt webhook secrets (used by other services)
 func (pm *ProviderManager) DecryptWebhookSecret(encrypted string) (string, error) {
 	return pm.encryptor.Decrypt(encrypted)
 }
 
-// GetProviderByProjectAndType retrieves a provider by project and type (used by webhook handler)
 func (pm *ProviderManager) GetProviderByProjectAndType(ctx context.Context, projectID string, providerType models.ProviderType) (*models.PaymentProvider, error) {
 	return pm.data.GetProviderByProjectAndType(ctx, projectID, providerType)
 }

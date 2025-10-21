@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"time"
 	"zori/internal/storage/clickhouse"
-	ingestionData "zori/services/ingestion/data"
 	"zori/services/analytics/types"
+	ingestionData "zori/services/ingestion/data"
 )
 
 type AnalyticsData struct {
@@ -85,38 +85,90 @@ func (a *AnalyticsData) GetVisitorsByDevice(ctx context.Context, projectID strin
 	return dataPoints, nil
 }
 
-// GetUniqueVisitorsByOrigin returns unique visitor counts grouped by traffic origin
+// GetUniqueVisitorsByOrigin returns unique visitor counts grouped by traffic origin with revenue data using first-touch attribution
+// This endpoint shows visitors who arrived in the time period AND revenue from payments made in the time period (attributed to origin)
 func (a *AnalyticsData) GetUniqueVisitorsByOrigin(ctx context.Context, projectID string, timeRange types.TimeRange) ([]types.OriginDataPoint, error) {
 	startTime, _, err := GetTimeRangeBounds(timeRange)
 	if err != nil {
 		return nil, err
 	}
 
+	// Step 1: Get all visitors who had events in the time period
+	// Step 2: Get their first-touch attribution (from whenever they first arrived)
+	// Step 3: Get ALL payments made in the time period, attributed to visitor's original source
 	query := `
-		WITH totals AS (
-			SELECT uniq(visitor_id) as total_visitors
+		WITH visitors_in_period AS (
+			SELECT DISTINCT visitor_id
 			FROM events
 			WHERE project_id = ?
 				AND client_timestamp_utc >= ?
 				AND client_timestamp_utc <= now()
+		),
+		totals AS (
+			SELECT COUNT(DISTINCT visitor_id) as total_visitors
+			FROM visitors_in_period
+		),
+		revenue_totals AS (
+			SELECT SUM(amount) as total_revenue
+			FROM payment_events
+			WHERE project_id = ?
+				AND payment_timestamp_utc >= ?
+				AND payment_timestamp_utc <= now()
+				AND payment_status = 'succeeded'
+		),
+		visitor_origins AS (
+			SELECT
+				ft.visitor_id,
+				CASE
+					WHEN argMinMerge(ft.first_referrer_domain) IS NULL OR argMinMerge(ft.first_referrer_domain) = '' THEN 'Direct'
+					ELSE argMinMerge(ft.first_referrer_domain)
+				END as origin
+			FROM visitor_first_touch_attribution ft
+			INNER JOIN visitors_in_period vip ON ft.visitor_id = vip.visitor_id
+			WHERE ft.project_id = ?
+			GROUP BY ft.visitor_id
 		)
 		SELECT
+			vo.origin,
+			uniq(vo.visitor_id) as unique_visitors,
+			(uniq(vo.visitor_id) * 100.0 / (SELECT total_visitors FROM totals)) as percentage,
+			COALESCE(SUM(p.amount), 0) as total_revenue,
 			CASE
-				WHEN referrer_domain IS NULL OR referrer_domain = '' THEN 'Direct'
-				ELSE referrer_domain
-			END as origin,
-			uniq(visitor_id) as unique_visitors,
-			(uniq(visitor_id) * 100.0 / (SELECT total_visitors FROM totals)) as percentage
-		FROM events
-		WHERE project_id = ?
-			AND client_timestamp_utc >= ?
-			AND client_timestamp_utc <= now()
-		GROUP BY origin
-		ORDER BY unique_visitors DESC
+				WHEN (SELECT total_revenue FROM revenue_totals) > 0
+				THEN (COALESCE(SUM(p.amount), 0) * 100.0 / (SELECT total_revenue FROM revenue_totals))
+				ELSE 0
+			END as revenue_percentage,
+			uniq(p.visitor_id) as paying_visitors,
+			CASE
+				WHEN uniq(vo.visitor_id) > 0
+				THEN (uniq(p.visitor_id) * 100.0 / uniq(vo.visitor_id))
+				ELSE 0
+			END as conversion_rate,
+			CASE
+				WHEN uniq(p.visitor_id) > 0
+				THEN COALESCE(SUM(p.amount), 0) / uniq(p.visitor_id)
+				ELSE 0
+			END as avg_revenue_per_visitor,
+			COUNT(p.payment_id) as payment_count,
+			any(p.currency) as currency
+		FROM visitor_origins vo
+		LEFT JOIN payment_events p
+			ON vo.visitor_id = p.visitor_id
+			AND p.payment_status = 'succeeded'
+			AND p.project_id = ?
+			AND p.payment_timestamp_utc >= ?
+			AND p.payment_timestamp_utc <= now()
+		GROUP BY vo.origin
+		ORDER BY total_revenue DESC
 		LIMIT 20
 	`
 
-	rows, err := a.clickDb.Db().Query(ctx, query, projectID, startTime, projectID, startTime)
+	rows, err := a.clickDb.Db().Query(ctx, query,
+		projectID, startTime, // visitors_in_period CTE
+		projectID, startTime, // revenue_totals CTE
+		projectID,            // visitor_origins CTE
+		projectID, startTime, // main query payment join
+	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query visitors by origin: %w", err)
 	}
@@ -125,7 +177,18 @@ func (a *AnalyticsData) GetUniqueVisitorsByOrigin(ctx context.Context, projectID
 	var dataPoints []types.OriginDataPoint
 	for rows.Next() {
 		var dp types.OriginDataPoint
-		if err := rows.Scan(&dp.Origin, &dp.UniqueVisitors, &dp.Percentage); err != nil {
+		if err := rows.Scan(
+			&dp.Origin,
+			&dp.UniqueVisitors,
+			&dp.Percentage,
+			&dp.TotalRevenue,
+			&dp.RevenuePercentage,
+			&dp.PayingVisitors,
+			&dp.ConversionRate,
+			&dp.AvgRevenuePerVisitor,
+			&dp.PaymentCount,
+			&dp.Currency,
+		); err != nil {
 			return nil, fmt.Errorf("failed to scan row: %w", err)
 		}
 		dataPoints = append(dataPoints, dp)
@@ -248,7 +311,6 @@ func (a *AnalyticsData) GetRecentEvents(ctx context.Context, projectID string, l
 	return events, nil
 }
 
-// GetTopVisitors returns the most active visitors for a project within a time range
 func (a *AnalyticsData) GetTopVisitors(ctx context.Context, projectID string, timeRange types.TimeRange, limit int) ([]types.TopVisitor, error) {
 	startTime, _, err := GetTimeRangeBounds(timeRange)
 	if err != nil {
@@ -261,24 +323,33 @@ func (a *AnalyticsData) GetTopVisitors(ctx context.Context, projectID string, ti
 
 	query := `
 		SELECT
-			visitor_id,
+			e.visitor_id,
 			count() as event_count,
-			max(client_timestamp_utc) as last_seen,
-			min(client_timestamp_utc) as first_seen,
-			any(location_country_iso) as location_country_iso,
-			any(location_city) as location_city,
-			any(device_type) as device_type,
-			any(browser_name) as browser_name
-		FROM events
-		WHERE project_id = ?
-			AND client_timestamp_utc >= ?
-			AND client_timestamp_utc <= now()
-		GROUP BY visitor_id
+			max(e.client_timestamp_utc) as last_seen,
+			min(e.client_timestamp_utc) as first_seen,
+			any(e.location_country_iso) as location_country_iso,
+			any(e.location_city) as location_city,
+			any(e.device_type) as device_type,
+			any(e.browser_name) as browser_name,
+			COALESCE(SUM(p.amount), 0) as total_revenue,
+			COUNT(p.payment_id) as payment_count,
+			any(p.currency) as currency
+		FROM events e
+		LEFT JOIN payment_events p
+			ON e.visitor_id = p.visitor_id
+			AND p.payment_status = 'succeeded'
+			AND p.project_id = ?
+			AND p.payment_timestamp_utc >= ?
+			AND p.payment_timestamp_utc <= now()
+		WHERE e.project_id = ?
+			AND e.client_timestamp_utc >= ?
+			AND e.client_timestamp_utc <= now()
+		GROUP BY e.visitor_id
 		ORDER BY event_count DESC
 		LIMIT ?
 	`
 
-	rows, err := a.clickDb.Db().Query(ctx, query, projectID, startTime, limit)
+	rows, err := a.clickDb.Db().Query(ctx, query, projectID, startTime, projectID, startTime, limit)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query top visitors: %w", err)
 	}
@@ -296,6 +367,9 @@ func (a *AnalyticsData) GetTopVisitors(ctx context.Context, projectID string, ti
 			&visitor.LocationCity,
 			&visitor.DeviceType,
 			&visitor.BrowserName,
+			&visitor.TotalRevenue,
+			&visitor.PaymentCount,
+			&visitor.Currency,
 		); err != nil {
 			return nil, fmt.Errorf("failed to scan row: %w", err)
 		}
@@ -431,6 +505,79 @@ func (a *AnalyticsData) GetVisitorProfile(ctx context.Context, projectID string,
 		eventsOverTime = append(eventsOverTime, dp)
 	}
 	profile.EventsOverTime = eventsOverTime
+
+	revenueQuery := `
+		SELECT
+			COALESCE(SUM(amount), 0) as total_revenue,
+			COUNT(*) as payment_count,
+			MIN(payment_timestamp_utc) as first_payment,
+			MAX(payment_timestamp_utc) as last_payment,
+			CASE
+				WHEN COUNT(*) > 0
+				THEN COALESCE(SUM(amount), 0) / COUNT(*)
+				ELSE 0
+			END as avg_order_value,
+			any(currency) as currency
+		FROM payment_events
+		WHERE project_id = ?
+			AND visitor_id = ?
+			AND payment_status = 'succeeded'
+	`
+
+	revenueRow := a.clickDb.Db().QueryRow(ctx, revenueQuery, projectID, visitorID)
+	if err := revenueRow.Scan(
+		&profile.TotalRevenue,
+		&profile.PaymentCount,
+		&profile.FirstPaymentDate,
+		&profile.LastPaymentDate,
+		&profile.AvgOrderValue,
+		&profile.Currency,
+	); err != nil {
+		// Set defaults if no payments found
+		profile.TotalRevenue = 0
+		profile.PaymentCount = 0
+		profile.AvgOrderValue = 0
+		profile.FirstPaymentDate = nil
+		profile.LastPaymentDate = nil
+	}
+
+	paymentsQuery := `
+		SELECT
+			payment_id,
+			amount,
+			currency,
+			payment_status,
+			product_name,
+			payment_timestamp_utc,
+			provider_type
+		FROM payment_events
+		WHERE project_id = ?
+			AND visitor_id = ?
+		ORDER BY payment_timestamp_utc DESC
+		LIMIT 20
+	`
+
+	paymentsRows, err := a.clickDb.Db().Query(ctx, paymentsQuery, projectID, visitorID)
+	if err == nil {
+		defer paymentsRows.Close()
+
+		var payments []types.VisitorPayment
+		for paymentsRows.Next() {
+			var payment types.VisitorPayment
+			if err := paymentsRows.Scan(
+				&payment.PaymentID,
+				&payment.Amount,
+				&payment.Currency,
+				&payment.Status,
+				&payment.ProductName,
+				&payment.PaymentTimestamp,
+				&payment.ProviderType,
+			); err == nil {
+				payments = append(payments, payment)
+			}
+		}
+		profile.Payments = payments
+	}
 
 	// Fetch visitor identity data from PostgreSQL
 	visitorIdentity, err := a.visitorRepository.GetVisitorByID(ctx, visitorID)
@@ -874,17 +1021,314 @@ func (a *AnalyticsData) GetDashboardMetrics(ctx context.Context, projectID strin
 		return nil, fmt.Errorf("failed to get totals: %w", err)
 	}
 
+	// Get revenue metrics
+	revenueQuery := `
+		SELECT
+			COALESCE(SUM(p.amount), 0) as total_revenue,
+			uniq(p.visitor_id) as paying_visitors,
+			COUNT(*) as total_payments,
+			CASE
+				WHEN uniq(p.visitor_id) > 0
+				THEN COALESCE(SUM(p.amount), 0) / uniq(p.visitor_id)
+				ELSE 0
+			END as avg_revenue_per_visitor,
+			any(p.currency) as currency
+		FROM payment_events p
+		WHERE p.project_id = ?
+			AND p.payment_timestamp_utc >= ?
+			AND p.payment_timestamp_utc <= now()
+			AND p.payment_status = 'succeeded'
+	`
+
+	var totalRevenue, avgRevenuePerVisitor float64
+	var payingVisitors, totalPayments uint64
+	var currency string
+
+	revenueRow := a.clickDb.Db().QueryRow(ctx, revenueQuery, projectID, startTime)
+	if err := revenueRow.Scan(&totalRevenue, &payingVisitors, &totalPayments, &avgRevenuePerVisitor, &currency); err != nil {
+		// Set defaults if no payments found
+		totalRevenue = 0
+		payingVisitors = 0
+		totalPayments = 0
+		avgRevenuePerVisitor = 0
+		currency = "USD"
+	}
+
+	// Calculate conversion rate
+	var conversionToPaying float64
+	if uniqueVisitors > 0 {
+		conversionToPaying = float64(payingVisitors) * 100.0 / float64(uniqueVisitors)
+	}
+
+	// Get average revenue per identified customer
+	identifiedRevenueQuery := `
+		SELECT
+			CASE
+				WHEN uniq(p.visitor_id) > 0
+				THEN COALESCE(SUM(p.amount), 0) / uniq(p.visitor_id)
+				ELSE 0
+			END as avg_revenue_identified
+		FROM payment_events p
+		INNER JOIN (
+			SELECT DISTINCT visitor_id
+			FROM events
+			WHERE project_id = ?
+				AND client_timestamp_utc >= ?
+				AND client_timestamp_utc <= now()
+				AND (user_id IS NOT NULL OR external_id IS NOT NULL OR email_hash IS NOT NULL)
+		) identified ON p.visitor_id = identified.visitor_id
+		WHERE p.project_id = ?
+			AND p.payment_timestamp_utc >= ?
+			AND p.payment_timestamp_utc <= now()
+			AND p.payment_status = 'succeeded'
+	`
+
+	var avgRevenuePerIdentifiedCustomer float64
+	identifiedRow := a.clickDb.Db().QueryRow(ctx, identifiedRevenueQuery, projectID, startTime, projectID, startTime)
+	if err := identifiedRow.Scan(&avgRevenuePerIdentifiedCustomer); err != nil {
+		avgRevenuePerIdentifiedCustomer = 0
+	}
+
 	return &types.DashboardMetricsResponse{
-		DAU:                   activeUsers.DAU,
-		WAU:                   activeUsers.WAU,
-		MAU:                   activeUsers.MAU,
-		SessionsToday:         sessionsToday,
-		TotalSessionsInPeriod: sessionMetrics.TotalSessions,
-		AvgSessionDuration:    sessionMetrics.AverageSessionDuration,
-		AvgPagesPerSession:    sessionMetrics.AveragePagesPerSession,
-		BounceRate:            bounceRate.OverallBounceRate,
-		ReturnRate:            returnRate.ReturnRatePercent,
-		TotalEvents:           totalEvents,
-		UniqueVisitors:        uniqueVisitors,
+		DAU:                             activeUsers.DAU,
+		WAU:                             activeUsers.WAU,
+		MAU:                             activeUsers.MAU,
+		SessionsToday:                   sessionsToday,
+		TotalSessionsInPeriod:           sessionMetrics.TotalSessions,
+		AvgSessionDuration:              sessionMetrics.AverageSessionDuration,
+		AvgPagesPerSession:              sessionMetrics.AveragePagesPerSession,
+		BounceRate:                      bounceRate.OverallBounceRate,
+		ReturnRate:                      returnRate.ReturnRatePercent,
+		TotalEvents:                     totalEvents,
+		UniqueVisitors:                  uniqueVisitors,
+		TotalRevenue:                    totalRevenue,
+		PayingVisitors:                  payingVisitors,
+		ConversionToPaying:              conversionToPaying,
+		AvgRevenuePerVisitor:            avgRevenuePerVisitor,
+		AvgRevenuePerIdentifiedCustomer: avgRevenuePerIdentifiedCustomer,
+		TotalPayments:                   totalPayments,
+		Currency:                        currency,
 	}, nil
+}
+
+// GetRevenueByUTMSource returns revenue grouped by UTM parameters using first-touch attribution
+func (a *AnalyticsData) GetRevenueByUTMSource(ctx context.Context, projectID string, timeRange types.TimeRange, utmType string) ([]types.UTMRevenueDataPoint, error) {
+	startTime, _, err := GetTimeRangeBounds(timeRange)
+	if err != nil {
+		return nil, err
+	}
+
+	// Determine which UTM field to use from the attribution table
+	utmField := "first_utm_source"
+	switch utmType {
+	case "medium":
+		utmField = "first_utm_medium"
+	case "campaign":
+		utmField = "first_utm_campaign"
+	case "source":
+		utmField = "first_utm_source"
+	default:
+		utmField = "first_utm_source"
+	}
+
+	// Use visitor_first_touch_attribution table for cached first-touch attribution
+	// This shows ALL payments made in the time period, attributed to the visitor's original UTM source
+	query := fmt.Sprintf(`
+		WITH revenue_totals AS (
+			SELECT SUM(amount) as total_revenue
+			FROM payment_events
+			WHERE project_id = ?
+				AND payment_timestamp_utc >= ?
+				AND payment_timestamp_utc <= now()
+				AND payment_status = 'succeeded'
+		),
+		payments_in_period AS (
+			SELECT
+				visitor_id,
+				amount,
+				payment_id,
+				currency
+			FROM payment_events
+			WHERE project_id = ?
+				AND payment_timestamp_utc >= ?
+				AND payment_timestamp_utc <= now()
+				AND payment_status = 'succeeded'
+		),
+		visitor_utm AS (
+			SELECT
+				ft.visitor_id,
+				CASE
+					WHEN argMinMerge(ft.%s) IS NULL OR argMinMerge(ft.%s) = '' THEN '(not set)'
+					ELSE argMinMerge(ft.%s)
+				END as utm_value
+			FROM visitor_first_touch_attribution ft
+			INNER JOIN payments_in_period pip ON ft.visitor_id = pip.visitor_id
+			WHERE ft.project_id = ?
+			GROUP BY ft.visitor_id
+		),
+		visitors_in_period AS (
+			SELECT DISTINCT visitor_id
+			FROM events
+			WHERE project_id = ?
+				AND client_timestamp_utc >= ?
+				AND client_timestamp_utc <= now()
+		),
+		all_visitor_utm AS (
+			SELECT
+				ft.visitor_id,
+				CASE
+					WHEN argMinMerge(ft.%s) IS NULL OR argMinMerge(ft.%s) = '' THEN '(not set)'
+					ELSE argMinMerge(ft.%s)
+				END as utm_value
+			FROM visitor_first_touch_attribution ft
+			INNER JOIN visitors_in_period vip ON ft.visitor_id = vip.visitor_id
+			WHERE ft.project_id = ?
+			GROUP BY ft.visitor_id
+		)
+		SELECT
+			vu.utm_value,
+			COALESCE(SUM(p.amount), 0) as total_revenue,
+			CASE
+				WHEN (SELECT total_revenue FROM revenue_totals) > 0
+				THEN (COALESCE(SUM(p.amount), 0) * 100.0 / (SELECT total_revenue FROM revenue_totals))
+				ELSE 0
+			END as revenue_percentage,
+			uniq(p.visitor_id) as paying_visitors,
+			(SELECT uniq(visitor_id) FROM all_visitor_utm WHERE utm_value = vu.utm_value) as unique_visitors,
+			CASE
+				WHEN (SELECT uniq(visitor_id) FROM all_visitor_utm WHERE utm_value = vu.utm_value) > 0
+				THEN (uniq(p.visitor_id) * 100.0 / (SELECT uniq(visitor_id) FROM all_visitor_utm WHERE utm_value = vu.utm_value))
+				ELSE 0
+			END as conversion_rate,
+			CASE
+				WHEN uniq(p.visitor_id) > 0
+				THEN COALESCE(SUM(p.amount), 0) / uniq(p.visitor_id)
+				ELSE 0
+			END as avg_revenue_per_visitor,
+			COUNT(p.payment_id) as payment_count,
+			any(p.currency) as currency
+		FROM visitor_utm vu
+		LEFT JOIN payments_in_period p ON vu.visitor_id = p.visitor_id
+		GROUP BY vu.utm_value
+		ORDER BY total_revenue DESC
+		LIMIT 20
+	`, utmField, utmField, utmField, utmField, utmField, utmField)
+
+	rows, err := a.clickDb.Db().Query(ctx, query,
+		projectID, startTime,  // revenue_totals CTE
+		projectID, startTime,  // payments_in_period CTE
+		projectID,             // visitor_utm CTE
+		projectID, startTime,  // visitors_in_period CTE
+		projectID,             // all_visitor_utm CTE
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query revenue by UTM: %w", err)
+	}
+	defer rows.Close()
+
+	var dataPoints []types.UTMRevenueDataPoint
+	for rows.Next() {
+		var dp types.UTMRevenueDataPoint
+		if err := rows.Scan(
+			&dp.UTMValue,
+			&dp.TotalRevenue,
+			&dp.RevenuePercentage,
+			&dp.PayingVisitors,
+			&dp.UniqueVisitors,
+			&dp.ConversionRate,
+			&dp.AvgRevenuePerVisitor,
+			&dp.PaymentCount,
+			&dp.Currency,
+		); err != nil {
+			return nil, fmt.Errorf("failed to scan row: %w", err)
+		}
+		dataPoints = append(dataPoints, dp)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating rows: %w", err)
+	}
+
+	return dataPoints, nil
+}
+
+// GetRevenueTimeline returns revenue over time using materialized views for performance
+func (a *AnalyticsData) GetRevenueTimeline(ctx context.Context, projectID string, timeRange types.TimeRange) ([]types.RevenueTimelineDataPoint, error) {
+	startTime, intervalFunc, err := GetTimeRangeBounds(timeRange)
+	if err != nil {
+		return nil, err
+	}
+
+	// Use materialized views for better performance
+	// Choose the appropriate view based on the time range granularity
+	var query string
+
+	if timeRange == types.TimeRangeLast30Days || timeRange == types.TimeRangeLast90Days {
+		// Use daily materialized view for longer ranges
+		query = `
+			SELECT
+				time_bucket,
+				SUM(total_revenue) as total_revenue,
+				SUM(payment_count) as payment_count,
+				any(currency) as currency
+			FROM revenue_timeline_daily_mv
+			WHERE project_id = ?
+				AND time_bucket >= toDate(?)
+				AND time_bucket <= today()
+			GROUP BY time_bucket
+			ORDER BY time_bucket ASC
+		`
+	} else if timeRange == types.TimeRangeToday || timeRange == types.TimeRangeLast7Days {
+		// Use hourly materialized view for shorter ranges
+		query = `
+			SELECT
+				time_bucket,
+				SUM(total_revenue) as total_revenue,
+				SUM(payment_count) as payment_count,
+				any(currency) as currency
+			FROM revenue_timeline_hourly_mv
+			WHERE project_id = ?
+				AND time_bucket >= ?
+				AND time_bucket <= now()
+			GROUP BY time_bucket
+			ORDER BY time_bucket ASC
+		`
+	} else {
+		// Fall back to raw query for sub-hour granularity (last_hour)
+		query = fmt.Sprintf(`
+			SELECT
+				%s(payment_timestamp_utc) as time_bucket,
+				COALESCE(SUM(amount), 0) as total_revenue,
+				COUNT(*) as payment_count,
+				any(currency) as currency
+			FROM payment_events
+			WHERE project_id = ?
+				AND payment_timestamp_utc >= ?
+				AND payment_timestamp_utc <= now()
+				AND payment_status = 'succeeded'
+			GROUP BY time_bucket
+			ORDER BY time_bucket ASC
+		`, intervalFunc)
+	}
+
+	rows, err := a.clickDb.Db().Query(ctx, query, projectID, startTime)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query revenue timeline: %w", err)
+	}
+	defer rows.Close()
+
+	var dataPoints []types.RevenueTimelineDataPoint
+	for rows.Next() {
+		var dp types.RevenueTimelineDataPoint
+		if err := rows.Scan(&dp.Timestamp, &dp.TotalRevenue, &dp.PaymentCount, &dp.Currency); err != nil {
+			return nil, fmt.Errorf("failed to scan row: %w", err)
+		}
+		dataPoints = append(dataPoints, dp)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating rows: %w", err)
+	}
+
+	return dataPoints, nil
 }

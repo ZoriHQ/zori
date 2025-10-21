@@ -570,3 +570,79 @@ func (s *AnalyticsService) IdentifyVisitor(c *ctx.Ctx) (*types.ManualIdentifyRes
 		VisitorID: req.VisitorID,
 	}, nil
 }
+
+// GetRevenueByUTM returns revenue grouped by UTM parameters
+// @Summary Get revenue by UTM parameters
+// @Description Get revenue metrics grouped by UTM source, medium, or campaign
+// @Tags Analytics
+// @Accept json
+// @Produce json
+// @Security ApiKeyAuth
+// @Param project_id query string true "Project ID"
+// @Param time_range query string true "Time range" Enums(last_hour, today, last_7_days, last_30_days, last_90_days)
+// @Param utm_type query string false "UTM type: source, medium, or campaign (default: source)"
+// @Success 200 {object} types.RevenueByUTMResponse "Revenue by UTM parameters"
+// @Failure 400 {object} map[string]interface{} "Invalid request parameters"
+// @Failure 401 {object} map[string]interface{} "Unauthorized - Invalid or missing JWT token"
+// @Failure 500 {object} map[string]interface{} "Internal server error"
+// @Router /api/v1/analytics/revenue/by-utm [get]
+func (s *AnalyticsService) GetRevenueByUTM(c *ctx.Ctx) (*types.RevenueByUTMResponse, error) {
+	var req types.RevenueByUTMRequest
+	if err := c.Echo.Bind(&req); err != nil {
+		return nil, echo.NewHTTPError(400, "Invalid request parameters")
+	}
+
+	// Validate time range
+	if req.TimeRange == "" {
+		req.TimeRange = types.TimeRangeLast7Days
+	}
+
+	// Default to source if not specified
+	if req.UTMType == "" {
+		req.UTMType = "source"
+	}
+
+	dataPoints, err := s.data.GetRevenueByUTMSource(c.Echo.Request().Context(), req.ProjectID, req.TimeRange, req.UTMType)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get revenue by UTM: %w", err)
+	}
+
+	return &types.RevenueByUTMResponse{
+		Data: dataPoints,
+	}, nil
+}
+
+// GetRevenueTimeline returns revenue over time
+// @Summary Get revenue timeline
+// @Description Get revenue metrics over time for chart visualization
+// @Tags Analytics
+// @Accept json
+// @Produce json
+// @Security ApiKeyAuth
+// @Param project_id query string true "Project ID"
+// @Param time_range query string true "Time range" Enums(last_hour, today, last_7_days, last_30_days, last_90_days)
+// @Success 200 {object} types.RevenueTimelineResponse "Revenue timeline data"
+// @Failure 400 {object} map[string]interface{} "Invalid request parameters"
+// @Failure 401 {object} map[string]interface{} "Unauthorized - Invalid or missing JWT token"
+// @Failure 500 {object} map[string]interface{} "Internal server error"
+// @Router /api/v1/analytics/revenue/timeline [get]
+func (s *AnalyticsService) GetRevenueTimeline(c *ctx.Ctx) (*types.RevenueTimelineResponse, error) {
+	var req types.RevenueTimelineRequest
+	if err := c.Echo.Bind(&req); err != nil {
+		return nil, echo.NewHTTPError(400, "Invalid request parameters")
+	}
+
+	// Validate time range
+	if req.TimeRange == "" {
+		req.TimeRange = types.TimeRangeLast7Days
+	}
+
+	dataPoints, err := s.data.GetRevenueTimeline(c.Echo.Request().Context(), req.ProjectID, req.TimeRange)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get revenue timeline: %w", err)
+	}
+
+	return &types.RevenueTimelineResponse{
+		Data: dataPoints,
+	}, nil
+}
