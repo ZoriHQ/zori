@@ -39,6 +39,7 @@ func NewApplication() *fx.App {
 		payments.BuildPaymentsDIContainer(),
 
 		fx.Provide(middlewares.NewJwtMiddleware),
+		fx.Provide(middlewares.NewCacheMiddleware),
 
 		fx.Invoke(registerDatabaseLifecycle),
 		fx.Invoke(server.RegisterSwaggerRoutes),

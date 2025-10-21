@@ -1,38 +1,118 @@
 package web
 
 import (
+	"time"
+	"zori/internal/cache"
 	"zori/internal/server"
 	"zori/internal/server/middlewares"
 	"zori/services/analytics/services"
 )
 
-func RegisterRoutes(s *server.Server, analyticsService *services.AnalyticsService, jwtMiddleware *middlewares.JwtMiddleware) {
+func RegisterRoutes(
+	s *server.Server,
+	analyticsService *services.AnalyticsService,
+	jwtMiddleware *middlewares.JwtMiddleware,
+	cacheMiddleware *middlewares.CacheMiddleware,
+) {
 	analyticsRouteGroup := s.Group("/api/v1/analytics")
 	analyticsRouteGroup.Use(jwtMiddleware.Middleware())
 
-	// Visitors endpoints
-	server.GroupGET(analyticsRouteGroup, "/visitors/device", analyticsService.GetVisitorsByDevice)
-	server.GroupGET(analyticsRouteGroup, "/visitors/origin", analyticsService.GetUniqueVisitorsByOrigin)
-	server.GroupGET(analyticsRouteGroup, "/visitors/country", analyticsService.GetUniqueVisitorsByCountry)
-	server.GroupGET(analyticsRouteGroup, "/visitors/top", analyticsService.GetTopVisitors)
-	server.GroupGET(analyticsRouteGroup, "/visitors/profile", analyticsService.GetVisitorProfile)
-	server.GroupGET(analyticsRouteGroup, "/visitors/timeline", analyticsService.GetUniqueVisitorsTimeline)
+	highFrequencyTTL := 1 * time.Minute
+	mediumFrequencyTTL := 2 * time.Minute
+	lowFrequencyTTL := 5 * time.Minute
 
-	// Events endpoints
+	cachePrefix := string(cache.AnalyticsCacheKey)
+
+	server.GroupGET(analyticsRouteGroup, "/visitors/device",
+		analyticsService.GetVisitorsByDevice,
+		cacheMiddleware.Middleware(middlewares.CacheConfig{
+			TTL:       mediumFrequencyTTL,
+			KeyPrefix: cachePrefix,
+		}))
+
+	server.GroupGET(analyticsRouteGroup, "/visitors/origin",
+		analyticsService.GetUniqueVisitorsByOrigin,
+		cacheMiddleware.Middleware(middlewares.CacheConfig{
+			TTL:       lowFrequencyTTL,
+			KeyPrefix: cachePrefix,
+		}))
+
+	server.GroupGET(analyticsRouteGroup, "/visitors/country",
+		analyticsService.GetUniqueVisitorsByCountry,
+		cacheMiddleware.Middleware(middlewares.CacheConfig{
+			TTL:       lowFrequencyTTL,
+			KeyPrefix: cachePrefix,
+		}))
+
+	server.GroupGET(analyticsRouteGroup, "/visitors/top",
+		analyticsService.GetTopVisitors,
+		cacheMiddleware.Middleware(middlewares.CacheConfig{
+			TTL:       mediumFrequencyTTL,
+			KeyPrefix: cachePrefix,
+		}))
+
+	server.GroupGET(analyticsRouteGroup, "/visitors/profile",
+		analyticsService.GetVisitorProfile,
+		cacheMiddleware.Middleware(middlewares.CacheConfig{
+			TTL:       mediumFrequencyTTL,
+			KeyPrefix: cachePrefix,
+		}))
+
+	server.GroupGET(analyticsRouteGroup, "/visitors/timeline",
+		analyticsService.GetUniqueVisitorsTimeline,
+		cacheMiddleware.Middleware(middlewares.CacheConfig{
+			TTL:       highFrequencyTTL,
+			KeyPrefix: cachePrefix,
+		}))
+
 	server.GroupGET(analyticsRouteGroup, "/events/recent", analyticsService.GetRecentEvents)
 
-	// Session endpoints
-	server.GroupGET(analyticsRouteGroup, "/sessions/metrics", analyticsService.GetSessionMetrics)
-	server.GroupGET(analyticsRouteGroup, "/sessions/bounce-rate", analyticsService.GetBounceRate)
+	server.GroupGET(analyticsRouteGroup, "/sessions/metrics",
+		analyticsService.GetSessionMetrics,
+		cacheMiddleware.Middleware(middlewares.CacheConfig{
+			TTL:       mediumFrequencyTTL,
+			KeyPrefix: cachePrefix,
+		}))
 
-	// User activity endpoints
-	server.GroupGET(analyticsRouteGroup, "/users/active", analyticsService.GetActiveUsers)
+	server.GroupGET(analyticsRouteGroup, "/sessions/bounce-rate",
+		analyticsService.GetBounceRate,
+		cacheMiddleware.Middleware(middlewares.CacheConfig{
+			TTL:       mediumFrequencyTTL,
+			KeyPrefix: cachePrefix,
+		}))
 
-	// Retention endpoints
-	server.GroupGET(analyticsRouteGroup, "/retention/return-rate", analyticsService.GetReturnRate)
-	server.GroupGET(analyticsRouteGroup, "/retention/churn-rate", analyticsService.GetChurnRate)
-	server.GroupGET(analyticsRouteGroup, "/retention/cohorts", analyticsService.GetCohortAnalysis)
+	server.GroupGET(analyticsRouteGroup, "/users/active",
+		analyticsService.GetActiveUsers,
+		cacheMiddleware.Middleware(middlewares.CacheConfig{
+			TTL:       mediumFrequencyTTL,
+			KeyPrefix: cachePrefix,
+		}))
 
-	// Dashboard endpoint
-	server.GroupGET(analyticsRouteGroup, "/dashboard", analyticsService.GetDashboardMetrics)
+	server.GroupGET(analyticsRouteGroup, "/retention/return-rate",
+		analyticsService.GetReturnRate,
+		cacheMiddleware.Middleware(middlewares.CacheConfig{
+			TTL:       lowFrequencyTTL,
+			KeyPrefix: cachePrefix,
+		}))
+
+	server.GroupGET(analyticsRouteGroup, "/retention/churn-rate",
+		analyticsService.GetChurnRate,
+		cacheMiddleware.Middleware(middlewares.CacheConfig{
+			TTL:       lowFrequencyTTL,
+			KeyPrefix: cachePrefix,
+		}))
+
+	server.GroupGET(analyticsRouteGroup, "/retention/cohorts",
+		analyticsService.GetCohortAnalysis,
+		cacheMiddleware.Middleware(middlewares.CacheConfig{
+			TTL:       lowFrequencyTTL,
+			KeyPrefix: cachePrefix,
+		}))
+
+	server.GroupGET(analyticsRouteGroup, "/dashboard",
+		analyticsService.GetDashboardMetrics,
+		cacheMiddleware.Middleware(middlewares.CacheConfig{
+			TTL:       highFrequencyTTL,
+			KeyPrefix: cachePrefix,
+		}))
 }
