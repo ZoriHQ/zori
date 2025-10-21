@@ -3,7 +3,8 @@ package cache
 type CacheKey string
 
 const (
-	ProjectCacheKey CacheKey = "project"
+	ProjectCacheKey   CacheKey = "project"
+	AnalyticsCacheKey CacheKey = "analytics"
 )
 
 func (k CacheKey) FromValue(value string) string {

@@ -96,24 +96,54 @@ type Group struct {
 	server *Server
 }
 
-func GroupGET[T any](g *Group, path string, handler HandlerFunc[T]) {
-	g.echo.GET(path, wrapHandler(g.server, handler))
+func GroupGET[T any](g *Group, path string, handler HandlerFunc[T], middleware ...echo.MiddlewareFunc) {
+	wrappedHandler := wrapHandler(g.server, handler)
+	if len(middleware) > 0 {
+		for i := len(middleware) - 1; i >= 0; i-- {
+			wrappedHandler = middleware[i](wrappedHandler)
+		}
+	}
+	g.echo.GET(path, wrappedHandler)
 }
 
-func GroupPOST[T any](g *Group, path string, handler HandlerFunc[T]) {
-	g.echo.POST(path, wrapHandler(g.server, handler))
+func GroupPOST[T any](g *Group, path string, handler HandlerFunc[T], middleware ...echo.MiddlewareFunc) {
+	wrappedHandler := wrapHandler(g.server, handler)
+	if len(middleware) > 0 {
+		for i := len(middleware) - 1; i >= 0; i-- {
+			wrappedHandler = middleware[i](wrappedHandler)
+		}
+	}
+	g.echo.POST(path, wrappedHandler)
 }
 
-func GroupPUT[T any](g *Group, path string, handler HandlerFunc[T]) {
-	g.echo.PUT(path, wrapHandler(g.server, handler))
+func GroupPUT[T any](g *Group, path string, handler HandlerFunc[T], middleware ...echo.MiddlewareFunc) {
+	wrappedHandler := wrapHandler(g.server, handler)
+	if len(middleware) > 0 {
+		for i := len(middleware) - 1; i >= 0; i-- {
+			wrappedHandler = middleware[i](wrappedHandler)
+		}
+	}
+	g.echo.PUT(path, wrappedHandler)
 }
 
-func GroupDELETE[T any](g *Group, path string, handler HandlerFunc[T]) {
-	g.echo.DELETE(path, wrapHandler(g.server, handler))
+func GroupDELETE[T any](g *Group, path string, handler HandlerFunc[T], middleware ...echo.MiddlewareFunc) {
+	wrappedHandler := wrapHandler(g.server, handler)
+	if len(middleware) > 0 {
+		for i := len(middleware) - 1; i >= 0; i-- {
+			wrappedHandler = middleware[i](wrappedHandler)
+		}
+	}
+	g.echo.DELETE(path, wrappedHandler)
 }
 
-func GroupPATCH[T any](g *Group, path string, handler HandlerFunc[T]) {
-	g.echo.PATCH(path, wrapHandler(g.server, handler))
+func GroupPATCH[T any](g *Group, path string, handler HandlerFunc[T], middleware ...echo.MiddlewareFunc) {
+	wrappedHandler := wrapHandler(g.server, handler)
+	if len(middleware) > 0 {
+		for i := len(middleware) - 1; i >= 0; i-- {
+			wrappedHandler = middleware[i](wrappedHandler)
+		}
+	}
+	g.echo.PATCH(path, wrappedHandler)
 }
 
 func (g *Group) Use(middleware ...echo.MiddlewareFunc) {
