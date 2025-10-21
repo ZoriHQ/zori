@@ -46,7 +46,7 @@ func NewIngestionApplication() *fx.App {
 					go func() {
 						address := fmt.Sprintf("%s:%s", "0.0.0.0", "1324")
 						fmt.Printf("Starting Ingestion server on %s\n", address)
-						if err := fasthttp.ListenAndServe(address, ingestionServer.Injest); err != nil {
+						if err := fasthttp.ListenAndServe(address, ingestionServer.HandleRequest); err != nil {
 							fmt.Printf("Server error: %v\n", err)
 						}
 					}()

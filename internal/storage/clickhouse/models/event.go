@@ -15,6 +15,11 @@ type Event struct {
 	VisitorID              string  `ch:"visitor_id"`
 	SessionID              string  `ch:"session_id"`
 
+	// Identity fields (set when visitor is identified)
+	UserID     *string `ch:"user_id"`     // Authenticated user ID
+	ExternalID *string `ch:"external_id"` // Customer-provided external ID
+	EmailHash  *string `ch:"email_hash"`  // SHA256 hash of email for privacy-safe analytics
+
 	// Timestamps
 	ClientTimestampUTC time.Time `ch:"client_timestamp_utc"`
 	ServerTimestampUTC time.Time `ch:"server_timestamp_utc,default:now()"`
