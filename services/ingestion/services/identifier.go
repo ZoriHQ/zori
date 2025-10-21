@@ -32,12 +32,12 @@ func (i *Identifier) Identify(ctx context.Context, project *models.Project, iden
 		Email:          identifyEvent.Email,
 		Name:           identifyEvent.Fullname,
 		Phone:          identifyEvent.Phone,
-		CustomTraits:   make(models.JSONB), // Initialize as empty map
+		CustomTraits:   make(map[string]interface{}), // Initialize as empty map
 	}
 
 	// Add additional properties to custom traits if provided
 	if identifyEvent.AdditionalProperties != nil && len(identifyEvent.AdditionalProperties) > 0 {
-		visitor.CustomTraits = models.JSONB(identifyEvent.AdditionalProperties)
+		visitor.CustomTraits = identifyEvent.AdditionalProperties
 	}
 
 	if err := i.visitorRepository.UpsertVisitor(ctx, visitor); err != nil {
