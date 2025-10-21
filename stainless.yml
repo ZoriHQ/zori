@@ -57,6 +57,8 @@ resources:
           churn_rate_response: "#/components/schemas/types.ChurnRateResponse"
           cohort_analysis_response: "#/components/schemas/types.CohortAnalysisResponse"
           cohort_data: "#/components/schemas/types.CohortData"
+          manual_identify_request: "#/components/schemas/types.ManualIdentifyRequest"
+          manual_identify_response: "#/components/schemas/types.ManualIdentifyResponse"
         methods:
           dashboard: get /api/v1/analytics/dashboard
         subresources:
@@ -68,6 +70,7 @@ resources:
               top: get /api/v1/analytics/visitors/top
               profile: get /api/v1/analytics/visitors/profile
               timeline: get /api/v1/analytics/visitors/timeline
+              identify: post /api/v1/analytics/visitors/identify
           events:
             methods:
               recent: get /api/v1/analytics/events/recent
