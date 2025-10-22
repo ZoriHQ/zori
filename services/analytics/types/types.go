@@ -64,7 +64,7 @@ type OriginDataPoint struct {
 	Origin               string  `json:"origin"`
 	UniqueVisitors       uint64  `json:"unique_visitors"`
 	Percentage           float64 `json:"percentage"`
-	TotalRevenue         int64   `json:"total_revenue"` // Revenue in smallest currency unit (cents)
+	TotalRevenue         *int64  `json:"total_revenue"` // Revenue in smallest currency unit (cents)
 	RevenuePercentage    float64 `json:"revenue_percentage"`
 	PayingVisitors       uint64  `json:"paying_visitors"`
 	ConversionRate       float64 `json:"conversion_rate"`         // paying_visitors / unique_visitors * 100
@@ -132,7 +132,7 @@ type TopVisitor struct {
 	LocationCity       *string   `json:"location_city,omitempty"`
 	DeviceType         *string   `json:"device_type,omitempty"`
 	BrowserName        *string   `json:"browser_name,omitempty"`
-	TotalRevenue       int64     `json:"total_revenue"` // Total revenue in smallest currency unit (cents)
+	TotalRevenue       *int64    `json:"total_revenue"` // Total revenue in smallest currency unit (cents)
 	PaymentCount       uint64    `json:"payment_count"`
 	Currency           string    `json:"currency,omitempty"`
 }
@@ -159,7 +159,7 @@ type VisitorProfileResponse struct {
 	Events             []VisitorEvent            `json:"events"`
 	EventsOverTime     []EventsOverTimeDataPoint `json:"events_over_time"`
 	// Revenue fields
-	TotalRevenue     int64            `json:"total_revenue"` // Total revenue in smallest currency unit (cents)
+	TotalRevenue     float64          `json:"total_revenue"` // Total revenue in smallest currency unit (cents)
 	PaymentCount     uint64           `json:"payment_count"`
 	FirstPaymentDate *time.Time       `json:"first_payment_date,omitempty"`
 	LastPaymentDate  *time.Time       `json:"last_payment_date,omitempty"`
@@ -276,13 +276,19 @@ type DashboardMetricsResponse struct {
 	// Total metrics
 	TotalEvents    uint64 `json:"total_events"`
 	UniqueVisitors uint64 `json:"unique_visitors"`
+	UniqueSessions uint64 `json:"unique_sessions"` // Total unique sessions in period
 
-	// Revenue metrics
-	TotalRevenue                    float64 `json:"total_revenue"`                       // Total revenue in smallest currency unit (cents)
+	// Revenue metrics - 4 key metrics as separate queries
+	TotalRevenue                    int64   `json:"total_revenue"`                      // 1. Total revenue for all payments in period
+	TotalRevenueIdentifiedCustomers int64   `json:"total_revenue_identified_customers"` // 2. Total revenue for identified customers only
+	AvgRevenuePerSession            int64   `json:"avg_revenue_per_session"`            // 3. Average revenue per unique session
+	ConversionRate                  float64 `json:"conversion_rate"`                    // 4. % of unique visitors who made payment
+
+	// Additional revenue metrics (kept for compatibility)
 	PayingVisitors                  uint64  `json:"paying_visitors"`                     // Number of unique visitors who paid
-	ConversionToPaying              float64 `json:"conversion_to_paying"`                // paying_visitors / unique_visitors * 100
+	ConversionToPaying              float64 `json:"conversion_to_paying"`                // Same as ConversionRate (deprecated, use ConversionRate)
 	AvgRevenuePerVisitor            float64 `json:"avg_revenue_per_visitor"`             // Average revenue per paying visitor
-	AvgRevenuePerIdentifiedCustomer float64 `json:"avg_revenue_per_identified_customer"` // Average revenue for identified visitors only
+	AvgRevenuePerIdentifiedCustomer float64 `json:"avg_revenue_per_identified_customer"` // Average revenue for identified visitors only (deprecated)
 	TotalPayments                   uint64  `json:"total_payments"`                      // Count of successful payments
 	Currency                        string  `json:"currency,omitempty"`
 }
@@ -388,7 +394,7 @@ type RevenueTimelineResponse struct {
 // RevenueTimelineDataPoint represents revenue at a specific time bucket
 type RevenueTimelineDataPoint struct {
 	Timestamp    time.Time `json:"timestamp"`
-	TotalRevenue int64     `json:"total_revenue"` // Revenue in smallest currency unit (cents)
+	TotalRevenue *float64  `json:"total_revenue"` // Revenue in smallest currency unit (cents)
 	PaymentCount uint64    `json:"payment_count"`
 	Currency     string    `json:"currency,omitempty"`
 }
