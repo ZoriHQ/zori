@@ -8,6 +8,8 @@ import (
 	"zori/internal/storage/clickhouse"
 	"zori/services/analytics/types"
 	ingestionData "zori/services/ingestion/data"
+
+	"golang.org/x/sync/errgroup"
 )
 
 type AnalyticsData struct {
@@ -149,7 +151,7 @@ func (a *AnalyticsData) GetUniqueVisitorsByOrigin(ctx context.Context, projectID
 				THEN COALESCE(SUM(p.amount), 0) / uniq(p.visitor_id)
 				ELSE 0
 			END as avg_revenue_per_visitor,
-			COUNT(p.payment_id) as payment_count,
+			countIf(p.payment_id IS NOT NULL) as payment_count,
 			any(p.currency) as currency
 		FROM visitor_origins vo
 		LEFT JOIN payment_events p
@@ -332,7 +334,7 @@ func (a *AnalyticsData) GetTopVisitors(ctx context.Context, projectID string, ti
 			any(e.device_type) as device_type,
 			any(e.browser_name) as browser_name,
 			COALESCE(SUM(p.amount), 0) as total_revenue,
-			COUNT(p.payment_id) as payment_count,
+			countIf(p.payment_id IS NOT NULL) as payment_count,
 			any(p.currency) as currency
 		FROM events e
 		LEFT JOIN payment_events p
@@ -957,157 +959,384 @@ func (a *AnalyticsData) GetCohortAnalysis(ctx context.Context, projectID string,
 	}, nil
 }
 
-// GetDashboardMetrics returns combined key metrics for a dashboard
-func (a *AnalyticsData) GetDashboardMetrics(ctx context.Context, projectID string, timeRange types.TimeRange) (*types.DashboardMetricsResponse, error) {
-	startTime, _, err := GetTimeRangeBounds(timeRange)
-	if err != nil {
-		return nil, err
-	}
-
-	// Get active users
-	activeUsers, err := a.GetActiveUsers(ctx, projectID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get active users: %w", err)
-	}
-
-	// Get session metrics
-	sessionMetrics, err := a.GetSessionMetrics(ctx, projectID, timeRange)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get session metrics: %w", err)
-	}
-
-	// Get bounce rate
-	bounceRate, err := a.GetBounceRate(ctx, projectID, timeRange, 0)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get bounce rate: %w", err)
-	}
-
-	// Get return rate
-	returnRate, err := a.GetReturnRate(ctx, projectID, timeRange)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get return rate: %w", err)
-	}
-
-	// Get sessions today
-	now := time.Now().UTC()
-	todayStart := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
-
-	sessionsTodayQuery := `
-		SELECT COUNT(*) as sessions_today
-		FROM sessions
-		WHERE project_id = ?
-			AND started_at >= ?
-	`
-	var sessionsToday uint64
-	todayRow := a.clickDb.Db().QueryRow(ctx, sessionsTodayQuery, projectID, todayStart)
-	if err := todayRow.Scan(&sessionsToday); err != nil {
-		return nil, fmt.Errorf("failed to get sessions today: %w", err)
-	}
-
-	// Get total events and unique visitors for the period
-	totalsQuery := `
+// GetTotalRevenue returns total revenue for all payments within a time period
+func (a *AnalyticsData) GetTotalRevenue(ctx context.Context, projectID string, startTime time.Time) (int64, string, error) {
+	query := `
 		SELECT
-			COUNT(*) as total_events,
-			uniq(visitor_id) as unique_visitors
+			COALESCE(SUM(amount), 0) as total_revenue,
+			any(currency) as currency
+		FROM payment_events
+		WHERE project_id = ?
+			AND payment_timestamp_utc >= ?
+			AND payment_timestamp_utc <= now()
+			AND payment_status = 'succeeded'
+	`
+
+	var totalRevenue int64
+	var currency string
+	row := a.clickDb.Db().QueryRow(ctx, query, projectID, startTime)
+	if err := row.Scan(&totalRevenue, &currency); err != nil {
+		return 0, "USD", fmt.Errorf("failed to get total revenue: %w", err)
+	}
+
+	if currency == "" {
+		currency = "USD"
+	}
+
+	return totalRevenue, currency, nil
+}
+
+// GetIdentifiedCustomersRevenue returns total revenue for identified customers only
+func (a *AnalyticsData) GetIdentifiedCustomersRevenue(ctx context.Context, projectID string, startTime time.Time) (int64, error) {
+	query := `
+		SELECT
+			COALESCE(SUM(p.amount), 0) as total_revenue
+		FROM payment_events p
+		WHERE p.project_id = ?
+			AND p.payment_timestamp_utc >= ?
+			AND p.payment_timestamp_utc <= now()
+			AND p.payment_status = 'succeeded'
+			AND p.visitor_id IN (
+				SELECT DISTINCT visitor_id
+				FROM events
+				WHERE project_id = ?
+					AND (user_id IS NOT NULL OR external_id IS NOT NULL OR email_hash IS NOT NULL)
+			)
+	`
+
+	var totalRevenue int64
+	row := a.clickDb.Db().QueryRow(ctx, query, projectID, startTime, projectID)
+	if err := row.Scan(&totalRevenue); err != nil {
+		return 0, fmt.Errorf("failed to get identified customers revenue: %w", err)
+	}
+
+	return totalRevenue, nil
+}
+
+func (a *AnalyticsData) GetAvgRevenuePerSession(ctx context.Context, projectID string, startTime time.Time) (int64, error) {
+
+	revenueQuery := `
+		SELECT COALESCE(SUM(amount), 0) as total_revenue
+		FROM payment_events
+		WHERE project_id = ?
+			AND payment_timestamp_utc >= ?
+			AND payment_timestamp_utc <= now()
+			AND payment_status = 'succeeded'
+	`
+
+	var totalRevenue int64
+	revenueRow := a.clickDb.Db().QueryRow(ctx, revenueQuery, projectID, startTime)
+	if err := revenueRow.Scan(&totalRevenue); err != nil {
+		return 0, fmt.Errorf("failed to get total revenue: %w", err)
+	}
+
+	sessionsQuery := `
+		SELECT COUNT(DISTINCT session_id) as unique_sessions
 		FROM events
 		WHERE project_id = ?
 			AND client_timestamp_utc >= ?
 			AND client_timestamp_utc <= now()
 	`
 
-	var totalEvents, uniqueVisitors uint64
-	totalsRow := a.clickDb.Db().QueryRow(ctx, totalsQuery, projectID, startTime)
-	if err := totalsRow.Scan(&totalEvents, &uniqueVisitors); err != nil {
-		return nil, fmt.Errorf("failed to get totals: %w", err)
+	var uniqueSessions uint64
+	sessionsRow := a.clickDb.Db().QueryRow(ctx, sessionsQuery, projectID, startTime)
+	if err := sessionsRow.Scan(&uniqueSessions); err != nil {
+		return 0, fmt.Errorf("failed to get unique sessions: %w", err)
 	}
 
-	// Get revenue metrics
-	revenueQuery := `
-		SELECT
-			COALESCE(SUM(p.amount), 0) as total_revenue,
-			uniq(p.visitor_id) as paying_visitors,
-			COUNT(*) as total_payments,
-			CASE
-				WHEN uniq(p.visitor_id) > 0
-				THEN COALESCE(SUM(p.amount), 0) / uniq(p.visitor_id)
-				ELSE 0
-			END as avg_revenue_per_visitor,
-			any(p.currency) as currency
-		FROM payment_events p
-		WHERE p.project_id = ?
-			AND p.payment_timestamp_utc >= ?
-			AND p.payment_timestamp_utc <= now()
-			AND p.payment_status = 'succeeded'
+	if uniqueSessions == 0 {
+		return 0, nil
+	}
+
+	return int64(float64(totalRevenue) / float64(uniqueSessions)), nil
+}
+
+// GetConversionRate returns percentage of unique visitors who made a payment
+func (a *AnalyticsData) GetConversionRate(ctx context.Context, projectID string, startTime time.Time) (float64, uint64, uint64, error) {
+	// Get unique visitors count
+	visitorsQuery := `
+		SELECT COUNT(DISTINCT visitor_id) as unique_visitors
+		FROM events
+		WHERE project_id = ?
+			AND client_timestamp_utc >= ?
+			AND client_timestamp_utc <= now()
 	`
 
-	var totalRevenue, avgRevenuePerVisitor float64
-	var payingVisitors, totalPayments uint64
-	var currency string
-
-	revenueRow := a.clickDb.Db().QueryRow(ctx, revenueQuery, projectID, startTime)
-	if err := revenueRow.Scan(&totalRevenue, &payingVisitors, &totalPayments, &avgRevenuePerVisitor, &currency); err != nil {
-		// Set defaults if no payments found
-		totalRevenue = 0
-		payingVisitors = 0
-		totalPayments = 0
-		avgRevenuePerVisitor = 0
-		currency = "USD"
+	var uniqueVisitors uint64
+	visitorsRow := a.clickDb.Db().QueryRow(ctx, visitorsQuery, projectID, startTime)
+	if err := visitorsRow.Scan(&uniqueVisitors); err != nil {
+		return 0, 0, 0, fmt.Errorf("failed to get unique visitors: %w", err)
 	}
 
-	// Calculate conversion rate
-	var conversionToPaying float64
-	if uniqueVisitors > 0 {
-		conversionToPaying = float64(payingVisitors) * 100.0 / float64(uniqueVisitors)
+	// Get paying visitors count
+	payingQuery := `
+		SELECT COUNT(DISTINCT visitor_id) as paying_visitors
+		FROM payment_events
+		WHERE project_id = ?
+			AND payment_timestamp_utc >= ?
+			AND payment_timestamp_utc <= now()
+			AND payment_status = 'succeeded'
+	`
+
+	var payingVisitors uint64
+	payingRow := a.clickDb.Db().QueryRow(ctx, payingQuery, projectID, startTime)
+	if err := payingRow.Scan(&payingVisitors); err != nil {
+		return 0, 0, 0, fmt.Errorf("failed to get paying visitors: %w", err)
 	}
 
-	// Get average revenue per identified customer
-	identifiedRevenueQuery := `
-		SELECT
-			CASE
-				WHEN uniq(p.visitor_id) > 0
-				THEN COALESCE(SUM(p.amount), 0) / uniq(p.visitor_id)
-				ELSE 0
-			END as avg_revenue_identified
-		FROM payment_events p
-		INNER JOIN (
-			SELECT DISTINCT visitor_id
+	if uniqueVisitors == 0 {
+		return 0, uniqueVisitors, payingVisitors, nil
+	}
+
+	conversionRate := float64(payingVisitors) * 100.0 / float64(uniqueVisitors)
+	return conversionRate, uniqueVisitors, payingVisitors, nil
+}
+
+// GetDashboardMetrics returns combined key metrics for a dashboard using parallel queries
+func (a *AnalyticsData) GetDashboardMetrics(ctx context.Context, projectID string, timeRange types.TimeRange) (*types.DashboardMetricsResponse, error) {
+	startTime, _, err := GetTimeRangeBounds(timeRange)
+	if err != nil {
+		return nil, err
+	}
+
+	// Use errgroup to run all queries in parallel
+	type results struct {
+		// Existing metrics
+		activeUsers                     *types.ActiveUsersResponse
+		sessionMetrics                  *types.SessionMetricsResponse
+		bounceRate                      *types.BounceRateResponse
+		returnRate                      *types.ReturnRateResponse
+		sessionsToday                   uint64
+		totalEvents                     uint64
+		uniqueVisitors                  uint64
+		uniqueSessions                  uint64
+		payingVisitors                  uint64
+		totalPayments                   uint64
+		avgRevenuePerVisitor            float64
+		avgRevenuePerIdentifiedCustomer float64
+
+		totalRevenue                    int64
+		totalRevenueIdentifiedCustomers int64
+		avgRevenuePerSession            int64
+		conversionRate                  float64
+
+		currency string
+	}
+
+	var res results
+	var g errgroup.Group
+
+	// 1. Get active users
+	g.Go(func() error {
+		activeUsers, err := a.GetActiveUsers(ctx, projectID)
+		if err != nil {
+			return fmt.Errorf("failed to get active users: %w", err)
+		}
+		res.activeUsers = activeUsers
+		return nil
+	})
+
+	// 2. Get session metrics
+	g.Go(func() error {
+		sessionMetrics, err := a.GetSessionMetrics(ctx, projectID, timeRange)
+		if err != nil {
+			return fmt.Errorf("failed to get session metrics: %w", err)
+		}
+		res.sessionMetrics = sessionMetrics
+		return nil
+	})
+
+	// 3. Get bounce rate
+	g.Go(func() error {
+		bounceRate, err := a.GetBounceRate(ctx, projectID, timeRange, 0)
+		if err != nil {
+			return fmt.Errorf("failed to get bounce rate: %w", err)
+		}
+		res.bounceRate = bounceRate
+		return nil
+	})
+
+	// 4. Get return rate
+	g.Go(func() error {
+		returnRate, err := a.GetReturnRate(ctx, projectID, timeRange)
+		if err != nil {
+			return fmt.Errorf("failed to get return rate: %w", err)
+		}
+		res.returnRate = returnRate
+		return nil
+	})
+
+	// 5. Get sessions today
+	g.Go(func() error {
+		now := time.Now().UTC()
+		todayStart := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
+
+		query := `
+			SELECT COUNT(*) as sessions_today
+			FROM sessions
+			WHERE project_id = ?
+				AND started_at >= ?
+		`
+		row := a.clickDb.Db().QueryRow(ctx, query, projectID, todayStart)
+		if err := row.Scan(&res.sessionsToday); err != nil {
+			return fmt.Errorf("failed to get sessions today: %w", err)
+		}
+		return nil
+	})
+
+	// 6. Get total events, unique visitors, and unique sessions
+	g.Go(func() error {
+		query := `
+			SELECT
+				COUNT(*) as total_events,
+				uniq(visitor_id) as unique_visitors,
+				uniq(session_id) as unique_sessions
 			FROM events
 			WHERE project_id = ?
 				AND client_timestamp_utc >= ?
 				AND client_timestamp_utc <= now()
-				AND (user_id IS NOT NULL OR external_id IS NOT NULL OR email_hash IS NOT NULL)
-		) identified ON p.visitor_id = identified.visitor_id
-		WHERE p.project_id = ?
-			AND p.payment_timestamp_utc >= ?
-			AND p.payment_timestamp_utc <= now()
-			AND p.payment_status = 'succeeded'
-	`
+		`
+		row := a.clickDb.Db().QueryRow(ctx, query, projectID, startTime)
+		if err := row.Scan(&res.totalEvents, &res.uniqueVisitors, &res.uniqueSessions); err != nil {
+			return fmt.Errorf("failed to get totals: %w", err)
+		}
+		return nil
+	})
 
-	var avgRevenuePerIdentifiedCustomer float64
-	identifiedRow := a.clickDb.Db().QueryRow(ctx, identifiedRevenueQuery, projectID, startTime, projectID, startTime)
-	if err := identifiedRow.Scan(&avgRevenuePerIdentifiedCustomer); err != nil {
-		avgRevenuePerIdentifiedCustomer = 0
+	// 7. Get total revenue for all payments (NEW METRIC #1)
+	g.Go(func() error {
+		totalRevenue, currency, err := a.GetTotalRevenue(ctx, projectID, startTime)
+		if err != nil {
+			return err
+		}
+		res.totalRevenue = totalRevenue
+		res.currency = currency
+		return nil
+	})
+
+	// 8. Get total revenue for identified customers only (NEW METRIC #2)
+	g.Go(func() error {
+		totalRevenueIdentified, err := a.GetIdentifiedCustomersRevenue(ctx, projectID, startTime)
+		if err != nil {
+			return err
+		}
+		res.totalRevenueIdentifiedCustomers = totalRevenueIdentified
+		return nil
+	})
+
+	// 9. Get average revenue per session (NEW METRIC #3)
+	g.Go(func() error {
+		avgRevPerSession, err := a.GetAvgRevenuePerSession(ctx, projectID, startTime)
+		if err != nil {
+			return err
+		}
+		res.avgRevenuePerSession = avgRevPerSession
+		return nil
+	})
+
+	// 10. Get conversion rate (NEW METRIC #4)
+	g.Go(func() error {
+		convRate, _, payingVis, err := a.GetConversionRate(ctx, projectID, startTime)
+		if err != nil {
+			return err
+		}
+		res.conversionRate = convRate
+		res.payingVisitors = payingVis
+		return nil
+	})
+
+	// 11. Get total payments and avg revenue per paying visitor (legacy metrics)
+	g.Go(func() error {
+		query := `
+			SELECT
+				COUNT(*) as total_payments,
+				CASE
+					WHEN uniq(visitor_id) > 0
+					THEN COALESCE(SUM(amount), 0) / uniq(visitor_id)
+					ELSE 0
+				END as avg_revenue_per_visitor
+			FROM payment_events
+			WHERE project_id = ?
+				AND payment_timestamp_utc >= ?
+				AND payment_timestamp_utc <= now()
+				AND payment_status = 'succeeded'
+		`
+		row := a.clickDb.Db().QueryRow(ctx, query, projectID, startTime)
+		if err := row.Scan(&res.totalPayments, &res.avgRevenuePerVisitor); err != nil {
+			// Set defaults if no payments found
+			res.totalPayments = 0
+			res.avgRevenuePerVisitor = 0
+		}
+		return nil
+	})
+
+	// 12. Get average revenue per identified customer (legacy metric)
+	g.Go(func() error {
+		query := `
+			SELECT
+				CASE
+					WHEN uniq(p.visitor_id) > 0
+					THEN COALESCE(SUM(p.amount), 0) / uniq(p.visitor_id)
+					ELSE 0
+				END as avg_revenue_identified
+			FROM payment_events p
+			WHERE p.project_id = ?
+				AND p.payment_timestamp_utc >= ?
+				AND p.payment_timestamp_utc <= now()
+				AND p.payment_status = 'succeeded'
+				AND p.visitor_id IN (
+					SELECT DISTINCT visitor_id
+					FROM events
+					WHERE project_id = ?
+						AND (user_id IS NOT NULL OR external_id IS NOT NULL OR email_hash IS NOT NULL)
+				)
+		`
+		row := a.clickDb.Db().QueryRow(ctx, query, projectID, startTime, projectID)
+		if err := row.Scan(&res.avgRevenuePerIdentifiedCustomer); err != nil {
+			res.avgRevenuePerIdentifiedCustomer = 0
+		}
+		return nil
+	})
+
+	// Wait for all queries to complete
+	if err := g.Wait(); err != nil {
+		return nil, err
 	}
 
 	return &types.DashboardMetricsResponse{
-		DAU:                             activeUsers.DAU,
-		WAU:                             activeUsers.WAU,
-		MAU:                             activeUsers.MAU,
-		SessionsToday:                   sessionsToday,
-		TotalSessionsInPeriod:           sessionMetrics.TotalSessions,
-		AvgSessionDuration:              sessionMetrics.AverageSessionDuration,
-		AvgPagesPerSession:              sessionMetrics.AveragePagesPerSession,
-		BounceRate:                      bounceRate.OverallBounceRate,
-		ReturnRate:                      returnRate.ReturnRatePercent,
-		TotalEvents:                     totalEvents,
-		UniqueVisitors:                  uniqueVisitors,
-		TotalRevenue:                    totalRevenue,
-		PayingVisitors:                  payingVisitors,
-		ConversionToPaying:              conversionToPaying,
-		AvgRevenuePerVisitor:            avgRevenuePerVisitor,
-		AvgRevenuePerIdentifiedCustomer: avgRevenuePerIdentifiedCustomer,
-		TotalPayments:                   totalPayments,
-		Currency:                        currency,
+		// Active users
+		DAU: res.activeUsers.DAU,
+		WAU: res.activeUsers.WAU,
+		MAU: res.activeUsers.MAU,
+
+		// Sessions
+		SessionsToday:         res.sessionsToday,
+		TotalSessionsInPeriod: res.sessionMetrics.TotalSessions,
+		AvgSessionDuration:    res.sessionMetrics.AverageSessionDuration,
+		AvgPagesPerSession:    res.sessionMetrics.AveragePagesPerSession,
+
+		// Engagement metrics
+		BounceRate: res.bounceRate.OverallBounceRate,
+		ReturnRate: res.returnRate.ReturnRatePercent,
+
+		// Total metrics
+		TotalEvents:    res.totalEvents,
+		UniqueVisitors: res.uniqueVisitors,
+		UniqueSessions: res.uniqueSessions,
+
+		// 4 new revenue metrics
+		TotalRevenue:                    res.totalRevenue,
+		TotalRevenueIdentifiedCustomers: res.totalRevenueIdentifiedCustomers,
+		AvgRevenuePerSession:            res.avgRevenuePerSession,
+		ConversionRate:                  res.conversionRate,
+
+		// Legacy revenue metrics (kept for compatibility)
+		PayingVisitors:                  res.payingVisitors,
+		ConversionToPaying:              res.conversionRate, // Same as ConversionRate
+		AvgRevenuePerVisitor:            res.avgRevenuePerVisitor,
+		AvgRevenuePerIdentifiedCustomer: res.avgRevenuePerIdentifiedCustomer,
+		TotalPayments:                   res.totalPayments,
+		Currency:                        res.currency,
 	}, nil
 }
 
@@ -1205,7 +1434,7 @@ func (a *AnalyticsData) GetRevenueByUTMSource(ctx context.Context, projectID str
 				THEN COALESCE(SUM(p.amount), 0) / uniq(p.visitor_id)
 				ELSE 0
 			END as avg_revenue_per_visitor,
-			COUNT(p.payment_id) as payment_count,
+			countIf(p.payment_id IS NOT NULL) as payment_count,
 			any(p.currency) as currency
 		FROM visitor_utm vu
 		LEFT JOIN payments_in_period p ON vu.visitor_id = p.visitor_id
@@ -1215,11 +1444,11 @@ func (a *AnalyticsData) GetRevenueByUTMSource(ctx context.Context, projectID str
 	`, utmField, utmField, utmField, utmField, utmField, utmField)
 
 	rows, err := a.clickDb.Db().Query(ctx, query,
-		projectID, startTime,  // revenue_totals CTE
-		projectID, startTime,  // payments_in_period CTE
-		projectID,             // visitor_utm CTE
-		projectID, startTime,  // visitors_in_period CTE
-		projectID,             // all_visitor_utm CTE
+		projectID, startTime, // revenue_totals CTE
+		projectID, startTime, // payments_in_period CTE
+		projectID,            // visitor_utm CTE
+		projectID, startTime, // visitors_in_period CTE
+		projectID, // all_visitor_utm CTE
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query revenue by UTM: %w", err)
