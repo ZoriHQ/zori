@@ -53,8 +53,22 @@ func (s StageLocation) ProcessFrame(event *types.ClientEventFrameV1) error {
 			return err
 		}
 
+		var lat float64
+		err = s.maxMindDb.Lookup(parsedIp).DecodePath(&lat, "location", "latitude")
+		if err != nil {
+			return err
+		}
+
+		var lng float64
+		err = s.maxMindDb.Lookup(parsedIp).DecodePath(&lng, "location", "longitude")
+		if err != nil {
+			return err
+		}
+
 		event.LocationCountryISO = nullable.FromString(countryCode).Ptr()
 		event.LocationCity = nullable.FromString(cityName).Ptr()
+		event.LocationLatitude = nullable.FromFloat64(lat).Ptr()
+		event.LocationLongitude = nullable.FromFloat64(lng).Ptr()
 	}
 
 	return nil
