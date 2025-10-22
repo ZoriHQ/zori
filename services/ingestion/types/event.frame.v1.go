@@ -6,8 +6,10 @@ type ClientEventFrameV1 struct {
 	ProjectID      string `json:"project_id"`
 	OrganizationID string `json:"organization_id"`
 
-	LocationCountryISO *string `json:"location_country_iso"`
-	LocationCity       *string `json:"location_city"`
+	LocationCountryISO *string  `json:"location_country_iso"`
+	LocationCity       *string  `json:"location_city"`
+	LocationLatitude   *float64 `json:"location_latitude"`
+	LocationLongitude  *float64 `json:"location_longitude"`
 
 	BrowserName *string `json:"browser_name"`
 	OsName      *string `json:"os_name"`
