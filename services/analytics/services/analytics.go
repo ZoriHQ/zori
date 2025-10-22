@@ -7,6 +7,7 @@ import (
 	"zori/services/analytics/data"
 	"zori/services/analytics/types"
 	ingestionData "zori/services/ingestion/data"
+	projectsData "zori/services/projects/data"
 
 	"github.com/labstack/echo/v4"
 )
@@ -14,12 +15,14 @@ import (
 type AnalyticsService struct {
 	data              *data.AnalyticsData
 	visitorRepository *ingestionData.VisitorRepository
+	projectData       *projectsData.ProjectData
 }
 
-func NewAnalyticsService(data *data.AnalyticsData, visitorRepository *ingestionData.VisitorRepository) *AnalyticsService {
+func NewAnalyticsService(data *data.AnalyticsData, visitorRepository *ingestionData.VisitorRepository, projectData *projectsData.ProjectData) *AnalyticsService {
 	return &AnalyticsService{
 		data:              data,
 		visitorRepository: visitorRepository,
+		projectData:       projectData,
 	}
 }
 
@@ -547,17 +550,12 @@ func (s *AnalyticsService) IdentifyVisitor(c *ctx.Ctx) (*types.ManualIdentifyRes
 		visitor.CustomTraits = req.AdditionalProperties
 	}
 
-	// Note: We need to get the organization_id from the project
-	// For now, we'll fetch the existing visitor first or get it from context
-	// This is a simplification - in production you'd fetch project details
-	existingVisitor, err := s.visitorRepository.GetVisitorByID(c.Echo.Request().Context(), req.VisitorID)
-	if err == nil && existingVisitor != nil {
-		visitor.OrganizationID = existingVisitor.OrganizationID
-	} else {
-		// If visitor doesn't exist, we need to get organization_id from project
-		// For now, return an error - this should be handled properly
-		return nil, echo.NewHTTPError(400, "Cannot identify new visitor without project context. Visitor must have at least one event first.")
+	// Get organization_id from the project
+	project, err := s.projectData.GetProjectByID(c.Echo.Request().Context(), req.ProjectID)
+	if err != nil {
+		return nil, echo.NewHTTPError(400, fmt.Sprintf("Failed to find project: %v", err))
 	}
+	visitor.OrganizationID = project.OrganizationID
 
 	// Upsert visitor identity
 	if err := s.visitorRepository.UpsertVisitor(c.Echo.Request().Context(), visitor); err != nil {
