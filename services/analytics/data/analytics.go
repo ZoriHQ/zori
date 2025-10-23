@@ -111,7 +111,7 @@ func (a *AnalyticsData) GetUniqueVisitorsByOrigin(ctx context.Context, projectID
 			FROM visitors_in_period
 		),
 		revenue_totals AS (
-			SELECT SUM(amount) as total_revenue
+			SELECT COALESCE(SUM(amount), 0) as total_revenue
 			FROM payment_events
 			WHERE project_id = ?
 				AND payment_timestamp_utc >= ?
@@ -129,39 +129,51 @@ func (a *AnalyticsData) GetUniqueVisitorsByOrigin(ctx context.Context, projectID
 			INNER JOIN visitors_in_period vip ON ft.visitor_id = vip.visitor_id
 			WHERE ft.project_id = ?
 			GROUP BY ft.visitor_id
+		),
+		origin_stats AS (
+			SELECT
+				vo.origin,
+				uniq(vo.visitor_id) as unique_visitors,
+				COALESCE(SUM(p.amount), 0) as total_revenue,
+				uniq(p.visitor_id) as paying_visitors,
+				countIf(p.payment_id IS NOT NULL) as payment_count,
+				any(p.currency) as currency
+			FROM visitor_origins vo
+			LEFT JOIN payment_events p
+				ON vo.visitor_id = p.visitor_id
+				AND p.payment_status = 'succeeded'
+				AND p.project_id = ?
+				AND p.payment_timestamp_utc >= ?
+				AND p.payment_timestamp_utc <= now()
+			GROUP BY vo.origin
 		)
 		SELECT
-			vo.origin,
-			uniq(vo.visitor_id) as unique_visitors,
-			(uniq(vo.visitor_id) * 100.0 / (SELECT total_visitors FROM totals)) as percentage,
-			COALESCE(SUM(p.amount), 0) as total_revenue,
+			os.origin,
+			os.unique_visitors,
+			os.unique_visitors * 100.0 / t.total_visitors as percentage,
+			os.total_revenue,
 			CASE
-				WHEN (SELECT total_revenue FROM revenue_totals) > 0
-				THEN (COALESCE(SUM(p.amount), 0) * 100.0 / (SELECT total_revenue FROM revenue_totals))
+				WHEN rt.total_revenue > 0
+				THEN os.total_revenue * 100.0 / rt.total_revenue
 				ELSE 0
 			END as revenue_percentage,
-			uniq(p.visitor_id) as paying_visitors,
+			os.paying_visitors,
 			CASE
-				WHEN uniq(vo.visitor_id) > 0
-				THEN (uniq(p.visitor_id) * 100.0 / uniq(vo.visitor_id))
+				WHEN os.unique_visitors > 0
+				THEN os.paying_visitors * 100.0 / os.unique_visitors
 				ELSE 0
 			END as conversion_rate,
 			CASE
-				WHEN uniq(p.visitor_id) > 0
-				THEN COALESCE(SUM(p.amount), 0) / uniq(p.visitor_id)
+				WHEN os.paying_visitors > 0
+				THEN os.total_revenue / os.paying_visitors
 				ELSE 0
 			END as avg_revenue_per_visitor,
-			countIf(p.payment_id IS NOT NULL) as payment_count,
-			any(p.currency) as currency
-		FROM visitor_origins vo
-		LEFT JOIN payment_events p
-			ON vo.visitor_id = p.visitor_id
-			AND p.payment_status = 'succeeded'
-			AND p.project_id = ?
-			AND p.payment_timestamp_utc >= ?
-			AND p.payment_timestamp_utc <= now()
-		GROUP BY vo.origin
-		ORDER BY total_revenue DESC
+			os.payment_count,
+			os.currency
+		FROM origin_stats os
+		CROSS JOIN totals t
+		CROSS JOIN revenue_totals rt
+		ORDER BY os.total_revenue DESC
 		LIMIT 20
 	`
 
@@ -169,7 +181,7 @@ func (a *AnalyticsData) GetUniqueVisitorsByOrigin(ctx context.Context, projectID
 		projectID, startTime, // visitors_in_period CTE
 		projectID, startTime, // revenue_totals CTE
 		projectID,            // visitor_origins CTE
-		projectID, startTime, // main query payment join
+		projectID, startTime, // origin_stats CTE payment join
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query visitors by origin: %w", err)

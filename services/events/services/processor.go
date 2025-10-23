@@ -94,13 +94,13 @@ func (p *Processor) Start() error {
 		}
 
 		var (
-			clickPositionX     *float64
-			clickPositionY     *float64
-			clickScreenWidth   *uint16
-			clickScreenHeight  *uint16
-			clickElementTag    *string
+			clickPositionX       *float64
+			clickPositionY       *float64
+			clickScreenWidth     *uint16
+			clickScreenHeight    *uint16
+			clickElementTag      *string
 			clickElementSelector *string
-			clickElementText   *string
+			clickElementText     *string
 		)
 
 		// Handle new click position format
@@ -197,6 +197,15 @@ func (p *Processor) Start() error {
 		}
 
 		msg.Ack()
+
+		marshalEventFrame, err := json.Marshal(eventFrame)
+		if err != nil {
+			log.Printf("Error marshaling event frame: %v", err)
+		} else {
+			// publish enriched event to NATS stream
+			// so consumers on the frontend can receive it
+			p.natsStream.GetConnection().Publish(fmt.Sprintf("events:project:%s", eventFrame.ProjectID), marshalEventFrame)
+		}
 	})
 
 	return err

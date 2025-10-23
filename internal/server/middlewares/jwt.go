@@ -1,7 +1,6 @@
 package middlewares
 
 import (
-	"fmt"
 	"net/http"
 	"strings"
 	"zori/internal/ctx"
@@ -37,8 +36,6 @@ func (j *JwtMiddleware) Middleware() echo.MiddlewareFunc {
 			}
 
 			token := strings.TrimPrefix(authHeader, "Bearer ")
-
-			fmt.Println("Middleware invoke", token)
 
 			claims, err := j.JwtService.ValidateAccessToken(token)
 			if err != nil {
