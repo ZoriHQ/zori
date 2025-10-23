@@ -2,6 +2,7 @@ package web
 
 import (
 	"fmt"
+	"net/http"
 	"zori/internal/server"
 	authServices "zori/services/auth/services"
 	"zori/services/events/services"
@@ -13,7 +14,11 @@ import (
 )
 
 var (
-	upgrader = websocket.Upgrader{}
+	upgrader = websocket.Upgrader{
+		CheckOrigin: func(r *http.Request) bool {
+			return true
+		},
+	}
 )
 
 func RegisterRoutes(s *server.Server, projectService *projectsService.ProjectService, jwtService *authServices.JWTService, eventsService *services.EventsService) {
@@ -50,8 +55,7 @@ func RegisterRoutes(s *server.Server, projectService *projectsService.ProjectSer
 		defer subscription.Unsubscribe()
 
 		for {
-			if _, messageBytes, err := ws.ReadMessage(); err != nil {
-				fmt.Println("Client message bytes: ", string(messageBytes))
+			if _, _, err := ws.ReadMessage(); err != nil {
 				break
 			}
 		}
