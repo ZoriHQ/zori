@@ -50,6 +50,7 @@ func NewApplication() *fx.App {
 		analytics.BuildAnalyticsWebDIContainer(),
 		payments.BuildPaymentsWebDIContainer(),
 		events.BuildEventsDIContainer(),
+		events.BuildEventsWebContainer(),
 		payments.BuildPaymentsProcessorDIContainer(),
 
 		fx.Invoke(func(lc fx.Lifecycle, srv *server.Server) {
