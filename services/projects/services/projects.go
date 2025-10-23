@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"zori/internal/ctx"
@@ -164,7 +165,11 @@ func (s *ProjectService) GetProject(c *ctx.Ctx) (*ProjectResponse, error) {
 		return nil, echo.NewHTTPError(http.StatusBadRequest, "Project ID is required")
 	}
 
-	project, err := s.data.GetProject(c.Echo.Request().Context(), projectID, c.OrgID())
+	return s.GetProjectNoContext(c, projectID, c.OrgID())
+}
+
+func (s *ProjectService) GetProjectNoContext(ctx context.Context, projectID, orgID string) (*ProjectResponse, error) {
+	project, err := s.data.GetProject(ctx, projectID, orgID)
 	if err != nil {
 		if err.Error() == "sql: no rows in result set" {
 			return nil, echo.NewHTTPError(http.StatusNotFound, "Project not found")
