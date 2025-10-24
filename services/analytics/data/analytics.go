@@ -269,7 +269,7 @@ func (a *AnalyticsData) GetUniqueVisitorsByCountry(ctx context.Context, projectI
 }
 
 // GetRecentEvents returns the most recent events for a project with optional filters
-func (a *AnalyticsData) GetRecentEvents(ctx context.Context, req types.RecentEventsRequest) ([]types.RecentEvent, int, error) {
+func (a *AnalyticsData) GetRecentEvents(ctx context.Context, req types.RecentEventsRequest) ([]types.RecentEvent, uint64, error) {
 	if req.Limit <= 0 {
 		req.Limit = 15
 	}
@@ -278,8 +278,12 @@ func (a *AnalyticsData) GetRecentEvents(ctx context.Context, req types.RecentEve
 	}
 
 	// Build WHERE clause dynamically based on filters
-	whereConditions := []string{"project_id = ?"}
-	args := []interface{}{req.ProjectID}
+	// Add default time range to prevent counting entire table (performance optimization)
+	now := time.Now().UTC()
+	defaultStartTime := now.AddDate(0, 0, -7) // Last 7 days by default
+
+	whereConditions := []string{"project_id = ?", "client_timestamp_utc >= ?"}
+	args := []interface{}{req.ProjectID, defaultStartTime}
 
 	if req.VisitorID != nil && *req.VisitorID != "" {
 		whereConditions = append(whereConditions, "visitor_id = ?")
@@ -314,14 +318,15 @@ func (a *AnalyticsData) GetRecentEvents(ctx context.Context, req types.RecentEve
 		}
 	}
 
-	// Get total count for pagination
+	// Get approximate total count for pagination using count() which is faster than COUNT(*)
+	// ClickHouse's count() is optimized and uses metadata when possible
 	countQuery := fmt.Sprintf(`
-		SELECT COUNT(*)
+		SELECT count()
 		FROM events
 		%s
 	`, whereClause)
 
-	var totalCount int
+	var totalCount uint64
 	countRow := a.clickDb.Db().QueryRow(ctx, countQuery, args...)
 	if err := countRow.Scan(&totalCount); err != nil {
 		return nil, 0, fmt.Errorf("failed to get total count: %w", err)
@@ -351,8 +356,10 @@ func (a *AnalyticsData) GetRecentEvents(ctx context.Context, req types.RecentEve
 		LIMIT ? OFFSET ?
 	`, whereClause)
 
-	// Add limit and offset to args
-	queryArgs := append(args, req.Limit, req.Offset)
+	// Create a new slice with limit and offset appended (don't modify original args)
+	queryArgs := make([]interface{}, len(args), len(args)+2)
+	copy(queryArgs, args)
+	queryArgs = append(queryArgs, req.Limit, req.Offset)
 
 	rows, err := a.clickDb.Db().Query(ctx, query, queryArgs...)
 	if err != nil {
