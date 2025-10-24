@@ -96,6 +96,77 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/analytics/events/filter-options": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Get unique traffic origins and page paths to populate filter dropdowns",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Analytics"
+                ],
+                "summary": "Get event filter options",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Project ID",
+                        "name": "project_id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "last_hour",
+                            "today",
+                            "last_7_days",
+                            "last_30_days",
+                            "last_90_days"
+                        ],
+                        "type": "string",
+                        "description": "Time range",
+                        "name": "time_range",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Filter options for traffic origins and pages",
+                        "schema": {
+                            "$ref": "#/definitions/types.EventFilterOptionsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request parameters",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - Invalid or missing JWT token",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/analytics/events/recent": {
             "get": {
                 "security": [
@@ -103,7 +174,7 @@ const docTemplate = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "Get a list of the most recent events (default: 15 events)",
+                "description": "Get a list of recent events with optional filters (visitor_id, user_id, external_id, traffic_origin, page_path)",
                 "consumes": [
                     "application/json"
                 ],
@@ -127,11 +198,47 @@ const docTemplate = `{
                         "description": "Maximum number of events to return (default: 15)",
                         "name": "limit",
                         "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Offset for pagination (default: 0)",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by visitor ID",
+                        "name": "visitor_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by user ID",
+                        "name": "user_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by external ID",
+                        "name": "external_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by traffic origin (referrer domain)",
+                        "name": "traffic_origin",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by page path",
+                        "name": "page_path",
+                        "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "List of recent events",
+                        "description": "List of recent events with pagination info",
                         "schema": {
                             "$ref": "#/definitions/types.RecentEventsResponse"
                         }
@@ -2657,12 +2764,16 @@ const docTemplate = `{
                     "type": "number"
                 },
                 "avg_revenue_per_identified_customer": {
-                    "description": "Average revenue for identified visitors only",
+                    "description": "Average revenue for identified visitors only (deprecated)",
+                    "type": "number"
+                },
+                "avg_revenue_per_session": {
+                    "description": "3. Average revenue per unique session",
                     "type": "integer"
                 },
                 "avg_revenue_per_visitor": {
                     "description": "Average revenue per paying visitor",
-                    "type": "integer"
+                    "type": "number"
                 },
                 "avg_session_duration_seconds": {
                     "type": "number"
@@ -2671,8 +2782,12 @@ const docTemplate = `{
                     "description": "Engagement metrics",
                     "type": "number"
                 },
+                "conversion_rate": {
+                    "description": "4. % of unique visitors who made payment",
+                    "type": "number"
+                },
                 "conversion_to_paying": {
-                    "description": "paying_visitors / unique_visitors * 100",
+                    "description": "Same as ConversionRate (deprecated, use ConversionRate)",
                     "type": "number"
                 },
                 "currency": {
@@ -2686,7 +2801,7 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "paying_visitors": {
-                    "description": "Number of unique visitors who paid",
+                    "description": "Additional revenue metrics (kept for compatibility)",
                     "type": "integer"
                 },
                 "return_rate": {
@@ -2705,10 +2820,18 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "total_revenue": {
-                    "description": "Revenue metrics",
+                    "description": "Revenue metrics - 4 key metrics as separate queries",
+                    "type": "integer"
+                },
+                "total_revenue_identified_customers": {
+                    "description": "2. Total revenue for identified customers only",
                     "type": "integer"
                 },
                 "total_sessions_in_period": {
+                    "type": "integer"
+                },
+                "unique_sessions": {
+                    "description": "Total unique sessions in period",
                     "type": "integer"
                 },
                 "unique_visitors": {
@@ -2716,6 +2839,25 @@ const docTemplate = `{
                 },
                 "wau": {
                     "type": "integer"
+                }
+            }
+        },
+        "types.EventFilterOptionsResponse": {
+            "type": "object",
+            "properties": {
+                "pages": {
+                    "description": "Unique page paths",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "traffic_origins": {
+                    "description": "Unique referrer domains",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 }
             }
         },
@@ -2798,7 +2940,7 @@ const docTemplate = `{
             "properties": {
                 "avg_revenue_per_visitor": {
                     "description": "Average revenue per paying visitor",
-                    "type": "integer"
+                    "type": "number"
                 },
                 "conversion_rate": {
                     "description": "paying_visitors / unique_visitors * 100",
@@ -2896,10 +3038,19 @@ const docTemplate = `{
                 "location_country_iso": {
                     "type": "string"
                 },
+                "location_latitude": {
+                    "type": "number"
+                },
+                "location_longitude": {
+                    "type": "number"
+                },
                 "page_path": {
                     "type": "string"
                 },
                 "page_url": {
+                    "type": "string"
+                },
+                "referrer_domain": {
                     "type": "string"
                 },
                 "referrer_url": {
@@ -2921,6 +3072,12 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/types.RecentEvent"
                     }
+                },
+                "limit": {
+                    "type": "integer"
+                },
+                "offset": {
+                    "type": "integer"
                 },
                 "total": {
                     "type": "integer"
@@ -2969,7 +3126,7 @@ const docTemplate = `{
                 },
                 "total_revenue": {
                     "description": "Revenue in smallest currency unit (cents)",
-                    "type": "integer"
+                    "type": "number"
                 }
             }
         },
@@ -3062,7 +3219,7 @@ const docTemplate = `{
             "properties": {
                 "avg_revenue_per_visitor": {
                     "description": "Average revenue per paying visitor",
-                    "type": "integer"
+                    "type": "number"
                 },
                 "conversion_rate": {
                     "description": "paying_visitors / unique_visitors * 100",
@@ -3308,7 +3465,7 @@ const docTemplate = `{
                 },
                 "total_revenue": {
                     "description": "Revenue fields",
-                    "type": "integer"
+                    "type": "number"
                 },
                 "user_id": {
                     "type": "string"

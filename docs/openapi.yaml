@@ -70,7 +70,7 @@ paths:
         Get combined key metrics including sessions, active users, bounce rate,
         and retention for dashboard display
       summary: Get dashboard metrics
-  /api/v1/analytics/events/recent:
+  /api/v1/analytics/events/filter-options:
     get:
       parameters:
         - description: Project ID
@@ -79,18 +79,24 @@ paths:
           required: true
           schema:
             type: string
-        - description: 'Maximum number of events to return (default: 15)'
+        - description: Time range
           in: query
-          name: limit
+          name: time_range
           schema:
-            type: integer
+            enum:
+              - last_hour
+              - today
+              - last_7_days
+              - last_30_days
+              - last_90_days
+            type: string
       responses:
         '200':
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/types.RecentEventsResponse'
-          description: List of recent events
+                $ref: '#/components/schemas/types.EventFilterOptionsResponse'
+          description: Filter options for traffic origins and pages
         '400':
           content:
             application/json:
@@ -116,7 +122,87 @@ paths:
         - ApiKeyAuth: []
       tags:
         - Analytics
-      description: 'Get a list of the most recent events (default: 15 events)'
+      description: Get unique traffic origins and page paths to populate filter dropdowns
+      summary: Get event filter options
+  /api/v1/analytics/events/recent:
+    get:
+      parameters:
+        - description: Project ID
+          in: query
+          name: project_id
+          required: true
+          schema:
+            type: string
+        - description: 'Maximum number of events to return (default: 15)'
+          in: query
+          name: limit
+          schema:
+            type: integer
+        - description: 'Offset for pagination (default: 0)'
+          in: query
+          name: offset
+          schema:
+            type: integer
+        - description: Filter by visitor ID
+          in: query
+          name: visitor_id
+          schema:
+            type: string
+        - description: Filter by user ID
+          in: query
+          name: user_id
+          schema:
+            type: string
+        - description: Filter by external ID
+          in: query
+          name: external_id
+          schema:
+            type: string
+        - description: Filter by traffic origin (referrer domain)
+          in: query
+          name: traffic_origin
+          schema:
+            type: string
+        - description: Filter by page path
+          in: query
+          name: page_path
+          schema:
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/types.RecentEventsResponse'
+          description: List of recent events with pagination info
+        '400':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Invalid request parameters
+        '401':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Unauthorized - Invalid or missing JWT token
+        '500':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Internal server error
+      security:
+        - ApiKeyAuth: []
+      tags:
+        - Analytics
+      description: >-
+        Get a list of recent events with optional filters (visitor_id, user_id,
+        external_id, traffic_origin, page_path)
       summary: Get recent events
   /api/v1/analytics/retention/churn-rate:
     get:
@@ -1981,18 +2067,24 @@ components:
         avg_pages_per_session:
           type: number
         avg_revenue_per_identified_customer:
-          description: Average revenue for identified visitors only
+          description: Average revenue for identified visitors only (deprecated)
+          type: number
+        avg_revenue_per_session:
+          description: 3. Average revenue per unique session
           type: integer
         avg_revenue_per_visitor:
           description: Average revenue per paying visitor
-          type: integer
+          type: number
         avg_session_duration_seconds:
           type: number
         bounce_rate:
           description: Engagement metrics
           type: number
+        conversion_rate:
+          description: 4. % of unique visitors who made payment
+          type: number
         conversion_to_paying:
-          description: paying_visitors / unique_visitors * 100
+          description: 'Same as ConversionRate (deprecated, use ConversionRate)'
           type: number
         currency:
           type: string
@@ -2002,7 +2094,7 @@ components:
         mau:
           type: integer
         paying_visitors:
-          description: Number of unique visitors who paid
+          description: Additional revenue metrics (kept for compatibility)
           type: integer
         return_rate:
           type: number
@@ -2016,14 +2108,33 @@ components:
           description: Count of successful payments
           type: integer
         total_revenue:
-          description: Revenue metrics
+          description: Revenue metrics - 4 key metrics as separate queries
+          type: integer
+        total_revenue_identified_customers:
+          description: 2. Total revenue for identified customers only
           type: integer
         total_sessions_in_period:
+          type: integer
+        unique_sessions:
+          description: Total unique sessions in period
           type: integer
         unique_visitors:
           type: integer
         wau:
           type: integer
+      type: object
+    types.EventFilterOptionsResponse:
+      properties:
+        pages:
+          description: Unique page paths
+          items:
+            type: string
+          type: array
+        traffic_origins:
+          description: Unique referrer domains
+          items:
+            type: string
+          type: array
       type: object
     types.EventsOverTimeDataPoint:
       properties:
@@ -2078,7 +2189,7 @@ components:
       properties:
         avg_revenue_per_visitor:
           description: Average revenue per paying visitor
-          type: integer
+          type: number
         conversion_rate:
           description: paying_visitors / unique_visitors * 100
           type: number
@@ -2144,9 +2255,15 @@ components:
           type: string
         location_country_iso:
           type: string
+        location_latitude:
+          type: number
+        location_longitude:
+          type: number
         page_path:
           type: string
         page_url:
+          type: string
+        referrer_domain:
           type: string
         referrer_url:
           type: string
@@ -2161,6 +2278,10 @@ components:
           items:
             $ref: '#/components/schemas/types.RecentEvent'
           type: array
+        limit:
+          type: integer
+        offset:
+          type: integer
         total:
           type: integer
       type: object
@@ -2192,7 +2313,7 @@ components:
           type: string
         total_revenue:
           description: Revenue in smallest currency unit (cents)
-          type: integer
+          type: number
       type: object
     types.RevenueTimelineResponse:
       properties:
@@ -2253,7 +2374,7 @@ components:
       properties:
         avg_revenue_per_visitor:
           description: Average revenue per paying visitor
-          type: integer
+          type: number
         conversion_rate:
           description: paying_visitors / unique_visitors * 100
           type: number
@@ -2419,7 +2540,7 @@ components:
           type: integer
         total_revenue:
           description: Revenue fields
-          type: integer
+          type: number
         user_id:
           type: string
         visitor_id:
