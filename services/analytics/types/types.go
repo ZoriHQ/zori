@@ -87,20 +87,20 @@ type CountryDataPoint struct {
 
 // RecentEventsRequest represents a request for recent events with filters
 type RecentEventsRequest struct {
-	ProjectID      string  `query:"project_id" validate:"required"`
-	Limit          int     `query:"limit"`
-	Offset         int     `query:"offset"`
-	VisitorID      *string `query:"visitor_id"`
-	UserID         *string `query:"user_id"`
-	ExternalID     *string `query:"external_id"`
-	TrafficOrigin  *string `query:"traffic_origin"`  // Filter by referrer_domain
-	PagePath       *string `query:"page_path"`       // Filter by page_path
+	ProjectID     string  `query:"project_id" validate:"required"`
+	Limit         int     `query:"limit"`
+	Offset        int     `query:"offset"`
+	VisitorID     *string `query:"visitor_id"`
+	UserID        *string `query:"user_id"`
+	ExternalID    *string `query:"external_id"`
+	TrafficOrigin *string `query:"traffic_origin"` // Filter by referrer_domain
+	PagePath      *string `query:"page_path"`      // Filter by page_path
 }
 
 // RecentEventsResponse represents the most recent events
 type RecentEventsResponse struct {
 	Events []RecentEvent `json:"events"`
-	Total  int           `json:"total"`
+	Total  uint64        `json:"total"`
 	Limit  int           `json:"limit"`
 	Offset int           `json:"offset"`
 }
