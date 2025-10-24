@@ -268,33 +268,95 @@ func (a *AnalyticsData) GetUniqueVisitorsByCountry(ctx context.Context, projectI
 	return dataPoints, nil
 }
 
-// GetRecentEvents returns the most recent events for a project
-func (a *AnalyticsData) GetRecentEvents(ctx context.Context, projectID string, limit int) ([]types.RecentEvent, error) {
-	if limit <= 0 {
-		limit = 15
+// GetRecentEvents returns the most recent events for a project with optional filters
+func (a *AnalyticsData) GetRecentEvents(ctx context.Context, req types.RecentEventsRequest) ([]types.RecentEvent, int, error) {
+	if req.Limit <= 0 {
+		req.Limit = 15
+	}
+	if req.Offset < 0 {
+		req.Offset = 0
 	}
 
-	query := `
+	// Build WHERE clause dynamically based on filters
+	whereConditions := []string{"project_id = ?"}
+	args := []interface{}{req.ProjectID}
+
+	if req.VisitorID != nil && *req.VisitorID != "" {
+		whereConditions = append(whereConditions, "visitor_id = ?")
+		args = append(args, *req.VisitorID)
+	}
+
+	if req.UserID != nil && *req.UserID != "" {
+		whereConditions = append(whereConditions, "user_id = ?")
+		args = append(args, *req.UserID)
+	}
+
+	if req.ExternalID != nil && *req.ExternalID != "" {
+		whereConditions = append(whereConditions, "external_id = ?")
+		args = append(args, *req.ExternalID)
+	}
+
+	if req.TrafficOrigin != nil && *req.TrafficOrigin != "" {
+		whereConditions = append(whereConditions, "referrer_domain = ?")
+		args = append(args, *req.TrafficOrigin)
+	}
+
+	if req.PagePath != nil && *req.PagePath != "" {
+		whereConditions = append(whereConditions, "page_path = ?")
+		args = append(args, *req.PagePath)
+	}
+
+	whereClause := ""
+	if len(whereConditions) > 0 {
+		whereClause = "WHERE " + whereConditions[0]
+		for i := 1; i < len(whereConditions); i++ {
+			whereClause += " AND " + whereConditions[i]
+		}
+	}
+
+	// Get total count for pagination
+	countQuery := fmt.Sprintf(`
+		SELECT COUNT(*)
+		FROM events
+		%s
+	`, whereClause)
+
+	var totalCount int
+	countRow := a.clickDb.Db().QueryRow(ctx, countQuery, args...)
+	if err := countRow.Scan(&totalCount); err != nil {
+		return nil, 0, fmt.Errorf("failed to get total count: %w", err)
+	}
+
+	// Build main query with all fields including lat/long
+	query := fmt.Sprintf(`
 		SELECT
 			event_name,
 			visitor_id,
+			user_id,
+			external_id,
 			client_timestamp_utc,
 			page_url,
 			page_path,
 			referrer_url,
+			referrer_domain,
 			device_type,
 			browser_name,
 			location_country_iso,
-			location_city
+			location_city,
+			location_latitude,
+			location_longitude
 		FROM events
-		WHERE project_id = ?
+		%s
 		ORDER BY client_timestamp_utc DESC
-		LIMIT ?
-	`
+		LIMIT ? OFFSET ?
+	`, whereClause)
 
-	rows, err := a.clickDb.Db().Query(ctx, query, projectID, limit)
+	// Add limit and offset to args
+	queryArgs := append(args, req.Limit, req.Offset)
+
+	rows, err := a.clickDb.Db().Query(ctx, query, queryArgs...)
 	if err != nil {
-		return nil, fmt.Errorf("failed to query recent events: %w", err)
+		return nil, 0, fmt.Errorf("failed to query recent events: %w", err)
 	}
 	defer rows.Close()
 
@@ -304,25 +366,110 @@ func (a *AnalyticsData) GetRecentEvents(ctx context.Context, projectID string, l
 		if err := rows.Scan(
 			&event.EventName,
 			&event.VisitorID,
+			&event.UserID,
+			&event.ExternalID,
 			&event.ClientTimestampUTC,
 			&event.PageURL,
 			&event.PagePath,
 			&event.ReferrerURL,
+			&event.ReferrerDomain,
 			&event.DeviceType,
 			&event.BrowserName,
 			&event.LocationCountryISO,
 			&event.LocationCity,
+			&event.LocationLatitude,
+			&event.LocationLongitude,
 		); err != nil {
-			return nil, fmt.Errorf("failed to scan row: %w", err)
+			return nil, 0, fmt.Errorf("failed to scan row: %w", err)
 		}
 		events = append(events, event)
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("error iterating rows: %w", err)
+		return nil, 0, fmt.Errorf("error iterating rows: %w", err)
 	}
 
-	return events, nil
+	return events, totalCount, nil
+}
+
+// GetEventFilterOptions returns unique traffic origins and page paths for filter dropdowns
+func (a *AnalyticsData) GetEventFilterOptions(ctx context.Context, projectID string, timeRange *types.TimeRange) (*types.EventFilterOptionsResponse, error) {
+	// Build WHERE clause based on optional time range
+	whereClause := "WHERE project_id = ?"
+	args := []interface{}{projectID}
+
+	if timeRange != nil && *timeRange != "" {
+		startTime, _, err := GetTimeRangeBounds(*timeRange)
+		if err == nil {
+			whereClause += " AND client_timestamp_utc >= ? AND client_timestamp_utc <= now()"
+			args = append(args, startTime)
+		}
+	}
+
+	// Query for unique traffic origins (referrer domains)
+	originsQuery := fmt.Sprintf(`
+		SELECT DISTINCT referrer_domain
+		FROM events
+		%s
+			AND referrer_domain IS NOT NULL
+			AND referrer_domain != ''
+		ORDER BY referrer_domain
+		LIMIT 1000
+	`, whereClause)
+
+	originsRows, err := a.clickDb.Db().Query(ctx, originsQuery, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query traffic origins: %w", err)
+	}
+	defer originsRows.Close()
+
+	var origins []string
+	for originsRows.Next() {
+		var origin string
+		if err := originsRows.Scan(&origin); err != nil {
+			return nil, fmt.Errorf("failed to scan origin: %w", err)
+		}
+		origins = append(origins, origin)
+	}
+
+	if err := originsRows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating origins: %w", err)
+	}
+
+	// Query for unique page paths
+	pagesQuery := fmt.Sprintf(`
+		SELECT DISTINCT page_path
+		FROM events
+		%s
+			AND page_path IS NOT NULL
+			AND page_path != ''
+		ORDER BY page_path
+		LIMIT 1000
+	`, whereClause)
+
+	pagesRows, err := a.clickDb.Db().Query(ctx, pagesQuery, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query pages: %w", err)
+	}
+	defer pagesRows.Close()
+
+	var pages []string
+	for pagesRows.Next() {
+		var page string
+		if err := pagesRows.Scan(&page); err != nil {
+			return nil, fmt.Errorf("failed to scan page: %w", err)
+		}
+		pages = append(pages, page)
+	}
+
+	if err := pagesRows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating pages: %w", err)
+	}
+
+	return &types.EventFilterOptionsResponse{
+		TrafficOrigins: origins,
+		Pages:          pages,
+	}, nil
 }
 
 func (a *AnalyticsData) GetTopVisitors(ctx context.Context, projectID string, timeRange types.TimeRange, limit int) ([]types.TopVisitor, error) {

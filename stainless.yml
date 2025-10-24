@@ -41,10 +41,12 @@ resources:
           visitors_by_country_response: "#/components/schemas/types.VisitorsByCountryResponse"
           recent_event: "#/components/schemas/types.RecentEvent"
           recent_events_response: "#/components/schemas/types.RecentEventsResponse"
+          event_filter_options_response: "#/components/schemas/types.EventFilterOptionsResponse"
           top_visitor: "#/components/schemas/types.TopVisitor"
           top_visitors_response: "#/components/schemas/types.TopVisitorsResponse"
           visitor_profile_response: "#/components/schemas/types.VisitorProfileResponse"
           visitor_event: "#/components/schemas/types.VisitorEvent"
+          visitor_payment: "#/components/schemas/types.VisitorPayment"
           events_over_time_data_point: "#/components/schemas/types.EventsOverTimeDataPoint"
           unique_visitors_data_point: "#/components/schemas/types.UniqueVisitorsDataPoint"
           unique_visitors_timeline_response: "#/components/schemas/types.UniqueVisitorsTimelineResponse"
@@ -59,6 +61,10 @@ resources:
           cohort_data: "#/components/schemas/types.CohortData"
           manual_identify_request: "#/components/schemas/types.ManualIdentifyRequest"
           manual_identify_response: "#/components/schemas/types.ManualIdentifyResponse"
+          utm_revenue_data_point: "#/components/schemas/types.UTMRevenueDataPoint"
+          revenue_by_utm_response: "#/components/schemas/types.RevenueByUTMResponse"
+          revenue_timeline_data_point: "#/components/schemas/types.RevenueTimelineDataPoint"
+          revenue_timeline_response: "#/components/schemas/types.RevenueTimelineResponse"
         methods:
           dashboard: get /api/v1/analytics/dashboard
         subresources:
@@ -74,6 +80,11 @@ resources:
           events:
             methods:
               recent: get /api/v1/analytics/events/recent
+              filter_options: get /api/v1/analytics/events/filter-options
+          revenue:
+            methods:
+              by_utm: get /api/v1/analytics/revenue/by-utm
+              timeline: get /api/v1/analytics/revenue/timeline
           sessions:
             methods:
               metrics: get /api/v1/analytics/sessions/metrics

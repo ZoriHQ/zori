@@ -85,10 +85,24 @@ type CountryDataPoint struct {
 	Percentage     float64 `json:"percentage"`
 }
 
+// RecentEventsRequest represents a request for recent events with filters
+type RecentEventsRequest struct {
+	ProjectID      string  `query:"project_id" validate:"required"`
+	Limit          int     `query:"limit"`
+	Offset         int     `query:"offset"`
+	VisitorID      *string `query:"visitor_id"`
+	UserID         *string `query:"user_id"`
+	ExternalID     *string `query:"external_id"`
+	TrafficOrigin  *string `query:"traffic_origin"`  // Filter by referrer_domain
+	PagePath       *string `query:"page_path"`       // Filter by page_path
+}
+
 // RecentEventsResponse represents the most recent events
 type RecentEventsResponse struct {
 	Events []RecentEvent `json:"events"`
 	Total  int           `json:"total"`
+	Limit  int           `json:"limit"`
+	Offset int           `json:"offset"`
 }
 
 // RecentEvent represents a single recent event
@@ -101,10 +115,13 @@ type RecentEvent struct {
 	PageURL            string    `json:"page_url"`
 	PagePath           string    `json:"page_path"`
 	ReferrerURL        string    `json:"referrer_url,omitempty"`
+	ReferrerDomain     *string   `json:"referrer_domain,omitempty"`
 	DeviceType         *string   `json:"device_type,omitempty"`
 	BrowserName        *string   `json:"browser_name,omitempty"`
 	LocationCountryISO *string   `json:"location_country_iso,omitempty"`
 	LocationCity       *string   `json:"location_city,omitempty"`
+	LocationLatitude   *float64  `json:"location_latitude,omitempty"`
+	LocationLongitude  *float64  `json:"location_longitude,omitempty"`
 }
 
 // TopVisitorsRequest represents a request for top visitors
@@ -397,4 +414,16 @@ type RevenueTimelineDataPoint struct {
 	TotalRevenue *float64  `json:"total_revenue"` // Revenue in smallest currency unit (cents)
 	PaymentCount uint64    `json:"payment_count"`
 	Currency     string    `json:"currency,omitempty"`
+}
+
+// EventFilterOptionsRequest represents a request for event filter options
+type EventFilterOptionsRequest struct {
+	ProjectID string    `query:"project_id" validate:"required"`
+	TimeRange TimeRange `query:"time_range"` // Optional time range to filter options
+}
+
+// EventFilterOptionsResponse represents available filter options for events
+type EventFilterOptionsResponse struct {
+	TrafficOrigins []string `json:"traffic_origins"` // Unique referrer domains
+	Pages          []string `json:"pages"`           // Unique page paths
 }

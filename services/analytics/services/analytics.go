@@ -131,42 +131,84 @@ func (s *AnalyticsService) GetUniqueVisitorsByCountry(c *ctx.Ctx) (*types.Visito
 	}, nil
 }
 
-// GetRecentEvents returns the most recent events for a project
+// GetRecentEvents returns the most recent events for a project with optional filters
 // @Summary Get recent events
-// @Description Get a list of the most recent events (default: 15 events)
+// @Description Get a list of recent events with optional filters (visitor_id, user_id, external_id, traffic_origin, page_path)
 // @Tags Analytics
 // @Accept json
 // @Produce json
 // @Security ApiKeyAuth
 // @Param project_id query string true "Project ID"
 // @Param limit query int false "Maximum number of events to return (default: 15)"
-// @Success 200 {object} types.RecentEventsResponse "List of recent events"
+// @Param offset query int false "Offset for pagination (default: 0)"
+// @Param visitor_id query string false "Filter by visitor ID"
+// @Param user_id query string false "Filter by user ID"
+// @Param external_id query string false "Filter by external ID"
+// @Param traffic_origin query string false "Filter by traffic origin (referrer domain)"
+// @Param page_path query string false "Filter by page path"
+// @Success 200 {object} types.RecentEventsResponse "List of recent events with pagination info"
 // @Failure 400 {object} map[string]interface{} "Invalid request parameters"
 // @Failure 401 {object} map[string]interface{} "Unauthorized - Invalid or missing JWT token"
 // @Failure 500 {object} map[string]interface{} "Internal server error"
 // @Router /api/v1/analytics/events/recent [get]
 func (s *AnalyticsService) GetRecentEvents(c *ctx.Ctx) (*types.RecentEventsResponse, error) {
-	projectID := c.Echo.QueryParam("project_id")
-	if projectID == "" {
+	var req types.RecentEventsRequest
+	if err := c.Echo.Bind(&req); err != nil {
+		return nil, echo.NewHTTPError(400, "Invalid request parameters")
+	}
+
+	if req.ProjectID == "" {
 		return nil, echo.NewHTTPError(400, "project_id is required")
 	}
 
-	limit := 15
-	if limitParam := c.Echo.QueryParam("limit"); limitParam != "" {
-		if _, err := fmt.Sscanf(limitParam, "%d", &limit); err != nil {
-			limit = 15
-		}
-	}
-
-	events, err := s.data.GetRecentEvents(c.Echo.Request().Context(), projectID, limit)
+	events, totalCount, err := s.data.GetRecentEvents(c.Echo.Request().Context(), req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get recent events: %w", err)
 	}
 
 	return &types.RecentEventsResponse{
 		Events: events,
-		Total:  len(events),
+		Total:  totalCount,
+		Limit:  req.Limit,
+		Offset: req.Offset,
 	}, nil
+}
+
+// GetEventFilterOptions returns available filter options for events
+// @Summary Get event filter options
+// @Description Get unique traffic origins and page paths to populate filter dropdowns
+// @Tags Analytics
+// @Accept json
+// @Produce json
+// @Security ApiKeyAuth
+// @Param project_id query string true "Project ID"
+// @Param time_range query string false "Time range" Enums(last_hour, today, last_7_days, last_30_days, last_90_days)
+// @Success 200 {object} types.EventFilterOptionsResponse "Filter options for traffic origins and pages"
+// @Failure 400 {object} map[string]interface{} "Invalid request parameters"
+// @Failure 401 {object} map[string]interface{} "Unauthorized - Invalid or missing JWT token"
+// @Failure 500 {object} map[string]interface{} "Internal server error"
+// @Router /api/v1/analytics/events/filter-options [get]
+func (s *AnalyticsService) GetEventFilterOptions(c *ctx.Ctx) (*types.EventFilterOptionsResponse, error) {
+	var req types.EventFilterOptionsRequest
+	if err := c.Echo.Bind(&req); err != nil {
+		return nil, echo.NewHTTPError(400, "Invalid request parameters")
+	}
+
+	if req.ProjectID == "" {
+		return nil, echo.NewHTTPError(400, "project_id is required")
+	}
+
+	var timeRange *types.TimeRange
+	if req.TimeRange != "" {
+		timeRange = &req.TimeRange
+	}
+
+	filterOptions, err := s.data.GetEventFilterOptions(c.Echo.Request().Context(), req.ProjectID, timeRange)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get event filter options: %w", err)
+	}
+
+	return filterOptions, nil
 }
 
 // GetTopVisitors returns the most active visitors for a project

@@ -65,6 +65,13 @@ func RegisterRoutes(
 
 	server.GroupGET(analyticsRouteGroup, "/events/recent", analyticsService.GetRecentEvents)
 
+	server.GroupGET(analyticsRouteGroup, "/events/filter-options",
+		analyticsService.GetEventFilterOptions,
+		cacheMiddleware.Middleware(middlewares.CacheConfig{
+			TTL:       mediumFrequencyTTL,
+			KeyPrefix: cachePrefix,
+		}))
+
 	server.GroupGET(analyticsRouteGroup, "/sessions/metrics",
 		analyticsService.GetSessionMetrics,
 		cacheMiddleware.Middleware(middlewares.CacheConfig{
