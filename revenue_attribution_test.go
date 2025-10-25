@@ -142,11 +142,11 @@ func TestRevenueAttribution_EndToEnd(t *testing.T) {
 
 			require.NotNil(t, googleRevenue, "Should have Google attribution")
 			assert.Equal(t, int64(9900), googleRevenue.TotalRevenue, "Google revenue should be $99")
-			assert.Equal(t, 1, googleRevenue.PayingCustomers, "Google should have 1 paying customer")
+			assert.Equal(t, uint64(1), googleRevenue.PayingCustomers, "Google should have 1 paying customer")
 
 			require.NotNil(t, facebookRevenue, "Should have Facebook attribution")
 			assert.Equal(t, int64(14900), facebookRevenue.TotalRevenue, "Facebook revenue should be $149")
-			assert.Equal(t, 1, facebookRevenue.PayingCustomers, "Facebook should have 1 paying customer")
+			assert.Equal(t, uint64(1), facebookRevenue.PayingCustomers, "Facebook should have 1 paying customer")
 
 			t.Logf("✓ Google: $%.2f, Facebook: $%.2f",
 				float64(googleRevenue.TotalRevenue)/100,
@@ -224,8 +224,8 @@ func TestRevenueAttribution_EndToEnd(t *testing.T) {
 			// Total revenue should be sum of all payments: $99 + $149 + $49 = $297
 			expectedTotalRevenue := int64(9900 + 14900 + 4900)
 			assert.Equal(t, expectedTotalRevenue, dashboard.TotalRevenue, "Total revenue should be $297")
-			assert.Equal(t, 3, dashboard.TotalPayments, "Should have 3 payments")
-			assert.Equal(t, 3, dashboard.PayingCustomers, "Should have 3 paying customers")
+			assert.Equal(t, uint64(3), dashboard.TotalPayments, "Should have 3 payments")
+			assert.Equal(t, uint64(3), dashboard.PayingCustomers, "Should have 3 paying customers")
 
 			// Average order value: $297 / 3 = $99
 			expectedAvgOrderValue := float64(expectedTotalRevenue) / 3.0
@@ -393,8 +393,8 @@ func TestRevenueAttribution_EndToEnd(t *testing.T) {
 		// Verify profile data
 		assert.Equal(t, visitorID, profile.VisitorID)
 		assert.Equal(t, int64(12500), profile.TotalRevenue, "Total revenue should be $125")
-		assert.Equal(t, 2, profile.PaymentCount, "Should have 2 payments")
-		assert.InDelta(t, 6250.0, profile.AvgOrderValue, 1.0, "Average order value should be $62.50")
+		assert.Equal(t, uint64(2), profile.PaymentCount, "Should have 2 payments")
+		assert.InDelta(t, 6250.0, float64(profile.AvgOrderValue), 1.0, "Average order value should be $62.50")
 
 		// Verify attribution
 		require.NotNil(t, profile.FirstUTMSource)
