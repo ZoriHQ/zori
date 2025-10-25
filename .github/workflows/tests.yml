@@ -35,18 +35,6 @@ jobs:
           --health-timeout 5s
           --health-retries 5
 
-      nats:
-        image: nats:latest
-        ports:
-          - 4222:4222
-          - 8222:8222
-        options: >-
-          --health-cmd "wget --no-verbose --tries=1 --spider http://localhost:8222/healthz || exit 1"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-          --js
-
       redis:
         image: redis:latest
         ports:
@@ -112,6 +100,24 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Start NATS with JetStream
+        run: |
+          docker run -d --name nats-test \
+            -p 4222:4222 \
+            -p 8222:8222 \
+            nats:latest -js
+
+          # Wait for NATS to be ready
+          echo "Waiting for NATS to start..."
+          for i in {1..30}; do
+            if curl -s http://localhost:8222/healthz > /dev/null 2>&1; then
+              echo "NATS is ready!"
+              break
+            fi
+            echo "Waiting for NATS... ($i/30)"
+            sleep 1
+          done
+
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
@@ -173,17 +179,6 @@ jobs:
             sleep 1
           done
 
-          # Wait for NATS
-          echo "Checking NATS..."
-          for i in {1..30}; do
-            if curl -s http://localhost:8222/healthz > /dev/null 2>&1; then
-              echo "NATS is ready!"
-              break
-            fi
-            echo "Waiting for NATS... ($i/30)"
-            sleep 1
-          done
-
           # Wait for Redis
           echo "Checking Redis..."
           for i in {1..30}; do
@@ -233,3 +228,7 @@ jobs:
           flags: unittests
           name: codecov-umbrella
           fail_ci_if_error: false
+
+      - name: Cleanup NATS container
+        if: always()
+        run: docker stop nats-test && docker rm nats-test || true
