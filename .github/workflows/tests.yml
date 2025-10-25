@@ -69,7 +69,7 @@ jobs:
 
       # NATS Configuration
       NATS_CREDENTIALS_CONTENT: ""
-      NATS_STREAM_URL: nats://localhost:4222
+      NATS_STREAM_URL: nats://nats:4222
 
       # Encryption Configuration
       ENCRYPTION_KEY: test-encryption-key-must-be-32-chars-long!
