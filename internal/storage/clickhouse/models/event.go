@@ -22,7 +22,7 @@ type Event struct {
 
 	// Timestamps
 	ClientTimestampUTC time.Time `ch:"client_timestamp_utc"`
-	ServerTimestampUTC time.Time `ch:"server_timestamp_utc,default:now()"`
+	ServerTimestampUTC time.Time `ch:"server_timestamp_utc"`
 
 	// Request metadata
 	UserAgent   string `ch:"user_agent"`
@@ -60,8 +60,10 @@ type Event struct {
 	OrganizationID string `ch:"organization_id"`
 
 	// Location
-	LocationCountryISO *string `ch:"location_country_iso"`
-	LocationCity       *string `ch:"location_city"`
+	LocationCountryISO *string  `ch:"location_country_iso"`
+	LocationCity       *string  `ch:"location_city"`
+	LocationLatitude   *float64 `ch:"location_latitude"`
+	LocationLongitude  *float64 `ch:"location_longitude"`
 
 	// Metadata
 	CreatedAt time.Time `ch:"created_at,type:DateTime,default:now()"`
