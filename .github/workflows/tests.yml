@@ -45,7 +45,7 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-          -js
+          --js
 
       redis:
         image: redis:latest
