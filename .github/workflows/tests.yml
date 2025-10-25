@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
 
     services:
-      jetstream:
+      jetstreamserver:
         image: nats:latest
 
       postgres:
@@ -67,7 +67,7 @@ jobs:
 
       # NATS Configuration
       NATS_CREDENTIALS_CONTENT: ""
-      NATS_STREAM_URL: nats://jetstream:4222
+      NATS_STREAM_URL: nats://jetstreamserver:4222
 
       # Encryption Configuration
       ENCRYPTION_KEY: test-encryption-key-must-be-32-chars-long!
