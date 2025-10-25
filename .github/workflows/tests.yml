@@ -12,7 +12,7 @@ jobs:
 
     services:
       nats:
-        image: zorihq/natsjs-github-actions
+        image: zorihq/natsjs-github-actions:v0.0.2
         ports:
           - 4222:4222
 
@@ -130,7 +130,3 @@ jobs:
           flags: unittests
           name: codecov-umbrella
           fail_ci_if_error: false
-
-      - name: Cleanup NATS container
-        if: always()
-        run: docker stop nats-test && docker rm nats-test || true
