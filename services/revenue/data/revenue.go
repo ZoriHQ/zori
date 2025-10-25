@@ -62,26 +62,20 @@ func (r *RevenueData) GetDashboardMetrics(ctx context.Context, projectID string,
 				AND payment_timestamp_utc <= now()
 				AND payment_status = 'succeeded'
 		),
-		visitor_data AS (
+		identified_visitors AS (
 			SELECT DISTINCT visitor_id
 			FROM events
 			WHERE project_id = ?
 				AND client_timestamp_utc >= ?
 				AND client_timestamp_utc <= now()
+				AND (user_id IS NOT NULL OR external_id IS NOT NULL OR email_hash IS NOT NULL)
 		),
-		session_data AS (
-			SELECT COUNT(DISTINCT session_id) as unique_sessions
-			FROM events
-			WHERE project_id = ?
-				AND client_timestamp_utc >= ?
-				AND client_timestamp_utc <= now()
-		),
-		identified_customers AS (
-			SELECT DISTINCT p.visitor_id
-			FROM payment_data p
-			INNER JOIN events e ON p.visitor_id = e.visitor_id
-			WHERE e.project_id = ?
-				AND (e.user_id IS NOT NULL OR e.external_id IS NOT NULL OR e.email_hash IS NOT NULL)
+		identified_customer_payments AS (
+			SELECT
+				COUNT(DISTINCT pd.visitor_id) as identified_customers,
+				COALESCE(SUM(pd.amount), 0) as identified_customer_revenue
+			FROM payment_data pd
+			INNER JOIN identified_visitors iv ON pd.visitor_id = iv.visitor_id
 		)
 		SELECT
 			-- Core revenue
@@ -92,8 +86,8 @@ func (r *RevenueData) GetDashboardMetrics(ctx context.Context, projectID string,
 			-- Customer metrics
 			COUNT(DISTINCT pd.visitor_id) as paying_customers,
 			CASE
-				WHEN (SELECT COUNT(*) FROM visitor_data) > 0
-				THEN COUNT(DISTINCT pd.visitor_id) * 100.0 / (SELECT COUNT(*) FROM visitor_data)
+				WHEN (SELECT COUNT(DISTINCT visitor_id) FROM events WHERE project_id = ? AND client_timestamp_utc >= ? AND client_timestamp_utc <= now()) > 0
+				THEN COUNT(DISTINCT pd.visitor_id) * 100.0 / (SELECT COUNT(DISTINCT visitor_id) FROM events WHERE project_id = ? AND client_timestamp_utc >= ? AND client_timestamp_utc <= now())
 				ELSE 0
 			END as conversion_rate,
 
@@ -109,17 +103,17 @@ func (r *RevenueData) GetDashboardMetrics(ctx context.Context, projectID string,
 				ELSE 0
 			END as avg_revenue_per_customer,
 			CASE
-				WHEN (SELECT unique_sessions FROM session_data) > 0
-				THEN COALESCE(SUM(pd.amount), 0) / (SELECT unique_sessions FROM session_data)
+				WHEN (SELECT COUNT(DISTINCT session_id) FROM events WHERE project_id = ? AND client_timestamp_utc >= ? AND client_timestamp_utc <= now()) > 0
+				THEN COALESCE(SUM(pd.amount), 0) / (SELECT COUNT(DISTINCT session_id) FROM events WHERE project_id = ? AND client_timestamp_utc >= ? AND client_timestamp_utc <= now())
 				ELSE 0
 			END as avg_revenue_per_session,
 
 			-- Identified customers
-			(SELECT COUNT(*) FROM identified_customers) as identified_customers,
-			COALESCE(SUM(CASE WHEN pd.visitor_id IN (SELECT visitor_id FROM identified_customers) THEN pd.amount ELSE 0 END), 0) as identified_customer_revenue,
+			(SELECT identified_customers FROM identified_customer_payments) as identified_customers,
+			(SELECT identified_customer_revenue FROM identified_customer_payments) as identified_customer_revenue,
 			CASE
-				WHEN (SELECT COUNT(*) FROM identified_customers) > 0
-				THEN COALESCE(SUM(CASE WHEN pd.visitor_id IN (SELECT visitor_id FROM identified_customers) THEN pd.amount ELSE 0 END), 0) / (SELECT COUNT(*) FROM identified_customers)
+				WHEN (SELECT identified_customers FROM identified_customer_payments) > 0
+				THEN (SELECT identified_customer_revenue FROM identified_customer_payments) / (SELECT identified_customers FROM identified_customer_payments)
 				ELSE 0
 			END as avg_revenue_per_identified_customer
 		FROM payment_data pd
@@ -128,9 +122,9 @@ func (r *RevenueData) GetDashboardMetrics(ctx context.Context, projectID string,
 	var response types.DashboardResponse
 	row := r.clickDb.Db().QueryRow(ctx, query,
 		projectID, startTime, // payment_data
-		projectID, startTime, // visitor_data
-		projectID, startTime, // session_data
-		projectID, // identified_customers
+		projectID, startTime, // identified_visitors
+		projectID, startTime, projectID, startTime, // conversion_rate subqueries
+		projectID, startTime, projectID, startTime, // avg_revenue_per_session subqueries
 	)
 
 	if err := row.Scan(
@@ -164,83 +158,109 @@ func (r *RevenueData) GetAttributionByOrigin(ctx context.Context, projectID stri
 	}
 
 	query := `
-		WITH visitors_in_period AS (
-			SELECT DISTINCT visitor_id
-			FROM events
-			WHERE project_id = ?
-				AND client_timestamp_utc >= ?
-				AND client_timestamp_utc <= now()
-		),
-		revenue_totals AS (
-			SELECT COALESCE(SUM(amount), 0) as total_revenue
+		WITH payments_in_period AS (
+			SELECT
+				visitor_id,
+				amount,
+				payment_id,
+				currency
 			FROM payment_events
 			WHERE project_id = ?
 				AND payment_timestamp_utc >= ?
 				AND payment_timestamp_utc <= now()
 				AND payment_status = 'succeeded'
 		),
-		visitor_origins AS (
+		visitors_in_period AS (
+			SELECT DISTINCT visitor_id
+			FROM events
+			WHERE project_id = ?
+				AND client_timestamp_utc >= ?
+				AND client_timestamp_utc <= now()
+		),
+		all_visitors AS (
+			SELECT visitor_id FROM visitors_in_period
+			UNION DISTINCT
+			SELECT visitor_id FROM payments_in_period
+		),
+		payment_visitor_origins AS (
 			SELECT
-				ft.visitor_id,
+				p.visitor_id,
+				p.amount,
+				p.payment_id,
+				p.currency,
 				CASE
+					WHEN ft.visitor_id IS NULL THEN 'Direct'
 					WHEN argMinMerge(ft.first_referrer_domain) IS NULL OR argMinMerge(ft.first_referrer_domain) = '' THEN 'Direct'
 					ELSE argMinMerge(ft.first_referrer_domain)
 				END as origin
-			FROM visitor_first_touch_attribution ft
-			INNER JOIN visitors_in_period vip ON ft.visitor_id = vip.visitor_id
-			WHERE ft.project_id = ?
-			GROUP BY ft.visitor_id
+			FROM payments_in_period p
+			LEFT JOIN visitor_first_touch_attribution ft
+				ON p.visitor_id = ft.visitor_id AND ft.project_id = ?
+			GROUP BY p.visitor_id, p.amount, p.payment_id, p.currency
 		),
-		origin_stats AS (
+		all_visitor_origins AS (
 			SELECT
-				vo.origin,
-				uniq(vo.visitor_id) as unique_visitors,
-				COALESCE(SUM(p.amount), 0) as total_revenue,
-				uniq(p.visitor_id) as paying_customers,
-				countIf(p.payment_id IS NOT NULL) as payment_count,
-				any(p.currency) as currency
-			FROM visitor_origins vo
-			LEFT JOIN payment_events p
-				ON vo.visitor_id = p.visitor_id
-				AND p.payment_status = 'succeeded'
-				AND p.project_id = ?
-				AND p.payment_timestamp_utc >= ?
-				AND p.payment_timestamp_utc <= now()
-			GROUP BY vo.origin
+				av.visitor_id,
+				CASE
+					WHEN ft.visitor_id IS NULL THEN 'Direct'
+					WHEN argMinMerge(ft.first_referrer_domain) IS NULL OR argMinMerge(ft.first_referrer_domain) = '' THEN 'Direct'
+					ELSE argMinMerge(ft.first_referrer_domain)
+				END as origin
+			FROM all_visitors av
+			LEFT JOIN visitor_first_touch_attribution ft
+				ON av.visitor_id = ft.visitor_id AND ft.project_id = ?
+			GROUP BY av.visitor_id
+		),
+		visitor_counts_by_origin AS (
+			SELECT
+				origin,
+				uniq(visitor_id) as unique_visitors
+			FROM all_visitor_origins
+			GROUP BY origin
+		),
+		payment_stats AS (
+			SELECT
+				origin,
+				COALESCE(SUM(amount), 0) as total_revenue,
+				uniq(visitor_id) as paying_customers,
+				COUNT(payment_id) as payment_count,
+				any(currency) as currency
+			FROM payment_visitor_origins
+			GROUP BY origin
 		)
 		SELECT
-			os.origin,
-			os.total_revenue,
+			ps.origin,
+			ps.total_revenue,
 			CASE
-				WHEN rt.total_revenue > 0
-				THEN os.total_revenue * 100.0 / rt.total_revenue
+				WHEN (SELECT SUM(amount) FROM payments_in_period) > 0
+				THEN ps.total_revenue * 100.0 / (SELECT SUM(amount) FROM payments_in_period)
 				ELSE 0
 			END as revenue_percentage,
-			os.paying_customers,
-			os.unique_visitors,
+			ps.paying_customers,
+			COALESCE(vc.unique_visitors, 0) as unique_visitors,
 			CASE
-				WHEN os.unique_visitors > 0
-				THEN os.paying_customers * 100.0 / os.unique_visitors
+				WHEN COALESCE(vc.unique_visitors, 0) > 0
+				THEN ps.paying_customers * 100.0 / vc.unique_visitors
 				ELSE 0
 			END as conversion_rate,
 			CASE
-				WHEN os.paying_customers > 0
-				THEN os.total_revenue / os.paying_customers
+				WHEN ps.paying_customers > 0
+				THEN ps.total_revenue / ps.paying_customers
 				ELSE 0
 			END as avg_revenue_per_customer,
-			os.payment_count,
-			os.currency
-		FROM origin_stats os
-		CROSS JOIN revenue_totals rt
-		ORDER BY os.total_revenue DESC
+			ps.payment_count,
+			ps.currency
+		FROM payment_stats ps
+		LEFT JOIN visitor_counts_by_origin vc ON ps.origin = vc.origin
+		ORDER BY ps.total_revenue DESC
 		LIMIT 20
 	`
 
 	rows, err := r.clickDb.Db().Query(ctx, query,
+		projectID, startTime, // payments_in_period
 		projectID, startTime, // visitors_in_period
-		projectID, startTime, // revenue_totals
-		projectID,            // visitor_origins
-		projectID, startTime, // origin_stats payment join
+		projectID,            // payment_visitor_origins LEFT JOIN
+		projectID,            // all_visitor_origins LEFT JOIN
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query attribution by origin: %w", err)
@@ -761,30 +781,39 @@ func (r *RevenueData) GetConversionMetrics(ctx context.Context, projectID string
 				AND payment_timestamp_utc <= now()
 				AND payment_status = 'succeeded'
 			GROUP BY visitor_id
+		),
+		joined_data AS (
+			SELECT
+				vd.visitor_id,
+				vd.first_visit,
+				pd.first_payment,
+				COALESCE(pd.payment_count, 0) as payment_count,
+				COALESCE(pd.total_revenue, 0) as total_revenue
+			FROM visitor_data vd
+			LEFT JOIN payment_data pd ON vd.visitor_id = pd.visitor_id
 		)
 		SELECT
-			COUNT(DISTINCT vd.visitor_id) as total_visitors,
-			COUNT(DISTINCT pd.visitor_id) as paying_customers,
+			COUNT(DISTINCT visitor_id) as total_visitors,
+			countIf(first_payment IS NOT NULL) as paying_customers,
 			CASE
-				WHEN COUNT(DISTINCT vd.visitor_id) > 0
-				THEN COUNT(DISTINCT pd.visitor_id) * 100.0 / COUNT(DISTINCT vd.visitor_id)
+				WHEN COUNT(DISTINCT visitor_id) > 0
+				THEN countIf(first_payment IS NOT NULL) * 100.0 / COUNT(DISTINCT visitor_id)
 				ELSE 0
 			END as conversion_rate,
-			AVG(dateDiff('hour', vd.first_visit, pd.first_payment)) as avg_time_to_purchase,
-			median(dateDiff('hour', vd.first_visit, pd.first_payment)) as median_time_to_purchase,
+			COALESCE(avgIf(dateDiff('hour', first_visit, first_payment), first_payment IS NOT NULL AND first_payment >= first_visit), 0) as avg_time_to_purchase,
+			COALESCE(medianIf(dateDiff('hour', first_visit, first_payment), first_payment IS NOT NULL AND first_payment >= first_visit), 0) as median_time_to_purchase,
 			CASE
-				WHEN COUNT(DISTINCT pd.visitor_id) > 0
-				THEN SUM(pd.total_revenue) / COUNT(DISTINCT pd.visitor_id)
+				WHEN countIf(first_payment IS NOT NULL) > 0
+				THEN sumIf(total_revenue, first_payment IS NOT NULL) / countIf(first_payment IS NOT NULL)
 				ELSE 0
 			END as customer_lifetime_value,
 			CASE
-				WHEN COUNT(DISTINCT pd.visitor_id) > 0
-				THEN countIf(pd.payment_count > 1) * 100.0 / COUNT(DISTINCT pd.visitor_id)
+				WHEN countIf(first_payment IS NOT NULL) > 0
+				THEN countIf(payment_count > 1) * 100.0 / countIf(first_payment IS NOT NULL)
 				ELSE 0
 			END as repeat_purchase_rate,
-			AVG(pd.payment_count) as avg_purchases_per_customer
-		FROM visitor_data vd
-		LEFT JOIN payment_data pd ON vd.visitor_id = pd.visitor_id
+			COALESCE(avgIf(payment_count, first_payment IS NOT NULL), 0) as avg_purchases_per_customer
+		FROM joined_data
 	`
 
 	var response types.ConversionMetricsResponse
