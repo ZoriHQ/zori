@@ -176,8 +176,9 @@ func (m *Zori) clickhouse() *dagger.Service {
 // nats returns a NATS JetStream service container
 func (m *Zori) nats() *dagger.Service {
 	return dag.Container().
-		From("zorihq/natsjs-github-actions:v0.0.2").
+		From("nats/nats:latest").
 		WithExposedPort(4222).
+		WithEntrypoint([]string{"nats-server", "-js", "-m", "8222", "-p", "4222"}).
 		AsService()
 }
 
