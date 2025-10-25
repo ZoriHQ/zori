@@ -7,87 +7,30 @@ vars:
 
 tasks:
   server:
-    desc: Start the HTTP server (default port 1323)
+    aliases:
+      - s
+    desc: Start the API HTTP server (default port 1323)
     cmds:
       - go run . server
 
   ingestion:
     aliases:
       - i
-    desc: Start the IngestionHTTP server (default port 1324)
+    desc: Start the Ingestion HTTP server (default port 1324)
     cmds:
       - go run . ingestion
-
-  migrate:all:up:
-    desc: Run all pending database migrations
-    cmds:
-      - task:migrate:up
-      - task:migrate:clickhouse:up
 
   migrate:up:
     desc: Run all pending database migrations
     cmds:
       - goose -dir internal/storage/postgres/migrations postgres "$POSTGRES_URL" up
-
-  migrate:clickhouse:up:
-    desc: Run all pending database migrations
-    cmds:
-      - goose -dir internal/storage/clickhouse/migrations clickhouse "$CLICKHOUSE_URL" up
-
-  migrate:clickhouse:down:
-    desc: Rollback the last database migration
-    cmds:
-      - goose -dir internal/storage/clickhouse/migrations clickhouse "$CLICKHOUSE_URL" down
+      - GOOSE_DRIVER=clickhouse GOOSE_DBSTRING=$CLICKHOUSE_URL goose -dir internal/storage/clickhouse/migrations up
 
   migrate:down:
     desc: Rollback the last database migration
     cmds:
       - goose -dir internal/storage/postgres/migrations postgres "$POSTGRES_URL" down
-
-  migrate:status:
-    desc: Show database migration status
-    cmds:
-      - goose -dir internal/storage/postgres/migrations postgres "$POSTGRES_URL" status
-
-  migrate:clickhouse:status:
-    desc: Show database migration status
-    cmds:
-      - goose -dir internal/storage/clickhouse/migrations clickhouse "$CLICKHOUSE_URL" status
-
-  migrate:version:
-    desc: Show current migration version
-    cmds:
-      - goose -dir internal/storage/postgres/migrations postgres "$DATABASE_URL" version
-
-  migrate:clickhouse:version:
-    desc: Show current migration version
-    cmds:
-      - goose -dir internal/storage/clickhouse/migrations clickhouse "$CLICKHOUSE_URL" version
-
-  migrate:create:
-    desc: Create a new migration file
-    cmds:
-      - goose -dir internal/storage/postgres/migrations create {{.NAME}} sql
-    vars:
-      NAME: '{{.NAME | default "migration"}}'
-
-  migrate:clickhouse:create:
-    desc: Create a new migration file
-    cmds:
-      - goose -dir internal/storage/clickhouse/migrations create {{.NAME}} sql
-    vars:
-      NAME: '{{.NAME | default "migration"}}'
-
-  db:setup:
-    desc: Initialize database and run all migrations
-    cmds:
-      - task: migrate:up
-
-  db:reset:
-    desc: Reset database (rollback all migrations and re-run)
-    cmds:
-      - goose -dir internal/storage/postgres/migrations postgres "$DATABASE_URL" reset
-      - task: migrate:up
+      - GOOSE_DRIVER=clickhouse GOOSE_DBSTRING=$CLICKHOUSE_URL goose -dir internal/storage/clickhouse/migrations down
 
   docs:
     desc: Generate Swagger documentation
@@ -97,17 +40,37 @@ tasks:
       - npx api-spec-converter --syntax=yaml --from=swagger_2 --to=openapi_3 docs/swagger.yaml > docs/openapi.yaml
       - rm docs/swagger.yaml
       - rm docs/swagger.json
-    silent: false
+    silent: true
 
-  swag-install:
-    desc: Install swag CLI tool
+  test-containers:
+    desc: Start test database containers
     cmds:
-      - go install github.com/swaggo/swag/cmd/swag@latest
+      - docker run --rm -d --name postgres-test -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=postgres -p 5434:5432 postgres:latest
+      - docker run --rm -d --name clickhouse-test -p 9002:9000 -v {{.ROOT_DIR}}/scripts/clickhouse-users-test.xml:/etc/clickhouse-server/users.d/test.xml clickhouse/clickhouse-server:latest
+      - docker run --rm -d --name nats-test -p 4222:4222 -p 8222:8222 nats:latest -js
+      - docker run --rm -d --name redis-test -p 6379:6379 redis:latest
+      - ./scripts/init-test-dbs.sh
+
+  test-migrate:
+    desc: Run migrations for test databases
+    dotenv: [".env.test"]
+    cmds:
+      - goose -dir internal/storage/postgres/migrations postgres "postgres://postgres:postgres@localhost:5434/zori_test?sslmode=disable" up
+      - GOOSE_DRIVER=clickhouse GOOSE_DBSTRING="tcp://localhost:9002/zori_test" goose -dir internal/storage/clickhouse/migrations up
+
+  test-cleanup:
+    desc: Stop and remove test database containers
+    cmds:
+      - docker stop postgres-test clickhouse-test nats-test redis-test || true
+      - docker rm postgres-test clickhouse-test nats-test redis-test || true
 
   test:
     desc: Run all tests
     dotenv: [".env.test"]
+    deps:
+      - test-migrate
     cmds:
+      - defer: { task: test-cleanup }
       - go test ./...
 
   test:verbose:
@@ -115,49 +78,6 @@ tasks:
     dotenv: [".env.test"]
     cmds:
       - go test -v ./...
-
-  # Test database tasks
-  test:db:setup:
-    desc: Setup test database
-    dotenv: [".env.test"]
-    cmds:
-      - |
-        PGPASSWORD=${TEST_DB_PASSWORD:-postgres} psql -h ${TEST_DB_HOST:-localhost} -U ${TEST_DB_USER:-postgres} -c "DROP DATABASE IF EXISTS zori_test"
-        PGPASSWORD=${TEST_DB_PASSWORD:-postgres} psql -h ${TEST_DB_HOST:-localhost} -U ${TEST_DB_USER:-postgres} -c "CREATE DATABASE zori_test"
-
-  test:db:reset:
-    desc: Reset test database
-    dotenv: [".env.test"]
-    deps: [test:db:setup]
-    cmds:
-      - echo "Test database reset complete"
-
-  test:db:migrate:
-    desc: Run migrations on test database
-    dotenv: [".env.test"]
-    cmds:
-      - goose -dir internal/storage/postgres/migrations postgres "$TEST_POSTGRES_URL" up
-
-  # Code quality tasks
-  fmt:
-    desc: Format Go code
-    cmds:
-      - go fmt ./...
-
-  vet:
-    desc: Run go vet
-    cmds:
-      - go vet ./...
-
-  lint:
-    desc: Run golangci-lint
-    cmds:
-      - golangci-lint run
-
-  tidy:
-    desc: Tidy go modules
-    cmds:
-      - go mod tidy
 
   # Clean tasks
   clean:

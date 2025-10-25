@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 	"zori/internal/storage/clickhouse"
-	"zori/services/revenue/types"
 	ingestionData "zori/services/ingestion/data"
+	"zori/services/revenue/types"
 )
 
 type RevenueData struct {
@@ -259,8 +259,8 @@ func (r *RevenueData) GetAttributionByOrigin(ctx context.Context, projectID stri
 	rows, err := r.clickDb.Db().Query(ctx, query,
 		projectID, startTime, // payments_in_period
 		projectID, startTime, // visitors_in_period
-		projectID,            // payment_visitor_origins LEFT JOIN
-		projectID,            // all_visitor_origins LEFT JOIN
+		projectID, // payment_visitor_origins LEFT JOIN
+		projectID, // all_visitor_origins LEFT JOIN
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query attribution by origin: %w", err)

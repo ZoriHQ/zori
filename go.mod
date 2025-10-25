@@ -3,17 +3,22 @@ module zori
 go 1.24.4
 
 require (
+	github.com/Cleverse/go-utilities/nullable v0.0.0-20250808171844-1347aec4138e
 	github.com/ClickHouse/clickhouse-go/v2 v2.40.3
 	github.com/caarlos0/env/v11 v11.3.1
 	github.com/go-playground/validator/v10 v10.27.0
 	github.com/golang-jwt/jwt/v5 v5.3.0
 	github.com/google/uuid v1.6.0
+	github.com/gorilla/websocket v1.5.3
 	github.com/joho/godotenv v1.5.1
 	github.com/labstack/echo/v4 v4.13.4
+	github.com/medama-io/go-useragent v1.2.2
 	github.com/nats-io/nats.go v1.46.1
 	github.com/oschwald/maxminddb-golang/v2 v2.0.0-beta.10
+	github.com/redis/go-redis/v9 v9.14.1
 	github.com/speps/go-hashids/v2 v2.0.1
 	github.com/stretchr/testify v1.11.1
+	github.com/stripe/stripe-go/v81 v81.4.0
 	github.com/swaggo/echo-swagger v1.4.1
 	github.com/swaggo/swag v1.16.6
 	github.com/uptrace/bun v1.2.15
@@ -25,11 +30,11 @@ require (
 	github.com/valyala/fasthttp v1.66.0
 	go.uber.org/fx v1.24.0
 	golang.org/x/crypto v0.42.0
+	golang.org/x/sync v0.17.0
 )
 
 require (
 	github.com/Cleverse/go-utilities/errors v0.0.0-20231113142714-2364608744a9 // indirect
-	github.com/Cleverse/go-utilities/nullable v0.0.0-20250808171844-1347aec4138e // indirect
 	github.com/ClickHouse/ch-go v0.69.0 // indirect
 	github.com/KyleBanks/depth v1.2.1 // indirect
 	github.com/andybalholm/brotli v1.2.0 // indirect
@@ -55,24 +60,20 @@ require (
 	github.com/go-openapi/swag/yamlutils v0.25.1 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
-	github.com/gorilla/websocket v1.5.3 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/klauspost/compress v1.18.0 // indirect
 	github.com/labstack/gommon v0.4.2 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
-	github.com/medama-io/go-useragent v1.2.2 // indirect
 	github.com/nats-io/nkeys v0.4.11 // indirect
 	github.com/nats-io/nuid v1.0.1 // indirect
 	github.com/paulmach/orb v0.12.0 // indirect
 	github.com/pierrec/lz4/v4 v4.1.22 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/puzpuzpuz/xsync/v3 v3.5.1 // indirect
-	github.com/redis/go-redis/v9 v9.14.1 // indirect
 	github.com/segmentio/asm v1.2.1 // indirect
 	github.com/shopspring/decimal v1.4.0 // indirect
-	github.com/stripe/stripe-go/v81 v81.4.0 // indirect
 	github.com/swaggo/files/v2 v2.0.2 // indirect
 	github.com/tmthrgd/go-hex v0.0.0-20190904060850-447a3041c3bc // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
@@ -88,7 +89,6 @@ require (
 	golang.org/x/exp v0.0.0-20230213192124-5e25df0256eb // indirect
 	golang.org/x/mod v0.28.0 // indirect
 	golang.org/x/net v0.44.0 // indirect
-	golang.org/x/sync v0.17.0 // indirect
 	golang.org/x/sys v0.37.0 // indirect
 	golang.org/x/text v0.29.0 // indirect
 	golang.org/x/time v0.11.0 // indirect

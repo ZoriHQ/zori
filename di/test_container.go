@@ -4,53 +4,44 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"os"
 	"testing"
-	"time"
 
+	"zori/internal/cache"
 	"zori/internal/config"
+	"zori/internal/natsstream"
 	"zori/internal/server"
 	"zori/internal/server/middlewares"
+	"zori/internal/storage/clickhouse"
 	"zori/internal/storage/postgres"
 	"zori/internal/storage/postgres/models"
 	"zori/services/auth"
+	"zori/services/events"
+	eventsServices "zori/services/events/services"
+	"zori/services/ingestion"
+	ingestionWeb "zori/services/ingestion/web"
 	"zori/services/organizations"
 	"zori/services/projects"
 
 	"github.com/uptrace/bun"
 	"github.com/uptrace/bun/dialect/pgdialect"
 	"github.com/uptrace/bun/driver/pgdriver"
+	"github.com/valyala/fasthttp"
 	"go.uber.org/fx"
 	"go.uber.org/fx/fxtest"
 )
 
 // TestContainer holds all the dependencies needed for testing
 type TestContainer struct {
-	App    *fxtest.App
-	DB     *postgres.PostgresDB
-	Server *server.Server
-	Config *config.Config
-}
-
-func NewTestConfig() *config.Config {
-	testPostgresURL := os.Getenv("TEST_POSTGRES_URL")
-	if testPostgresURL == "" {
-		testPostgresURL = "postgres://postgres:postgres@localhost:5432/zori_test?sslmode=disable"
-	}
-
-	testClickHouseURL := os.Getenv("TEST_CLICKHOUSE_URL")
-	if testClickHouseURL == "" {
-		testClickHouseURL = "clickhouse://localhost:9000/zori_test"
-	}
-
-	return &config.Config{
-		PostgresURL:        testPostgresURL,
-		ClickHouseURL:      testClickHouseURL,
-		JWTSecretKey:       "test-secret-key-for-testing-purposes-min-32-chars",
-		JWTAccessTokenTTL:  15 * time.Minute,
-		JWTRefreshTokenTTL: 7 * 24 * time.Hour,
-		BcryptCost:         4,
-	}
+	App                *fxtest.App
+	DB                 *postgres.PostgresDB
+	ClickHouse         *clickhouse.ClickhouseDB
+	NATS               *natsstream.Stream
+	Server             *server.Server
+	Config             *config.Config
+	Cache              *cache.CacheService
+	Processor          *eventsServices.Processor
+	IngestionServer    *ingestionWeb.IngestionServer
+	IngestionServerURL string
 }
 
 func NewTestPostgresDB(cfg *config.Config) (*postgres.PostgresDB, error) {
@@ -74,14 +65,18 @@ func NewTestPostgresDB(cfg *config.Config) (*postgres.PostgresDB, error) {
 
 func NewTestContainer(t *testing.T) *TestContainer {
 	tc := &TestContainer{}
+	tc.IngestionServerURL = "http://localhost:19324"
 
 	app := fxtest.New(
 		t,
 		fx.Provide(
-			NewTestConfig,
+			config.NewConfig,
 			func(cfg *config.Config) (*postgres.PostgresDB, error) {
 				return NewTestPostgresDB(cfg)
 			},
+			clickhouse.NewClickhouseDB,
+			natsstream.NewStream,
+			cache.NewCacheService,
 			server.New,
 		),
 
@@ -92,7 +87,35 @@ func NewTestContainer(t *testing.T) *TestContainer {
 		// Jwt middleware must be provided after the auth & org containers are built since it depends on some of the auth services
 		fx.Provide(middlewares.NewJwtMiddleware),
 
-		fx.Populate(&tc.DB, &tc.Server, &tc.Config),
+		// Register web routes for testing
+		auth.BuildAuthWebDIContainer(),
+		organizations.BuildOrganizationWebDIContainer(),
+		projects.BuildProjectWebDIContainer(),
+
+		// Add ingestion and events modules
+		ingestion.BuildIngestionDiContainer(),
+		events.BuildEventsDIContainer(),
+
+		// Start fasthttp ingestion server for testing
+		fx.Invoke(func(lc fx.Lifecycle, ingestionServer *ingestionWeb.IngestionServer) {
+			lc.Append(fx.Hook{
+				OnStart: func(ctx context.Context) error {
+					go func() {
+						address := "localhost:19324"
+						t.Logf("Starting test ingestion server on %s", address)
+						if err := fasthttp.ListenAndServe(address, ingestionServer.HandleRequest); err != nil {
+							t.Logf("Ingestion server error: %v", err)
+						}
+					}()
+					return nil
+				},
+				OnStop: func(ctx context.Context) error {
+					return nil
+				},
+			})
+		}),
+
+		fx.Populate(&tc.DB, &tc.ClickHouse, &tc.NATS, &tc.Server, &tc.Config, &tc.Cache, &tc.Processor, &tc.IngestionServer),
 	)
 
 	tc.App = app
