@@ -120,18 +120,4 @@ func RegisterRoutes(
 			TTL:       highFrequencyTTL,
 			KeyPrefix: cachePrefix,
 		}))
-
-	server.GroupGET(analyticsRouteGroup, "/revenue/by-utm",
-		analyticsService.GetRevenueByUTM,
-		cacheMiddleware.Middleware(middlewares.CacheConfig{
-			TTL:       lowFrequencyTTL,
-			KeyPrefix: cachePrefix,
-		}))
-
-	server.GroupGET(analyticsRouteGroup, "/revenue/timeline",
-		analyticsService.GetRevenueTimeline,
-		cacheMiddleware.Middleware(middlewares.CacheConfig{
-			TTL:       lowFrequencyTTL,
-			KeyPrefix: cachePrefix,
-		}))
 }

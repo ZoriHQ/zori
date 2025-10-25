@@ -81,10 +81,6 @@ resources:
             methods:
               recent: get /api/v1/analytics/events/recent
               filter_options: get /api/v1/analytics/events/filter-options
-          revenue:
-            methods:
-              by_utm: get /api/v1/analytics/revenue/by-utm
-              timeline: get /api/v1/analytics/revenue/timeline
           sessions:
             methods:
               metrics: get /api/v1/analytics/sessions/metrics
@@ -97,6 +93,36 @@ resources:
               return_rate: get /api/v1/analytics/retention/return-rate
               churn_rate: get /api/v1/analytics/retention/churn-rate
               cohorts: get /api/v1/analytics/retention/cohorts
+      revenue:
+        models:
+          dashboard_response: "#/components/schemas/types.DashboardResponse"
+          attribution_by_origin_response: "#/components/schemas/types.AttributionByOriginResponse"
+          origin_attribution_data_point: "#/components/schemas/types.OriginAttributionDataPoint"
+          attribution_by_utm_response: "#/components/schemas/types.AttributionByUTMResponse"
+          utm_attribution_data_point: "#/components/schemas/types.UTMAttributionDataPoint"
+          timeline_response: "#/components/schemas/types.TimelineResponse"
+          timeline_data_point: "#/components/schemas/types.TimelineDataPoint"
+          top_customers_response: "#/components/schemas/types.TopCustomersResponse"
+          top_customer: "#/components/schemas/types.TopCustomer"
+          customer_profile_response: "#/components/schemas/types.CustomerProfileResponse"
+          payment: "#/components/schemas/types.Payment"
+          revenue_over_time_data_point: "#/components/schemas/types.RevenueOverTimeDataPoint"
+          conversion_metrics_response: "#/components/schemas/types.ConversionMetricsResponse"
+        methods:
+          dashboard: get /api/v1/revenue/dashboard
+          timeline: get /api/v1/revenue/timeline
+        subresources:
+          attribution:
+            methods:
+              by_origin: get /api/v1/revenue/attribution/origin
+              by_utm: get /api/v1/revenue/attribution/utm
+          customers:
+            methods:
+              top: get /api/v1/revenue/customers/top
+              profile: get /api/v1/revenue/customers/profile
+          conversion:
+            methods:
+              metrics: get /api/v1/revenue/conversion/metrics
       projects:
         # Configure the models--named types--defined in the resource. Each key in the
         # object is the name of the model and the value is either the name of a schema in

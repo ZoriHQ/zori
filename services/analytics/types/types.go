@@ -61,16 +61,9 @@ type VisitorsByOriginResponse struct {
 
 // OriginDataPoint represents visitors from a specific origin
 type OriginDataPoint struct {
-	Origin               string  `json:"origin"`
-	UniqueVisitors       uint64  `json:"unique_visitors"`
-	Percentage           float64 `json:"percentage"`
-	TotalRevenue         *int64  `json:"total_revenue"` // Revenue in smallest currency unit (cents)
-	RevenuePercentage    float64 `json:"revenue_percentage"`
-	PayingVisitors       uint64  `json:"paying_visitors"`
-	ConversionRate       float64 `json:"conversion_rate"`         // paying_visitors / unique_visitors * 100
-	AvgRevenuePerVisitor float64 `json:"avg_revenue_per_visitor"` // Average revenue per paying visitor
-	PaymentCount         uint64  `json:"payment_count"`
-	Currency             string  `json:"currency,omitempty"`
+	Origin         string  `json:"origin"`
+	UniqueVisitors uint64  `json:"unique_visitors"`
+	Percentage     float64 `json:"percentage"`
 }
 
 // VisitorsByCountryResponse represents unique visitors grouped by country
@@ -149,9 +142,6 @@ type TopVisitor struct {
 	LocationCity       *string   `json:"location_city,omitempty"`
 	DeviceType         *string   `json:"device_type,omitempty"`
 	BrowserName        *string   `json:"browser_name,omitempty"`
-	TotalRevenue       *int64    `json:"total_revenue"` // Total revenue in smallest currency unit (cents)
-	PaymentCount       uint64    `json:"payment_count"`
-	Currency           string    `json:"currency,omitempty"`
 }
 
 // VisitorProfileResponse represents a single visitor's profile
@@ -175,25 +165,6 @@ type VisitorProfileResponse struct {
 	LocationCity       *string                   `json:"location_city,omitempty"`
 	Events             []VisitorEvent            `json:"events"`
 	EventsOverTime     []EventsOverTimeDataPoint `json:"events_over_time"`
-	// Revenue fields
-	TotalRevenue     float64          `json:"total_revenue"` // Total revenue in smallest currency unit (cents)
-	PaymentCount     uint64           `json:"payment_count"`
-	FirstPaymentDate *time.Time       `json:"first_payment_date,omitempty"`
-	LastPaymentDate  *time.Time       `json:"last_payment_date,omitempty"`
-	AvgOrderValue    int64            `json:"avg_order_value"` // Average payment amount
-	Currency         string           `json:"currency,omitempty"`
-	Payments         []VisitorPayment `json:"payments,omitempty"`
-}
-
-// VisitorPayment represents a payment made by a visitor
-type VisitorPayment struct {
-	PaymentID        string    `json:"payment_id"`
-	Amount           int64     `json:"amount"`
-	Currency         string    `json:"currency"`
-	Status           string    `json:"status"`
-	ProductName      string    `json:"product_name"`
-	PaymentTimestamp time.Time `json:"payment_timestamp"`
-	ProviderType     string    `json:"provider_type"`
 }
 
 // VisitorEvent represents a single event in a visitor's history
@@ -294,20 +265,6 @@ type DashboardMetricsResponse struct {
 	TotalEvents    uint64 `json:"total_events"`
 	UniqueVisitors uint64 `json:"unique_visitors"`
 	UniqueSessions uint64 `json:"unique_sessions"` // Total unique sessions in period
-
-	// Revenue metrics - 4 key metrics as separate queries
-	TotalRevenue                    int64   `json:"total_revenue"`                      // 1. Total revenue for all payments in period
-	TotalRevenueIdentifiedCustomers int64   `json:"total_revenue_identified_customers"` // 2. Total revenue for identified customers only
-	AvgRevenuePerSession            int64   `json:"avg_revenue_per_session"`            // 3. Average revenue per unique session
-	ConversionRate                  float64 `json:"conversion_rate"`                    // 4. % of unique visitors who made payment
-
-	// Additional revenue metrics (kept for compatibility)
-	PayingVisitors                  uint64  `json:"paying_visitors"`                     // Number of unique visitors who paid
-	ConversionToPaying              float64 `json:"conversion_to_paying"`                // Same as ConversionRate (deprecated, use ConversionRate)
-	AvgRevenuePerVisitor            float64 `json:"avg_revenue_per_visitor"`             // Average revenue per paying visitor
-	AvgRevenuePerIdentifiedCustomer float64 `json:"avg_revenue_per_identified_customer"` // Average revenue for identified visitors only (deprecated)
-	TotalPayments                   uint64  `json:"total_payments"`                      // Count of successful payments
-	Currency                        string  `json:"currency,omitempty"`
 }
 
 // SessionMetricsRequest represents a request for session metrics
@@ -370,50 +327,6 @@ type ManualIdentifyResponse struct {
 	Success   bool   `json:"success"`
 	Message   string `json:"message"`
 	VisitorID string `json:"visitor_id"`
-}
-
-// RevenueByUTMRequest represents a request for revenue by UTM parameters
-type RevenueByUTMRequest struct {
-	ProjectID string    `query:"project_id" validate:"required"`
-	TimeRange TimeRange `query:"time_range" validate:"required"`
-	UTMType   string    `query:"utm_type"` // "source", "medium", or "campaign"
-}
-
-// RevenueByUTMResponse represents revenue grouped by UTM parameters
-type RevenueByUTMResponse struct {
-	Data []UTMRevenueDataPoint `json:"data"`
-}
-
-// UTMRevenueDataPoint represents revenue from a specific UTM parameter
-type UTMRevenueDataPoint struct {
-	UTMValue             string  `json:"utm_value"`     // The UTM parameter value
-	TotalRevenue         int64   `json:"total_revenue"` // Revenue in smallest currency unit (cents)
-	RevenuePercentage    float64 `json:"revenue_percentage"`
-	PayingVisitors       uint64  `json:"paying_visitors"`
-	UniqueVisitors       uint64  `json:"unique_visitors"`
-	ConversionRate       float64 `json:"conversion_rate"`         // paying_visitors / unique_visitors * 100
-	AvgRevenuePerVisitor float64 `json:"avg_revenue_per_visitor"` // Average revenue per paying visitor
-	PaymentCount         uint64  `json:"payment_count"`
-	Currency             string  `json:"currency,omitempty"`
-}
-
-// RevenueTimelineRequest represents a request for revenue over time
-type RevenueTimelineRequest struct {
-	ProjectID string    `query:"project_id" validate:"required"`
-	TimeRange TimeRange `query:"time_range" validate:"required"`
-}
-
-// RevenueTimelineResponse represents revenue over time
-type RevenueTimelineResponse struct {
-	Data []RevenueTimelineDataPoint `json:"data"`
-}
-
-// RevenueTimelineDataPoint represents revenue at a specific time bucket
-type RevenueTimelineDataPoint struct {
-	Timestamp    time.Time `json:"timestamp"`
-	TotalRevenue *float64  `json:"total_revenue"` // Revenue in smallest currency unit (cents)
-	PaymentCount uint64    `json:"payment_count"`
-	Currency     string    `json:"currency,omitempty"`
 }
 
 // EventFilterOptionsRequest represents a request for event filter options

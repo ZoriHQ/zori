@@ -18,6 +18,7 @@ import (
 	"zori/services/organizations"
 	"zori/services/payments"
 	"zori/services/projects"
+	"zori/services/revenue"
 
 	"go.uber.org/fx"
 )
@@ -36,6 +37,7 @@ func NewApplication() *fx.App {
 		organizations.BuildOrganizationDIContainer(),
 		projects.BuildProjectsDIContainer(),
 		analytics.BuildAnalyticsDIContainer(),
+		revenue.BuildRevenueDIContainer(),
 		payments.BuildPaymentsDIContainer(),
 
 		fx.Provide(middlewares.NewJwtMiddleware),
@@ -48,6 +50,7 @@ func NewApplication() *fx.App {
 		organizations.BuildOrganizationWebDIContainer(),
 		auth.BuildAuthWebDIContainer(),
 		analytics.BuildAnalyticsWebDIContainer(),
+		revenue.BuildRevenueWebDIContainer(),
 		payments.BuildPaymentsWebDIContainer(),
 		events.BuildEventsDIContainer(),
 		events.BuildEventsWebContainer(),
