@@ -10,118 +10,17 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
-    services:
-      nats:
-        image: zorihq/natsjs-github-actions:v0.0.2
-        ports:
-          - 4222:4222
-
-      postgres:
-        image: postgres:latest
-        env:
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: postgres
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
-      redis:
-        image: redis:latest
-        ports:
-          - 6379:6379
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
-    env:
-      # Database Configuration
-      POSTGRES_URL: postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable
-      CLICKHOUSE_URL: localhost:9000
-      CLICKHOUSE_USERNAME: default
-      CLICKHOUSE_USER: default
-      CLICKHOUSE_PASSWORD: "default"
-      CLICKHOUSE_DATABASE: default
-
-      # JWT Configuration
-      JWT_SECRET_KEY: test-secret-key-for-testing-purposes-min-32-chars
-      JWT_ACCESS_TOKEN_TTL: 15m
-      JWT_REFRESH_TOKEN_TTL: 168h
-
-      # Bcrypt Configuration
-      BCRYPT_COST: 4
-
-      # Disable debug logging
-      BUNDEBUG: 0
-
-      # Server Configuration
-      TEST_SERVER_PORT: 1324
-      TEST_SERVER_HOST: localhost
-
-      # Redis Configuration
-      REDIS_ADDRS: localhost:6379
-      REDIS_PASSWORD: ""
-
-      # NATS Configuration
-      NATS_CREDENTIALS_CONTENT: ""
-      NATS_STREAM_URL: nats://nats:4222
-
-      # Encryption Configuration
-      ENCRYPTION_KEY: test-encryption-key-must-be-32-chars-long!
-
-      # Telemetry Configuration
-      TELEMETRY_ENABLED: false
-      DATADOG_ENABLED: false
-      OTEL_ENABLED: false
-
-      # Log Level
-      LOG_LEVEL: error
-
-      # Timeouts
-      TEST_TIMEOUT: 30s
-      TEST_DB_TIMEOUT: 5s
-
-      # Feature Flags
-      FEATURE_EMAIL_VERIFICATION: false
-      FEATURE_PASSWORD_RECOVERY: false
-      FEATURE_RATE_LIMITING: false
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: "Setup ClickHouse Server"
-        id: clickhouse-server
-        uses: praneeth527/clickhouse-server-action@v1.0.0
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
+      - name: Set up Dagger
+        uses: dagger/dagger-for-github@v7
         with:
-          go-version-file: go.mod
-          cache: true
+          version: "latest"
 
-      - name: Install goose
-        run: go install github.com/pressly/goose/v3/cmd/goose@latest
-
-      - name: Run migrations
-        run: |
-          # Run Postgres migrations
-          echo "Running Postgres migrations..."
-          goose -dir internal/storage/postgres/migrations postgres "$POSTGRES_URL" up
-
-          # Run ClickHouse migrations
-          echo "Running ClickHouse migrations..."
-          GOOSE_DRIVER=clickhouse GOOSE_DBSTRING="clickhouse://default:default@localhost:9000" goose -dir internal/storage/clickhouse/migrations up
-
-          echo "Migrations completed successfully!"
-
-      - name: Run tests
-        run: go test -v -race -coverprofile=coverage.out -covermode=atomic ./...
+      - name: Run tests with Dagger
+        run: dagger call test-with-coverage --source=. export --path=coverage.out
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
