@@ -47,11 +47,11 @@ jobs:
 
     env:
       # Database Configuration
-      POSTGRES_URL: postgres://postgres:postgres@localhost:5432/zori_test?sslmode=disable
+      POSTGRES_URL: postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable
       CLICKHOUSE_URL: localhost:9000
       CLICKHOUSE_USERNAME: default
       CLICKHOUSE_PASSWORD: ""
-      CLICKHOUSE_DATABASE: zori_test
+      CLICKHOUSE_DATABASE: default
 
       # JWT Configuration
       JWT_SECRET_KEY: test-secret-key-for-testing-purposes-min-32-chars
@@ -127,13 +127,6 @@ jobs:
       - name: Install goose
         run: go install github.com/pressly/goose/v3/cmd/goose@latest
 
-      - name: Configure ClickHouse
-        run: |
-          # ClickHouse by default allows passwordless access for the default user
-          # Just verify we can connect
-          echo "Verifying ClickHouse connection..."
-          clickhouse-client --host localhost --port 9000 --query "SELECT version()"
-
       - name: Wait for services to be ready
         run: |
           echo "Waiting for all services to be healthy..."
@@ -172,20 +165,6 @@ jobs:
           done
 
           echo "All services are ready!"
-
-      - name: Create test databases
-        run: |
-          # Create Postgres test database
-          echo "Creating zori_test database in Postgres..."
-          PGPASSWORD=postgres psql -h localhost -U postgres -c "DROP DATABASE IF EXISTS zori_test;" || true
-          PGPASSWORD=postgres psql -h localhost -U postgres -c "CREATE DATABASE zori_test;"
-
-          # Create ClickHouse test database
-          echo "Creating zori_test database in ClickHouse..."
-          clickhouse-client --host localhost --port 9000 --query "DROP DATABASE IF EXISTS zori_test;" || true
-          clickhouse-client --host localhost --port 9000 --query "CREATE DATABASE zori_test;"
-
-          echo "Test databases created successfully!"
 
       - name: Run migrations
         run: |
