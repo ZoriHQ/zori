@@ -1,0 +1,239 @@
+name: Run Integration Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:latest
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      clickhouse:
+        image: clickhouse/clickhouse-server:latest
+        ports:
+          - 9000:9000
+          - 8123:8123
+        options: >-
+          --health-cmd "clickhouse-client --query 'SELECT 1'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      nats:
+        image: nats:latest
+        ports:
+          - 4222:4222
+          - 8222:8222
+        options: >-
+          --health-cmd "wget --no-verbose --tries=1 --spider http://localhost:8222/healthz || exit 1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        command: ["-js"]
+
+      redis:
+        image: redis:latest
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      # Database Configuration
+      POSTGRES_URL: postgres://postgres:postgres@localhost:5432/zori_test?sslmode=disable
+      CLICKHOUSE_URL: localhost:9000
+      CLICKHOUSE_USERNAME: default
+      CLICKHOUSE_PASSWORD: ""
+      CLICKHOUSE_DATABASE: zori_test
+
+      # JWT Configuration
+      JWT_SECRET_KEY: test-secret-key-for-testing-purposes-min-32-chars
+      JWT_ACCESS_TOKEN_TTL: 15m
+      JWT_REFRESH_TOKEN_TTL: 168h
+
+      # Bcrypt Configuration
+      BCRYPT_COST: 4
+
+      # Disable debug logging
+      BUNDEBUG: 0
+
+      # Server Configuration
+      TEST_SERVER_PORT: 1324
+      TEST_SERVER_HOST: localhost
+
+      # Redis Configuration
+      REDIS_ADDRS: localhost:6379
+      REDIS_PASSWORD: ""
+
+      # NATS Configuration
+      NATS_CREDENTIALS_CONTENT: ""
+      NATS_STREAM_URL: nats://localhost:4222
+
+      # Encryption Configuration
+      ENCRYPTION_KEY: test-encryption-key-must-be-32-chars-long!
+
+      # Telemetry Configuration
+      TELEMETRY_ENABLED: false
+      DATADOG_ENABLED: false
+      OTEL_ENABLED: false
+
+      # Log Level
+      LOG_LEVEL: error
+
+      # Timeouts
+      TEST_TIMEOUT: 30s
+      TEST_DB_TIMEOUT: 5s
+
+      # Feature Flags
+      FEATURE_EMAIL_VERIFICATION: false
+      FEATURE_PASSWORD_RECOVERY: false
+      FEATURE_RATE_LIMITING: false
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Install dependencies
+        run: |
+          # Install PostgreSQL client tools
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+
+          # Install ClickHouse client
+          sudo apt-get install -y apt-transport-https ca-certificates dirmngr
+          GNUPGHOME=$(mktemp -d)
+          sudo GNUPGHOME="$GNUPGHOME" gpg --no-default-keyring --keyring /usr/share/keyrings/clickhouse-keyring.gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 8919F6BD2B48D754
+          rm -rf "$GNUPGHOME"
+          sudo chmod +r /usr/share/keyrings/clickhouse-keyring.gpg
+          echo "deb [signed-by=/usr/share/keyrings/clickhouse-keyring.gpg] https://packages.clickhouse.com/deb stable main" | sudo tee /etc/apt/sources.list.d/clickhouse.list
+          sudo apt-get update
+          sudo apt-get install -y clickhouse-client
+
+          # Install Redis client
+          sudo apt-get install -y redis-tools
+
+      - name: Install goose
+        run: go install github.com/pressly/goose/v3/cmd/goose@latest
+
+      - name: Configure ClickHouse
+        run: |
+          # ClickHouse by default allows passwordless access for the default user
+          # Just verify we can connect
+          echo "Verifying ClickHouse connection..."
+          clickhouse-client --host localhost --port 9000 --query "SELECT version()"
+
+      - name: Wait for services to be ready
+        run: |
+          echo "Waiting for all services to be healthy..."
+
+          # Wait for Postgres
+          echo "Checking Postgres..."
+          for i in {1..30}; do
+            if pg_isready -h localhost -p 5432 -U postgres > /dev/null 2>&1; then
+              echo "Postgres is ready!"
+              break
+            fi
+            echo "Waiting for Postgres... ($i/30)"
+            sleep 1
+          done
+
+          # Wait for ClickHouse
+          echo "Checking ClickHouse..."
+          for i in {1..30}; do
+            if curl -s http://localhost:8123/ping > /dev/null 2>&1; then
+              echo "ClickHouse is ready!"
+              break
+            fi
+            echo "Waiting for ClickHouse... ($i/30)"
+            sleep 1
+          done
+
+          # Wait for NATS
+          echo "Checking NATS..."
+          for i in {1..30}; do
+            if curl -s http://localhost:8222/healthz > /dev/null 2>&1; then
+              echo "NATS is ready!"
+              break
+            fi
+            echo "Waiting for NATS... ($i/30)"
+            sleep 1
+          done
+
+          # Wait for Redis
+          echo "Checking Redis..."
+          for i in {1..30}; do
+            if redis-cli -h localhost -p 6379 ping > /dev/null 2>&1; then
+              echo "Redis is ready!"
+              break
+            fi
+            echo "Waiting for Redis... ($i/30)"
+            sleep 1
+          done
+
+          echo "All services are ready!"
+
+      - name: Create test databases
+        run: |
+          # Create Postgres test database
+          echo "Creating zori_test database in Postgres..."
+          PGPASSWORD=postgres psql -h localhost -U postgres -c "DROP DATABASE IF EXISTS zori_test;" || true
+          PGPASSWORD=postgres psql -h localhost -U postgres -c "CREATE DATABASE zori_test;"
+
+          # Create ClickHouse test database
+          echo "Creating zori_test database in ClickHouse..."
+          clickhouse-client --host localhost --port 9000 --query "DROP DATABASE IF EXISTS zori_test;" || true
+          clickhouse-client --host localhost --port 9000 --query "CREATE DATABASE zori_test;"
+
+          echo "Test databases created successfully!"
+
+      - name: Run migrations
+        run: |
+          # Run Postgres migrations
+          echo "Running Postgres migrations..."
+          goose -dir internal/storage/postgres/migrations postgres "$POSTGRES_URL" up
+
+          # Run ClickHouse migrations
+          echo "Running ClickHouse migrations..."
+          GOOSE_DRIVER=clickhouse GOOSE_DBSTRING="$CLICKHOUSE_URL" goose -dir internal/storage/clickhouse/migrations up
+
+          echo "Migrations completed successfully!"
+
+      - name: Run tests
+        run: go test -v -race -coverprofile=coverage.out -covermode=atomic ./...
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          file: ./coverage.out
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: false

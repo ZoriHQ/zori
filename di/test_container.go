@@ -20,7 +20,11 @@ import (
 	"zori/services/ingestion"
 	ingestionWeb "zori/services/ingestion/web"
 	"zori/services/organizations"
+	"zori/services/payments"
+	paymentsServices "zori/services/payments/services"
 	"zori/services/projects"
+	"zori/services/revenue"
+	revenueServices "zori/services/revenue/services"
 
 	"github.com/uptrace/bun"
 	"github.com/uptrace/bun/dialect/pgdialect"
@@ -40,8 +44,11 @@ type TestContainer struct {
 	Config             *config.Config
 	Cache              *cache.CacheService
 	Processor          *eventsServices.Processor
+	PaymentProcessor   *paymentsServices.PaymentProcessor
+	RevenueService     *revenueServices.RevenueService
 	IngestionServer    *ingestionWeb.IngestionServer
 	IngestionServerURL string
+	RevenueData        interface{} // Will be populated with *revenueData.RevenueData
 }
 
 func NewTestPostgresDB(cfg *config.Config) (*postgres.PostgresDB, error) {
@@ -96,6 +103,10 @@ func NewTestContainer(t *testing.T) *TestContainer {
 		ingestion.BuildIngestionDiContainer(),
 		events.BuildEventsDIContainer(),
 
+		// Add payments and revenue modules
+		payments.BuildPaymentsDIContainer(),
+		revenue.BuildRevenueDIContainer(),
+
 		// Start fasthttp ingestion server for testing
 		fx.Invoke(func(lc fx.Lifecycle, ingestionServer *ingestionWeb.IngestionServer) {
 			lc.Append(fx.Hook{
@@ -115,7 +126,21 @@ func NewTestContainer(t *testing.T) *TestContainer {
 			})
 		}),
 
-		fx.Populate(&tc.DB, &tc.ClickHouse, &tc.NATS, &tc.Server, &tc.Config, &tc.Cache, &tc.Processor, &tc.IngestionServer),
+		// Start payment processor for testing
+		fx.Invoke(func(lc fx.Lifecycle, processor *paymentsServices.PaymentProcessor) {
+			lc.Append(fx.Hook{
+				OnStart: func(ctx context.Context) error {
+					go processor.Start()
+					t.Logf("Started payment processor for testing")
+					return nil
+				},
+				OnStop: func(ctx context.Context) error {
+					return processor.Stop()
+				},
+			})
+		}),
+
+		fx.Populate(&tc.DB, &tc.ClickHouse, &tc.NATS, &tc.Server, &tc.Config, &tc.Cache, &tc.Processor, &tc.PaymentProcessor, &tc.RevenueService, &tc.IngestionServer, &tc.RevenueData),
 	)
 
 	tc.App = app
