@@ -12,13 +12,9 @@ jobs:
 
     services:
       nats:
-        image: nats:latest
+        image: docker.io/zorihq/natsjs-github-actions
         ports:
           - 4222:4222
-        options: --name nats-server -v /tmp/nats:/tmp/nats
-        env:
-          # Enable JetStream with 1GB storage
-          NATS_ARGS: "-js -sd /tmp/nats"
 
       postgres:
         image: postgres:latest
