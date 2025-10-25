@@ -44,7 +44,7 @@ func (m *Zori) Test(ctx context.Context, source *dagger.Directory) (string, erro
 		WithEnvVariable("REDIS_ADDRS", "redis:6379").
 		WithEnvVariable("REDIS_PASSWORD", "").
 		WithEnvVariable("NATS_CREDENTIALS_CONTENT", "").
-		WithEnvVariable("NATS_STREAM_URL", "nats://nats:4222").
+		WithEnvVariable("NATS_STREAM_URL", "nats://localhost:4222").
 		WithEnvVariable("ENCRYPTION_KEY", "test-encryption-key-must-be-32-chars-long!").
 		WithEnvVariable("TELEMETRY_ENABLED", "false").
 		WithEnvVariable("DATADOG_ENABLED", "false").
