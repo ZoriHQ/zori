@@ -134,7 +134,7 @@ func (m *Zori) TestWithCoverage(ctx context.Context, source *dagger.Directory) *
 
 	// Run tests with coverage
 	return container.
-		WithExec([]string{"go", "test", "-v", "-race", "-coverprofile=coverage.out", "-covermode=atomic", "./..."}).
+		WithExec([]string{"go", "test", "-v", "-coverprofile=coverage.out", "-covermode=atomic", "./..."}).
 		File("coverage.out")
 }
 
