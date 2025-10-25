@@ -11,6 +11,9 @@ jobs:
     runs-on: ubuntu-latest
 
     services:
+      jetstream:
+        image: nats:latest
+
       postgres:
         image: postgres:latest
         env:
@@ -37,7 +40,7 @@ jobs:
     env:
       # Database Configuration
       POSTGRES_URL: postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable
-      CLICKHOUSE_URL: clickhouse://default:default@localhost:9000
+      CLICKHOUSE_URL: localhost:9002
       CLICKHOUSE_USERNAME: default
       CLICKHOUSE_USER: default
       CLICKHOUSE_PASSWORD: "default"
@@ -94,24 +97,6 @@ jobs:
         id: clickhouse-server
         uses: praneeth527/clickhouse-server-action@v1.0.0
 
-      - name: Start NATS with JetStream
-        run: |
-          docker run -d --name nats-test \
-            -p 4222:4222 \
-            -p 8222:8222 \
-            nats:latest -js
-
-          # Wait for NATS to be ready
-          echo "Waiting for NATS to start..."
-          for i in {1..30}; do
-            if curl -s http://localhost:8222/healthz > /dev/null 2>&1; then
-              echo "NATS is ready!"
-              break
-            fi
-            echo "Waiting for NATS... ($i/30)"
-            sleep 1
-          done
-
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
@@ -129,7 +114,7 @@ jobs:
 
           # Run ClickHouse migrations
           echo "Running ClickHouse migrations..."
-          GOOSE_DRIVER=clickhouse GOOSE_DBSTRING="$CLICKHOUSE_URL" goose -dir internal/storage/clickhouse/migrations up
+          GOOSE_DRIVER=clickhouse GOOSE_DBSTRING="clickhouse://default:default@localhost:9000" goose -dir internal/storage/clickhouse/migrations up
 
           echo "Migrations completed successfully!"
 

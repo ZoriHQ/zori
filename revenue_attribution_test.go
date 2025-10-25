@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"zori/di"
-	revenueData "zori/services/revenue/data"
 	revenueTypes "zori/services/revenue/types"
 	"zori/testutil/fixtures"
 
@@ -21,7 +20,7 @@ func TestRevenueAttribution_EndToEnd(t *testing.T) {
 	_, project := fixtures.SetupAccountAndProject(t, tc)
 
 	// Get the revenue data service
-	revenueDataService := tc.RevenueData.(*revenueData.RevenueData)
+	revenueDataService := tc.RevenueData
 	ctx := context.Background()
 
 	// Give processors time to initialize

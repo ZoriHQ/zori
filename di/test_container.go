@@ -24,6 +24,7 @@ import (
 	paymentsServices "zori/services/payments/services"
 	"zori/services/projects"
 	"zori/services/revenue"
+	revenueData "zori/services/revenue/data"
 	revenueServices "zori/services/revenue/services"
 
 	"github.com/uptrace/bun"
@@ -48,7 +49,7 @@ type TestContainer struct {
 	RevenueService     *revenueServices.RevenueService
 	IngestionServer    *ingestionWeb.IngestionServer
 	IngestionServerURL string
-	RevenueData        interface{} // Will be populated with *revenueData.RevenueData
+	RevenueData        *revenueData.RevenueData
 }
 
 func NewTestPostgresDB(cfg *config.Config) (*postgres.PostgresDB, error) {
