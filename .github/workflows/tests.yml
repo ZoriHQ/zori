@@ -2,21 +2,9 @@ name: Run Integration Tests
 
 on:
   push:
-<<<<<<< HEAD
     branches: [main]
-  pull_request:
-    branches: [main]
-=======
-    branches:
-      - main
-      - 'feature/**'
   pull_request:
     types: [opened, synchronize, reopened]
->>>>>>> a1292f93a8b68891c6d959c8b567736339f5cce9
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
 
 jobs:
   test:
