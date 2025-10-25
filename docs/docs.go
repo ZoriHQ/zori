@@ -489,156 +489,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/analytics/revenue/by-utm": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "Get revenue metrics grouped by UTM source, medium, or campaign",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Analytics"
-                ],
-                "summary": "Get revenue by UTM parameters",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Project ID",
-                        "name": "project_id",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "enum": [
-                            "last_hour",
-                            "today",
-                            "last_7_days",
-                            "last_30_days",
-                            "last_90_days"
-                        ],
-                        "type": "string",
-                        "description": "Time range",
-                        "name": "time_range",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "UTM type: source, medium, or campaign (default: source)",
-                        "name": "utm_type",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Revenue by UTM parameters",
-                        "schema": {
-                            "$ref": "#/definitions/types.RevenueByUTMResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid request parameters",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized - Invalid or missing JWT token",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/analytics/revenue/timeline": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "Get revenue metrics over time for chart visualization",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Analytics"
-                ],
-                "summary": "Get revenue timeline",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Project ID",
-                        "name": "project_id",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "enum": [
-                            "last_hour",
-                            "today",
-                            "last_7_days",
-                            "last_30_days",
-                            "last_90_days"
-                        ],
-                        "type": "string",
-                        "description": "Time range",
-                        "name": "time_range",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Revenue timeline data",
-                        "schema": {
-                            "$ref": "#/definitions/types.RevenueTimelineResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid request parameters",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized - Invalid or missing JWT token",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
         "/api/v1/analytics/sessions/bounce-rate": {
             "get": {
                 "security": [
@@ -2255,6 +2105,522 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/api/v1/revenue/attribution/origin": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Get revenue metrics grouped by traffic origin (referrer domain) using first-touch attribution",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Revenue"
+                ],
+                "summary": "Get revenue attribution by traffic origin",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Project ID",
+                        "name": "project_id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "last_hour",
+                            "today",
+                            "last_7_days",
+                            "last_30_days",
+                            "last_90_days"
+                        ],
+                        "type": "string",
+                        "description": "Time range",
+                        "name": "time_range",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Revenue attribution by origin",
+                        "schema": {
+                            "$ref": "#/definitions/types.AttributionByOriginResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request parameters",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - Invalid or missing JWT token",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/revenue/attribution/utm": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Get revenue metrics grouped by UTM source, medium, or campaign using first-touch attribution",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Revenue"
+                ],
+                "summary": "Get revenue attribution by UTM parameters",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Project ID",
+                        "name": "project_id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "last_hour",
+                            "today",
+                            "last_7_days",
+                            "last_30_days",
+                            "last_90_days"
+                        ],
+                        "type": "string",
+                        "description": "Time range",
+                        "name": "time_range",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "UTM type: source, medium, or campaign (default: source)",
+                        "name": "utm_type",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Revenue attribution by UTM parameters",
+                        "schema": {
+                            "$ref": "#/definitions/types.AttributionByUTMResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request parameters",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - Invalid or missing JWT token",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/revenue/conversion/metrics": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Get conversion funnel metrics including conversion rate, time to purchase, and customer lifetime value",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Revenue"
+                ],
+                "summary": "Get conversion metrics",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Project ID",
+                        "name": "project_id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "last_hour",
+                            "today",
+                            "last_7_days",
+                            "last_30_days",
+                            "last_90_days"
+                        ],
+                        "type": "string",
+                        "description": "Time range",
+                        "name": "time_range",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Conversion metrics",
+                        "schema": {
+                            "$ref": "#/definitions/types.ConversionMetricsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request parameters",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - Invalid or missing JWT token",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/revenue/customers/profile": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Get detailed revenue information for a specific customer including payment history and attribution",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Revenue"
+                ],
+                "summary": "Get customer revenue profile",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Project ID",
+                        "name": "project_id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Visitor ID",
+                        "name": "visitor_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Customer revenue profile",
+                        "schema": {
+                            "$ref": "#/definitions/types.CustomerProfileResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request parameters",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - Invalid or missing JWT token",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "Customer not found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/revenue/customers/top": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Get a list of customers ranked by total revenue",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Revenue"
+                ],
+                "summary": "Get top revenue customers",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Project ID",
+                        "name": "project_id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "last_hour",
+                            "today",
+                            "last_7_days",
+                            "last_30_days",
+                            "last_90_days"
+                        ],
+                        "type": "string",
+                        "description": "Time range",
+                        "name": "time_range",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Maximum number of customers to return (default: 50)",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of top customers",
+                        "schema": {
+                            "$ref": "#/definitions/types.TopCustomersResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request parameters",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - Invalid or missing JWT token",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/revenue/dashboard": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Get key revenue metrics including total revenue, conversion rate, and average order value",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Revenue"
+                ],
+                "summary": "Get revenue dashboard",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Project ID",
+                        "name": "project_id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "last_hour",
+                            "today",
+                            "last_7_days",
+                            "last_30_days",
+                            "last_90_days"
+                        ],
+                        "type": "string",
+                        "description": "Time range",
+                        "name": "time_range",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Revenue dashboard metrics",
+                        "schema": {
+                            "$ref": "#/definitions/types.DashboardResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request parameters",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - Invalid or missing JWT token",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/revenue/timeline": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Get revenue metrics over time for chart visualization",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Revenue"
+                ],
+                "summary": "Get revenue timeline",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Project ID",
+                        "name": "project_id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "last_hour",
+                            "today",
+                            "last_7_days",
+                            "last_30_days",
+                            "last_90_days"
+                        ],
+                        "type": "string",
+                        "description": "Time range",
+                        "name": "time_range",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Revenue timeline data",
+                        "schema": {
+                            "$ref": "#/definitions/types.TimelineResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request parameters",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - Invalid or missing JWT token",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -2597,6 +2963,28 @@ const docTemplate = `{
                 }
             }
         },
+        "types.AttributionByOriginResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/types.OriginAttributionDataPoint"
+                    }
+                }
+            }
+        },
+        "types.AttributionByUTMResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/types.UTMAttributionDataPoint"
+                    }
+                }
+            }
+        },
         "types.BounceRateByPageMetric": {
             "type": "object",
             "properties": {
@@ -2682,6 +3070,40 @@ const docTemplate = `{
                 }
             }
         },
+        "types.ConversionMetricsResponse": {
+            "type": "object",
+            "properties": {
+                "avg_purchases_per_customer": {
+                    "type": "number"
+                },
+                "avg_time_to_first_purchase_hours": {
+                    "description": "Time to conversion",
+                    "type": "number"
+                },
+                "conversion_rate": {
+                    "description": "% of visitors who paid",
+                    "type": "number"
+                },
+                "customer_lifetime_value": {
+                    "description": "Customer value",
+                    "type": "number"
+                },
+                "median_time_to_first_purchase_hours": {
+                    "type": "number"
+                },
+                "paying_customers": {
+                    "type": "integer"
+                },
+                "repeat_purchase_rate": {
+                    "description": "Repeat purchase metrics",
+                    "type": "number"
+                },
+                "total_visitors": {
+                    "description": "Funnel metrics",
+                    "type": "integer"
+                }
+            }
+        },
         "types.CountryDataPoint": {
             "type": "object",
             "properties": {
@@ -2757,22 +3179,77 @@ const docTemplate = `{
                 }
             }
         },
+        "types.CustomerProfileResponse": {
+            "type": "object",
+            "properties": {
+                "avg_order_value": {
+                    "type": "integer"
+                },
+                "currency": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "external_id": {
+                    "type": "string"
+                },
+                "first_payment_date": {
+                    "type": "string"
+                },
+                "first_traffic_origin": {
+                    "description": "Attribution",
+                    "type": "string"
+                },
+                "first_utm_campaign": {
+                    "type": "string"
+                },
+                "first_utm_medium": {
+                    "type": "string"
+                },
+                "first_utm_source": {
+                    "type": "string"
+                },
+                "last_payment_date": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "payment_count": {
+                    "type": "integer"
+                },
+                "payments": {
+                    "description": "Payment history",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/types.Payment"
+                    }
+                },
+                "revenue_over_time": {
+                    "description": "Revenue over time (last 90 days)",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/types.RevenueOverTimeDataPoint"
+                    }
+                },
+                "total_revenue": {
+                    "description": "Revenue summary",
+                    "type": "integer"
+                },
+                "user_id": {
+                    "type": "string"
+                },
+                "visitor_id": {
+                    "description": "Identity",
+                    "type": "string"
+                }
+            }
+        },
         "types.DashboardMetricsResponse": {
             "type": "object",
             "properties": {
                 "avg_pages_per_session": {
-                    "type": "number"
-                },
-                "avg_revenue_per_identified_customer": {
-                    "description": "Average revenue for identified visitors only (deprecated)",
-                    "type": "number"
-                },
-                "avg_revenue_per_session": {
-                    "description": "3. Average revenue per unique session",
-                    "type": "integer"
-                },
-                "avg_revenue_per_visitor": {
-                    "description": "Average revenue per paying visitor",
                     "type": "number"
                 },
                 "avg_session_duration_seconds": {
@@ -2782,26 +3259,11 @@ const docTemplate = `{
                     "description": "Engagement metrics",
                     "type": "number"
                 },
-                "conversion_rate": {
-                    "description": "4. % of unique visitors who made payment",
-                    "type": "number"
-                },
-                "conversion_to_paying": {
-                    "description": "Same as ConversionRate (deprecated, use ConversionRate)",
-                    "type": "number"
-                },
-                "currency": {
-                    "type": "string"
-                },
                 "dau": {
                     "description": "Active users",
                     "type": "integer"
                 },
                 "mau": {
-                    "type": "integer"
-                },
-                "paying_visitors": {
-                    "description": "Additional revenue metrics (kept for compatibility)",
                     "type": "integer"
                 },
                 "return_rate": {
@@ -2815,18 +3277,6 @@ const docTemplate = `{
                     "description": "Total metrics",
                     "type": "integer"
                 },
-                "total_payments": {
-                    "description": "Count of successful payments",
-                    "type": "integer"
-                },
-                "total_revenue": {
-                    "description": "Revenue metrics - 4 key metrics as separate queries",
-                    "type": "integer"
-                },
-                "total_revenue_identified_customers": {
-                    "description": "2. Total revenue for identified customers only",
-                    "type": "integer"
-                },
                 "total_sessions_in_period": {
                     "type": "integer"
                 },
@@ -2838,6 +3288,52 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "wau": {
+                    "type": "integer"
+                }
+            }
+        },
+        "types.DashboardResponse": {
+            "type": "object",
+            "properties": {
+                "avg_order_value": {
+                    "description": "Average metrics",
+                    "type": "integer"
+                },
+                "avg_revenue_per_customer": {
+                    "description": "Average revenue per paying customer",
+                    "type": "number"
+                },
+                "avg_revenue_per_identified_customer": {
+                    "type": "number"
+                },
+                "avg_revenue_per_session": {
+                    "description": "Average revenue per session",
+                    "type": "integer"
+                },
+                "conversion_rate": {
+                    "description": "% of visitors who paid",
+                    "type": "number"
+                },
+                "currency": {
+                    "type": "string"
+                },
+                "identified_customer_revenue": {
+                    "type": "integer"
+                },
+                "identified_customers": {
+                    "description": "Identified customers (have email/user_id)",
+                    "type": "integer"
+                },
+                "paying_customers": {
+                    "description": "Customer metrics",
+                    "type": "integer"
+                },
+                "total_payments": {
+                    "description": "Count of successful payments",
+                    "type": "integer"
+                },
+                "total_revenue": {
+                    "description": "Core revenue metrics",
                     "type": "integer"
                 }
             }
@@ -2935,15 +3431,15 @@ const docTemplate = `{
                 }
             }
         },
-        "types.OriginDataPoint": {
+        "types.OriginAttributionDataPoint": {
             "type": "object",
             "properties": {
-                "avg_revenue_per_visitor": {
-                    "description": "Average revenue per paying visitor",
+                "avg_revenue_per_customer": {
+                    "description": "Average revenue per paying customer",
                     "type": "number"
                 },
                 "conversion_rate": {
-                    "description": "paying_visitors / unique_visitors * 100",
+                    "description": "paying_customers / unique_visitors * 100",
                     "type": "number"
                 },
                 "currency": {
@@ -2952,14 +3448,11 @@ const docTemplate = `{
                 "origin": {
                     "type": "string"
                 },
-                "paying_visitors": {
+                "paying_customers": {
                     "type": "integer"
                 },
                 "payment_count": {
                     "type": "integer"
-                },
-                "percentage": {
-                    "type": "number"
                 },
                 "revenue_percentage": {
                     "type": "number"
@@ -2970,6 +3463,46 @@ const docTemplate = `{
                 },
                 "unique_visitors": {
                     "type": "integer"
+                }
+            }
+        },
+        "types.OriginDataPoint": {
+            "type": "object",
+            "properties": {
+                "origin": {
+                    "type": "string"
+                },
+                "percentage": {
+                    "type": "number"
+                },
+                "unique_visitors": {
+                    "type": "integer"
+                }
+            }
+        },
+        "types.Payment": {
+            "type": "object",
+            "properties": {
+                "amount": {
+                    "type": "integer"
+                },
+                "currency": {
+                    "type": "string"
+                },
+                "payment_id": {
+                    "type": "string"
+                },
+                "payment_timestamp": {
+                    "type": "string"
+                },
+                "product_name": {
+                    "type": "string"
+                },
+                "provider_type": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
                 }
             }
         },
@@ -3101,23 +3634,9 @@ const docTemplate = `{
                 }
             }
         },
-        "types.RevenueByUTMResponse": {
+        "types.RevenueOverTimeDataPoint": {
             "type": "object",
             "properties": {
-                "data": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/types.UTMRevenueDataPoint"
-                    }
-                }
-            }
-        },
-        "types.RevenueTimelineDataPoint": {
-            "type": "object",
-            "properties": {
-                "currency": {
-                    "type": "string"
-                },
                 "payment_count": {
                     "type": "integer"
                 },
@@ -3125,19 +3644,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "total_revenue": {
-                    "description": "Revenue in smallest currency unit (cents)",
-                    "type": "number"
-                }
-            }
-        },
-        "types.RevenueTimelineResponse": {
-            "type": "object",
-            "properties": {
-                "data": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/types.RevenueTimelineDataPoint"
-                    }
+                    "type": "integer"
                 }
             }
         },
@@ -3155,13 +3662,98 @@ const docTemplate = `{
                 }
             }
         },
+        "types.TimelineDataPoint": {
+            "type": "object",
+            "properties": {
+                "currency": {
+                    "type": "string"
+                },
+                "payment_count": {
+                    "type": "integer"
+                },
+                "timestamp": {
+                    "type": "string"
+                },
+                "total_revenue": {
+                    "description": "Revenue in smallest currency unit (cents)",
+                    "type": "number"
+                }
+            }
+        },
+        "types.TimelineResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/types.TimelineDataPoint"
+                    }
+                }
+            }
+        },
+        "types.TopCustomer": {
+            "type": "object",
+            "properties": {
+                "avg_order_value": {
+                    "type": "integer"
+                },
+                "currency": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "external_id": {
+                    "type": "string"
+                },
+                "first_payment_date": {
+                    "type": "string"
+                },
+                "first_traffic_origin": {
+                    "type": "string"
+                },
+                "last_payment_date": {
+                    "type": "string"
+                },
+                "location_country_iso": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "payment_count": {
+                    "type": "integer"
+                },
+                "total_revenue": {
+                    "description": "Total revenue in smallest currency unit (cents)",
+                    "type": "integer"
+                },
+                "user_id": {
+                    "type": "string"
+                },
+                "visitor_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "types.TopCustomersResponse": {
+            "type": "object",
+            "properties": {
+                "customers": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/types.TopCustomer"
+                    }
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
         "types.TopVisitor": {
             "type": "object",
             "properties": {
                 "browser_name": {
-                    "type": "string"
-                },
-                "currency": {
                     "type": "string"
                 },
                 "device_type": {
@@ -3185,13 +3777,6 @@ const docTemplate = `{
                 "location_country_iso": {
                     "type": "string"
                 },
-                "payment_count": {
-                    "type": "integer"
-                },
-                "total_revenue": {
-                    "description": "Total revenue in smallest currency unit (cents)",
-                    "type": "integer"
-                },
                 "user_id": {
                     "type": "string"
                 },
@@ -3214,21 +3799,21 @@ const docTemplate = `{
                 }
             }
         },
-        "types.UTMRevenueDataPoint": {
+        "types.UTMAttributionDataPoint": {
             "type": "object",
             "properties": {
-                "avg_revenue_per_visitor": {
-                    "description": "Average revenue per paying visitor",
+                "avg_revenue_per_customer": {
+                    "description": "Average revenue per paying customer",
                     "type": "number"
                 },
                 "conversion_rate": {
-                    "description": "paying_visitors / unique_visitors * 100",
+                    "description": "paying_customers / unique_visitors * 100",
                     "type": "number"
                 },
                 "currency": {
                     "type": "string"
                 },
-                "paying_visitors": {
+                "paying_customers": {
                     "type": "integer"
                 },
                 "payment_count": {
@@ -3245,7 +3830,6 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "utm_value": {
-                    "description": "The UTM parameter value",
                     "type": "string"
                 }
             }
@@ -3354,42 +3938,9 @@ const docTemplate = `{
                 }
             }
         },
-        "types.VisitorPayment": {
-            "type": "object",
-            "properties": {
-                "amount": {
-                    "type": "integer"
-                },
-                "currency": {
-                    "type": "string"
-                },
-                "payment_id": {
-                    "type": "string"
-                },
-                "payment_timestamp": {
-                    "type": "string"
-                },
-                "product_name": {
-                    "type": "string"
-                },
-                "provider_type": {
-                    "type": "string"
-                },
-                "status": {
-                    "type": "string"
-                }
-            }
-        },
         "types.VisitorProfileResponse": {
             "type": "object",
             "properties": {
-                "avg_order_value": {
-                    "description": "Average payment amount",
-                    "type": "integer"
-                },
-                "currency": {
-                    "type": "string"
-                },
                 "custom_traits": {
                     "type": "object",
                     "additionalProperties": true
@@ -3415,9 +3966,6 @@ const docTemplate = `{
                 "first_identified_at": {
                     "type": "string"
                 },
-                "first_payment_date": {
-                    "type": "string"
-                },
                 "first_referrer_url": {
                     "type": "string"
                 },
@@ -3433,9 +3981,6 @@ const docTemplate = `{
                 "last_identified_at": {
                     "type": "string"
                 },
-                "last_payment_date": {
-                    "type": "string"
-                },
                 "last_seen": {
                     "type": "string"
                 },
@@ -3448,24 +3993,11 @@ const docTemplate = `{
                 "name": {
                     "type": "string"
                 },
-                "payment_count": {
-                    "type": "integer"
-                },
-                "payments": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/types.VisitorPayment"
-                    }
-                },
                 "phone": {
                     "type": "string"
                 },
                 "total_events": {
                     "type": "integer"
-                },
-                "total_revenue": {
-                    "description": "Revenue fields",
-                    "type": "number"
                 },
                 "user_id": {
                     "type": "string"

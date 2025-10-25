@@ -374,121 +374,6 @@ paths:
         - Analytics
       description: Get metrics about user return rate and time between sessions
       summary: Get return rate
-  /api/v1/analytics/revenue/by-utm:
-    get:
-      parameters:
-        - description: Project ID
-          in: query
-          name: project_id
-          required: true
-          schema:
-            type: string
-        - description: Time range
-          in: query
-          name: time_range
-          required: true
-          schema:
-            enum:
-              - last_hour
-              - today
-              - last_7_days
-              - last_30_days
-              - last_90_days
-            type: string
-        - description: 'UTM type: source, medium, or campaign (default: source)'
-          in: query
-          name: utm_type
-          schema:
-            type: string
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/types.RevenueByUTMResponse'
-          description: Revenue by UTM parameters
-        '400':
-          content:
-            application/json:
-              schema:
-                additionalProperties: true
-                type: object
-          description: Invalid request parameters
-        '401':
-          content:
-            application/json:
-              schema:
-                additionalProperties: true
-                type: object
-          description: Unauthorized - Invalid or missing JWT token
-        '500':
-          content:
-            application/json:
-              schema:
-                additionalProperties: true
-                type: object
-          description: Internal server error
-      security:
-        - ApiKeyAuth: []
-      tags:
-        - Analytics
-      description: 'Get revenue metrics grouped by UTM source, medium, or campaign'
-      summary: Get revenue by UTM parameters
-  /api/v1/analytics/revenue/timeline:
-    get:
-      parameters:
-        - description: Project ID
-          in: query
-          name: project_id
-          required: true
-          schema:
-            type: string
-        - description: Time range
-          in: query
-          name: time_range
-          required: true
-          schema:
-            enum:
-              - last_hour
-              - today
-              - last_7_days
-              - last_30_days
-              - last_90_days
-            type: string
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/types.RevenueTimelineResponse'
-          description: Revenue timeline data
-        '400':
-          content:
-            application/json:
-              schema:
-                additionalProperties: true
-                type: object
-          description: Invalid request parameters
-        '401':
-          content:
-            application/json:
-              schema:
-                additionalProperties: true
-                type: object
-          description: Unauthorized - Invalid or missing JWT token
-        '500':
-          content:
-            application/json:
-              schema:
-                additionalProperties: true
-                type: object
-          description: Internal server error
-      security:
-        - ApiKeyAuth: []
-      tags:
-        - Analytics
-      description: Get revenue metrics over time for chart visualization
-      summary: Get revenue timeline
   /api/v1/analytics/sessions/bounce-rate:
     get:
       parameters:
@@ -1712,6 +1597,412 @@ paths:
         description: Project update details
         required: true
       summary: Update a project
+  /api/v1/revenue/attribution/origin:
+    get:
+      parameters:
+        - description: Project ID
+          in: query
+          name: project_id
+          required: true
+          schema:
+            type: string
+        - description: Time range
+          in: query
+          name: time_range
+          required: true
+          schema:
+            enum:
+              - last_hour
+              - today
+              - last_7_days
+              - last_30_days
+              - last_90_days
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/types.AttributionByOriginResponse'
+          description: Revenue attribution by origin
+        '400':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Invalid request parameters
+        '401':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Unauthorized - Invalid or missing JWT token
+        '500':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Internal server error
+      security:
+        - ApiKeyAuth: []
+      tags:
+        - Revenue
+      description: >-
+        Get revenue metrics grouped by traffic origin (referrer domain) using
+        first-touch attribution
+      summary: Get revenue attribution by traffic origin
+  /api/v1/revenue/attribution/utm:
+    get:
+      parameters:
+        - description: Project ID
+          in: query
+          name: project_id
+          required: true
+          schema:
+            type: string
+        - description: Time range
+          in: query
+          name: time_range
+          required: true
+          schema:
+            enum:
+              - last_hour
+              - today
+              - last_7_days
+              - last_30_days
+              - last_90_days
+            type: string
+        - description: 'UTM type: source, medium, or campaign (default: source)'
+          in: query
+          name: utm_type
+          schema:
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/types.AttributionByUTMResponse'
+          description: Revenue attribution by UTM parameters
+        '400':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Invalid request parameters
+        '401':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Unauthorized - Invalid or missing JWT token
+        '500':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Internal server error
+      security:
+        - ApiKeyAuth: []
+      tags:
+        - Revenue
+      description: >-
+        Get revenue metrics grouped by UTM source, medium, or campaign using
+        first-touch attribution
+      summary: Get revenue attribution by UTM parameters
+  /api/v1/revenue/conversion/metrics:
+    get:
+      parameters:
+        - description: Project ID
+          in: query
+          name: project_id
+          required: true
+          schema:
+            type: string
+        - description: Time range
+          in: query
+          name: time_range
+          required: true
+          schema:
+            enum:
+              - last_hour
+              - today
+              - last_7_days
+              - last_30_days
+              - last_90_days
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/types.ConversionMetricsResponse'
+          description: Conversion metrics
+        '400':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Invalid request parameters
+        '401':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Unauthorized - Invalid or missing JWT token
+        '500':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Internal server error
+      security:
+        - ApiKeyAuth: []
+      tags:
+        - Revenue
+      description: >-
+        Get conversion funnel metrics including conversion rate, time to
+        purchase, and customer lifetime value
+      summary: Get conversion metrics
+  /api/v1/revenue/customers/profile:
+    get:
+      parameters:
+        - description: Project ID
+          in: query
+          name: project_id
+          required: true
+          schema:
+            type: string
+        - description: Visitor ID
+          in: query
+          name: visitor_id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/types.CustomerProfileResponse'
+          description: Customer revenue profile
+        '400':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Invalid request parameters
+        '401':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Unauthorized - Invalid or missing JWT token
+        '404':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Customer not found
+        '500':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Internal server error
+      security:
+        - ApiKeyAuth: []
+      tags:
+        - Revenue
+      description: >-
+        Get detailed revenue information for a specific customer including
+        payment history and attribution
+      summary: Get customer revenue profile
+  /api/v1/revenue/customers/top:
+    get:
+      parameters:
+        - description: Project ID
+          in: query
+          name: project_id
+          required: true
+          schema:
+            type: string
+        - description: Time range
+          in: query
+          name: time_range
+          required: true
+          schema:
+            enum:
+              - last_hour
+              - today
+              - last_7_days
+              - last_30_days
+              - last_90_days
+            type: string
+        - description: 'Maximum number of customers to return (default: 50)'
+          in: query
+          name: limit
+          schema:
+            type: integer
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/types.TopCustomersResponse'
+          description: List of top customers
+        '400':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Invalid request parameters
+        '401':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Unauthorized - Invalid or missing JWT token
+        '500':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Internal server error
+      security:
+        - ApiKeyAuth: []
+      tags:
+        - Revenue
+      description: Get a list of customers ranked by total revenue
+      summary: Get top revenue customers
+  /api/v1/revenue/dashboard:
+    get:
+      parameters:
+        - description: Project ID
+          in: query
+          name: project_id
+          required: true
+          schema:
+            type: string
+        - description: Time range
+          in: query
+          name: time_range
+          required: true
+          schema:
+            enum:
+              - last_hour
+              - today
+              - last_7_days
+              - last_30_days
+              - last_90_days
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/types.DashboardResponse'
+          description: Revenue dashboard metrics
+        '400':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Invalid request parameters
+        '401':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Unauthorized - Invalid or missing JWT token
+        '500':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Internal server error
+      security:
+        - ApiKeyAuth: []
+      tags:
+        - Revenue
+      description: >-
+        Get key revenue metrics including total revenue, conversion rate, and
+        average order value
+      summary: Get revenue dashboard
+  /api/v1/revenue/timeline:
+    get:
+      parameters:
+        - description: Project ID
+          in: query
+          name: project_id
+          required: true
+          schema:
+            type: string
+        - description: Time range
+          in: query
+          name: time_range
+          required: true
+          schema:
+            enum:
+              - last_hour
+              - today
+              - last_7_days
+              - last_30_days
+              - last_90_days
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/types.TimelineResponse'
+          description: Revenue timeline data
+        '400':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Invalid request parameters
+        '401':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Unauthorized - Invalid or missing JWT token
+        '500':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Internal server error
+      security:
+        - ApiKeyAuth: []
+      tags:
+        - Revenue
+      description: Get revenue metrics over time for chart visualization
+      summary: Get revenue timeline
 components:
   schemas:
     models.Account:
@@ -1954,6 +2245,20 @@ components:
         wau:
           type: integer
       type: object
+    types.AttributionByOriginResponse:
+      properties:
+        data:
+          items:
+            $ref: '#/components/schemas/types.OriginAttributionDataPoint'
+          type: array
+      type: object
+    types.AttributionByUTMResponse:
+      properties:
+        data:
+          items:
+            $ref: '#/components/schemas/types.UTMAttributionDataPoint'
+          type: array
+      type: object
     types.BounceRateByPageMetric:
       properties:
         bounce_rate:
@@ -2009,6 +2314,30 @@ components:
         week_4_retention:
           type: number
       type: object
+    types.ConversionMetricsResponse:
+      properties:
+        avg_purchases_per_customer:
+          type: number
+        avg_time_to_first_purchase_hours:
+          description: Time to conversion
+          type: number
+        conversion_rate:
+          description: '% of visitors who paid'
+          type: number
+        customer_lifetime_value:
+          description: Customer value
+          type: number
+        median_time_to_first_purchase_hours:
+          type: number
+        paying_customers:
+          type: integer
+        repeat_purchase_rate:
+          description: Repeat purchase metrics
+          type: number
+        total_visitors:
+          description: Funnel metrics
+          type: integer
+      type: object
     types.CountryDataPoint:
       properties:
         country_code:
@@ -2062,39 +2391,65 @@ components:
         - name
         - website_url
       type: object
+    types.CustomerProfileResponse:
+      properties:
+        avg_order_value:
+          type: integer
+        currency:
+          type: string
+        email:
+          type: string
+        external_id:
+          type: string
+        first_payment_date:
+          type: string
+        first_traffic_origin:
+          description: Attribution
+          type: string
+        first_utm_campaign:
+          type: string
+        first_utm_medium:
+          type: string
+        first_utm_source:
+          type: string
+        last_payment_date:
+          type: string
+        name:
+          type: string
+        payment_count:
+          type: integer
+        payments:
+          description: Payment history
+          items:
+            $ref: '#/components/schemas/types.Payment'
+          type: array
+        revenue_over_time:
+          description: Revenue over time (last 90 days)
+          items:
+            $ref: '#/components/schemas/types.RevenueOverTimeDataPoint'
+          type: array
+        total_revenue:
+          description: Revenue summary
+          type: integer
+        user_id:
+          type: string
+        visitor_id:
+          description: Identity
+          type: string
+      type: object
     types.DashboardMetricsResponse:
       properties:
         avg_pages_per_session:
-          type: number
-        avg_revenue_per_identified_customer:
-          description: Average revenue for identified visitors only (deprecated)
-          type: number
-        avg_revenue_per_session:
-          description: 3. Average revenue per unique session
-          type: integer
-        avg_revenue_per_visitor:
-          description: Average revenue per paying visitor
           type: number
         avg_session_duration_seconds:
           type: number
         bounce_rate:
           description: Engagement metrics
           type: number
-        conversion_rate:
-          description: 4. % of unique visitors who made payment
-          type: number
-        conversion_to_paying:
-          description: 'Same as ConversionRate (deprecated, use ConversionRate)'
-          type: number
-        currency:
-          type: string
         dau:
           description: Active users
           type: integer
         mau:
-          type: integer
-        paying_visitors:
-          description: Additional revenue metrics (kept for compatibility)
           type: integer
         return_rate:
           type: number
@@ -2104,15 +2459,6 @@ components:
         total_events:
           description: Total metrics
           type: integer
-        total_payments:
-          description: Count of successful payments
-          type: integer
-        total_revenue:
-          description: Revenue metrics - 4 key metrics as separate queries
-          type: integer
-        total_revenue_identified_customers:
-          description: 2. Total revenue for identified customers only
-          type: integer
         total_sessions_in_period:
           type: integer
         unique_sessions:
@@ -2121,6 +2467,39 @@ components:
         unique_visitors:
           type: integer
         wau:
+          type: integer
+      type: object
+    types.DashboardResponse:
+      properties:
+        avg_order_value:
+          description: Average metrics
+          type: integer
+        avg_revenue_per_customer:
+          description: Average revenue per paying customer
+          type: number
+        avg_revenue_per_identified_customer:
+          type: number
+        avg_revenue_per_session:
+          description: Average revenue per session
+          type: integer
+        conversion_rate:
+          description: '% of visitors who paid'
+          type: number
+        currency:
+          type: string
+        identified_customer_revenue:
+          type: integer
+        identified_customers:
+          description: Identified customers (have email/user_id)
+          type: integer
+        paying_customers:
+          description: Customer metrics
+          type: integer
+        total_payments:
+          description: Count of successful payments
+          type: integer
+        total_revenue:
+          description: Core revenue metrics
           type: integer
       type: object
     types.EventFilterOptionsResponse:
@@ -2185,24 +2564,22 @@ components:
         visitor_id:
           type: string
       type: object
-    types.OriginDataPoint:
+    types.OriginAttributionDataPoint:
       properties:
-        avg_revenue_per_visitor:
-          description: Average revenue per paying visitor
+        avg_revenue_per_customer:
+          description: Average revenue per paying customer
           type: number
         conversion_rate:
-          description: paying_visitors / unique_visitors * 100
+          description: paying_customers / unique_visitors * 100
           type: number
         currency:
           type: string
         origin:
           type: string
-        paying_visitors:
+        paying_customers:
           type: integer
         payment_count:
           type: integer
-        percentage:
-          type: number
         revenue_percentage:
           type: number
         total_revenue:
@@ -2210,6 +2587,32 @@ components:
           type: integer
         unique_visitors:
           type: integer
+      type: object
+    types.OriginDataPoint:
+      properties:
+        origin:
+          type: string
+        percentage:
+          type: number
+        unique_visitors:
+          type: integer
+      type: object
+    types.Payment:
+      properties:
+        amount:
+          type: integer
+        currency:
+          type: string
+        payment_id:
+          type: string
+        payment_timestamp:
+          type: string
+        product_name:
+          type: string
+        provider_type:
+          type: string
+        status:
+          type: string
       type: object
     types.PaymentProviderResponse:
       properties:
@@ -2296,14 +2699,25 @@ components:
         total_users:
           type: integer
       type: object
-    types.RevenueByUTMResponse:
+    types.RevenueOverTimeDataPoint:
       properties:
-        data:
-          items:
-            $ref: '#/components/schemas/types.UTMRevenueDataPoint'
-          type: array
+        payment_count:
+          type: integer
+        timestamp:
+          type: string
+        total_revenue:
+          type: integer
       type: object
-    types.RevenueTimelineDataPoint:
+    types.SessionMetricsResponse:
+      properties:
+        average_pages_per_session:
+          type: number
+        average_session_duration_seconds:
+          type: number
+        total_sessions:
+          type: integer
+      type: object
+    types.TimelineDataPoint:
       properties:
         currency:
           type: string
@@ -2315,27 +2729,55 @@ components:
           description: Revenue in smallest currency unit (cents)
           type: number
       type: object
-    types.RevenueTimelineResponse:
+    types.TimelineResponse:
       properties:
         data:
           items:
-            $ref: '#/components/schemas/types.RevenueTimelineDataPoint'
+            $ref: '#/components/schemas/types.TimelineDataPoint'
           type: array
       type: object
-    types.SessionMetricsResponse:
+    types.TopCustomer:
       properties:
-        average_pages_per_session:
-          type: number
-        average_session_duration_seconds:
-          type: number
-        total_sessions:
+        avg_order_value:
+          type: integer
+        currency:
+          type: string
+        email:
+          type: string
+        external_id:
+          type: string
+        first_payment_date:
+          type: string
+        first_traffic_origin:
+          type: string
+        last_payment_date:
+          type: string
+        location_country_iso:
+          type: string
+        name:
+          type: string
+        payment_count:
+          type: integer
+        total_revenue:
+          description: Total revenue in smallest currency unit (cents)
+          type: integer
+        user_id:
+          type: string
+        visitor_id:
+          type: string
+      type: object
+    types.TopCustomersResponse:
+      properties:
+        customers:
+          items:
+            $ref: '#/components/schemas/types.TopCustomer'
+          type: array
+        total:
           type: integer
       type: object
     types.TopVisitor:
       properties:
         browser_name:
-          type: string
-        currency:
           type: string
         device_type:
           type: string
@@ -2351,11 +2793,6 @@ components:
           type: string
         location_country_iso:
           type: string
-        payment_count:
-          type: integer
-        total_revenue:
-          description: Total revenue in smallest currency unit (cents)
-          type: integer
         user_id:
           type: string
         visitor_id:
@@ -2370,17 +2807,17 @@ components:
             $ref: '#/components/schemas/types.TopVisitor'
           type: array
       type: object
-    types.UTMRevenueDataPoint:
+    types.UTMAttributionDataPoint:
       properties:
-        avg_revenue_per_visitor:
-          description: Average revenue per paying visitor
+        avg_revenue_per_customer:
+          description: Average revenue per paying customer
           type: number
         conversion_rate:
-          description: paying_visitors / unique_visitors * 100
+          description: paying_customers / unique_visitors * 100
           type: number
         currency:
           type: string
-        paying_visitors:
+        paying_customers:
           type: integer
         payment_count:
           type: integer
@@ -2392,7 +2829,6 @@ components:
         unique_visitors:
           type: integer
         utm_value:
-          description: The UTM parameter value
           type: string
       type: object
     types.UniqueVisitorsDataPoint:
@@ -2465,30 +2901,8 @@ components:
         referrer_url:
           type: string
       type: object
-    types.VisitorPayment:
-      properties:
-        amount:
-          type: integer
-        currency:
-          type: string
-        payment_id:
-          type: string
-        payment_timestamp:
-          type: string
-        product_name:
-          type: string
-        provider_type:
-          type: string
-        status:
-          type: string
-      type: object
     types.VisitorProfileResponse:
       properties:
-        avg_order_value:
-          description: Average payment amount
-          type: integer
-        currency:
-          type: string
         custom_traits:
           additionalProperties: true
           type: object
@@ -2506,8 +2920,6 @@ components:
           type: string
         first_identified_at:
           type: string
-        first_payment_date:
-          type: string
         first_referrer_url:
           type: string
         first_seen:
@@ -2518,8 +2930,6 @@ components:
           type: boolean
         last_identified_at:
           type: string
-        last_payment_date:
-          type: string
         last_seen:
           type: string
         location_city:
@@ -2528,19 +2938,10 @@ components:
           type: string
         name:
           type: string
-        payment_count:
-          type: integer
-        payments:
-          items:
-            $ref: '#/components/schemas/types.VisitorPayment'
-          type: array
         phone:
           type: string
         total_events:
           type: integer
-        total_revenue:
-          description: Revenue fields
-          type: number
         user_id:
           type: string
         visitor_id:
