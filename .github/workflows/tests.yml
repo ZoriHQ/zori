@@ -46,7 +46,7 @@ jobs:
     env:
       # Database Configuration
       POSTGRES_URL: postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable
-      CLICKHOUSE_URL: localhost:9002
+      CLICKHOUSE_URL: localhost:9000
       CLICKHOUSE_USERNAME: default
       CLICKHOUSE_USER: default
       CLICKHOUSE_PASSWORD: "default"
