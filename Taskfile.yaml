@@ -42,7 +42,7 @@ tasks:
       - rm docs/swagger.json
     silent: true
 
-  test-containers:
+  test:containers:
     desc: Start test database containers
     cmds:
       - docker run --rm -d --name postgres-test -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=postgres -p 5434:5432 postgres:latest
@@ -51,7 +51,7 @@ tasks:
       - docker run --rm -d --name redis-test -p 6379:6379 redis:latest
       - ./scripts/init-test-dbs.sh
 
-  test-migrate:
+  test:migrate:
     desc: Run migrations for test databases
     dotenv: [".env.test"]
     cmds:
@@ -68,9 +68,9 @@ tasks:
     desc: Run all tests
     dotenv: [".env.test"]
     deps:
-      - test-migrate
+      - test:migrate
     cmds:
-      - defer: { task: test-cleanup }
+      # - defer: { task: test-cleanup }
       - go test ./...
 
   test:verbose:

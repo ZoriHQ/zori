@@ -19,15 +19,13 @@ func TestRevenueAttribution_EndToEnd(t *testing.T) {
 
 	_, project := fixtures.SetupAccountAndProject(t, tc)
 
-	// Get the revenue data service
 	revenueDataService := tc.RevenueData
 	ctx := context.Background()
 
-	// Give processors time to initialize
-	time.Sleep(200 * time.Millisecond)
+	// Give processors and ingestion server time to initialize
+	time.Sleep(1 * time.Second)
 
 	t.Run("should attribute revenue to correct traffic sources", func(t *testing.T) {
-		// Create 3 visitors with different traffic sources
 		visitors := []struct {
 			visitorID   string
 			sessionID   string
@@ -66,7 +64,6 @@ func TestRevenueAttribution_EndToEnd(t *testing.T) {
 			},
 		}
 
-		// Step 1: Send visitor events for each visitor
 		for _, v := range visitors {
 			builder := fixtures.NewEventBuilder().
 				WithVisitorID(v.visitorID).
@@ -90,16 +87,13 @@ func TestRevenueAttribution_EndToEnd(t *testing.T) {
 			require.NoError(t, err, "Failed to send visitor event for %s", v.visitorID)
 		}
 
-		// Wait for events to be stored
 		_, err := fixtures.WaitForEvents(t, tc, fixtures.QueryEventsOptions{
 			ProjectID: &project.ID,
 		}, 3, 10*time.Second)
 		require.NoError(t, err, "Events should appear in ClickHouse")
 
-		// Give time for attribution materialized views to update
 		time.Sleep(2 * time.Second)
 
-		// Step 2: Send payment events for each visitor
 		for _, v := range visitors {
 			payment := fixtures.NewPaymentBuilder(project.ID, project.OrganizationID).
 				WithVisitorID(v.visitorID).
@@ -111,7 +105,6 @@ func TestRevenueAttribution_EndToEnd(t *testing.T) {
 			require.NoError(t, err, "Failed to send payment for %s", v.visitorID)
 		}
 
-		// Wait for payments to be processed
 		succeededStatus := "succeeded"
 		payments, err := fixtures.WaitForPayments(t, tc, fixtures.QueryPaymentEventsOptions{
 			ProjectID:     &project.ID,
@@ -120,16 +113,13 @@ func TestRevenueAttribution_EndToEnd(t *testing.T) {
 		require.NoError(t, err, "Payments should appear in ClickHouse")
 		assert.Len(t, payments, 3, "Should have stored all 3 payments")
 
-		// Give time for revenue materialized views to update
 		time.Sleep(2 * time.Second)
 
-		// Step 3: Verify revenue attribution by UTM source
 		t.Run("revenue attributed to UTM source", func(t *testing.T) {
 			dataPoints, err := revenueDataService.GetAttributionByUTM(ctx, project.ID, revenueTypes.TimeRangeLast7Days, "source")
 			require.NoError(t, err, "Should get attribution by UTM source")
 			require.NotEmpty(t, dataPoints, "Should have attribution data")
 
-			// Find Google and Facebook in the results
 			var googleRevenue, facebookRevenue *revenueTypes.UTMAttributionDataPoint
 			for i := range dataPoints {
 				switch dataPoints[i].UTMValue {
@@ -153,13 +143,11 @@ func TestRevenueAttribution_EndToEnd(t *testing.T) {
 				float64(facebookRevenue.TotalRevenue)/100)
 		})
 
-		// Step 4: Verify revenue attribution by UTM medium
 		t.Run("revenue attributed to UTM medium", func(t *testing.T) {
 			dataPoints, err := revenueDataService.GetAttributionByUTM(ctx, project.ID, revenueTypes.TimeRangeLast7Days, "medium")
 			require.NoError(t, err, "Should get attribution by UTM medium")
 			require.NotEmpty(t, dataPoints, "Should have attribution data")
 
-			// Find CPC and Social in the results
 			var cpcRevenue, socialRevenue *revenueTypes.UTMAttributionDataPoint
 			for i := range dataPoints {
 				switch dataPoints[i].UTMValue {
@@ -181,13 +169,11 @@ func TestRevenueAttribution_EndToEnd(t *testing.T) {
 				float64(socialRevenue.TotalRevenue)/100)
 		})
 
-		// Step 5: Verify revenue attribution by traffic origin
 		t.Run("revenue attributed to traffic origin", func(t *testing.T) {
 			dataPoints, err := revenueDataService.GetAttributionByOrigin(ctx, project.ID, revenueTypes.TimeRangeLast7Days)
 			require.NoError(t, err, "Should get attribution by origin")
 			require.NotEmpty(t, dataPoints, "Should have attribution data")
 
-			// Verify we have data for google.com and facebook.com
 			var googleOrigin, facebookOrigin, directOrigin *revenueTypes.OriginAttributionDataPoint
 			for i := range dataPoints {
 				switch dataPoints[i].Origin {
@@ -215,7 +201,6 @@ func TestRevenueAttribution_EndToEnd(t *testing.T) {
 				float64(directOrigin.TotalRevenue)/100)
 		})
 
-		// Step 6: Verify dashboard metrics
 		t.Run("dashboard shows correct revenue metrics", func(t *testing.T) {
 			dashboard, err := revenueDataService.GetDashboardMetrics(ctx, project.ID, revenueTypes.TimeRangeLast7Days)
 			require.NoError(t, err, "Should get dashboard metrics")
@@ -227,7 +212,6 @@ func TestRevenueAttribution_EndToEnd(t *testing.T) {
 			assert.Equal(t, uint64(3), dashboard.TotalPayments, "Should have 3 payments")
 			assert.Equal(t, uint64(3), dashboard.PayingCustomers, "Should have 3 paying customers")
 
-			// Average order value: $297 / 3 = $99
 			expectedAvgOrderValue := float64(expectedTotalRevenue) / 3.0
 			assert.InDelta(t, expectedAvgOrderValue, dashboard.AvgOrderValue, 1.0, "Average order value should be ~$99")
 
@@ -242,7 +226,6 @@ func TestRevenueAttribution_EndToEnd(t *testing.T) {
 		visitorID := "visitor-multi-touch"
 		sessionID := "session-multi-touch-1"
 
-		// First visit: comes from Google with UTM parameters
 		firstVisit := fixtures.NewEventBuilder().
 			WithVisitorID(visitorID).
 			WithSessionID(sessionID).
@@ -259,7 +242,6 @@ func TestRevenueAttribution_EndToEnd(t *testing.T) {
 
 		time.Sleep(500 * time.Millisecond)
 
-		// Second visit: comes from Facebook (different source)
 		secondVisit := fixtures.NewEventBuilder().
 			WithVisitorID(visitorID).
 			WithSessionID(sessionID).
@@ -274,7 +256,6 @@ func TestRevenueAttribution_EndToEnd(t *testing.T) {
 		err = fixtures.SendEventToTestServer(t, tc, project, secondVisit)
 		require.NoError(t, err)
 
-		// Wait for events
 		_, err = fixtures.WaitForEvents(t, tc, fixtures.QueryEventsOptions{
 			ProjectID: &project.ID,
 			VisitorID: &visitorID,
@@ -283,7 +264,6 @@ func TestRevenueAttribution_EndToEnd(t *testing.T) {
 
 		time.Sleep(2 * time.Second)
 
-		// Send payment for this visitor
 		payment := fixtures.NewPaymentBuilder(project.ID, project.OrganizationID).
 			WithVisitorID(visitorID).
 			WithAmount(19900). // $199
@@ -293,7 +273,6 @@ func TestRevenueAttribution_EndToEnd(t *testing.T) {
 		err = fixtures.SendPaymentToNATS(t, tc, payment)
 		require.NoError(t, err)
 
-		// Wait for payment
 		succeededStatus := "succeeded"
 		_, err = fixtures.WaitForPayments(t, tc, fixtures.QueryPaymentEventsOptions{
 			ProjectID:     &project.ID,
@@ -304,11 +283,9 @@ func TestRevenueAttribution_EndToEnd(t *testing.T) {
 
 		time.Sleep(2 * time.Second)
 
-		// Verify attribution goes to Google (first touch), not Facebook
 		dataPoints, err := revenueDataService.GetAttributionByUTM(ctx, project.ID, revenueTypes.TimeRangeLast7Days, "source")
 		require.NoError(t, err)
 
-		// Find Google in the results
 		var googleFound bool
 		var googleRevenue int64
 		for _, dp := range dataPoints {
@@ -329,7 +306,6 @@ func TestRevenueAttribution_EndToEnd(t *testing.T) {
 		visitorID := "visitor-profile-test"
 		sessionID := "session-profile-test"
 
-		// Send visitor event
 		event := fixtures.NewEventBuilder().
 			WithVisitorID(visitorID).
 			WithSessionID(sessionID).
@@ -344,7 +320,6 @@ func TestRevenueAttribution_EndToEnd(t *testing.T) {
 		err := fixtures.SendEventToTestServer(t, tc, project, event)
 		require.NoError(t, err)
 
-		// Wait for event
 		_, err = fixtures.WaitForEvents(t, tc, fixtures.QueryEventsOptions{
 			ProjectID: &project.ID,
 			VisitorID: &visitorID,
@@ -353,7 +328,6 @@ func TestRevenueAttribution_EndToEnd(t *testing.T) {
 
 		time.Sleep(2 * time.Second)
 
-		// Send two payments for this visitor
 		payment1 := fixtures.NewPaymentBuilder(project.ID, project.OrganizationID).
 			WithVisitorID(visitorID).
 			WithAmount(5000). // $50
@@ -374,7 +348,6 @@ func TestRevenueAttribution_EndToEnd(t *testing.T) {
 		err = fixtures.SendPaymentToNATS(t, tc, payment2)
 		require.NoError(t, err)
 
-		// Wait for payments
 		succeededStatus := "succeeded"
 		_, err = fixtures.WaitForPayments(t, tc, fixtures.QueryPaymentEventsOptions{
 			ProjectID:     &project.ID,
@@ -385,18 +358,15 @@ func TestRevenueAttribution_EndToEnd(t *testing.T) {
 
 		time.Sleep(2 * time.Second)
 
-		// Get customer profile
 		profile, err := revenueDataService.GetCustomerProfile(ctx, project.ID, visitorID)
 		require.NoError(t, err)
 		require.NotNil(t, profile)
 
-		// Verify profile data
 		assert.Equal(t, visitorID, profile.VisitorID)
 		assert.Equal(t, int64(12500), profile.TotalRevenue, "Total revenue should be $125")
 		assert.Equal(t, uint64(2), profile.PaymentCount, "Should have 2 payments")
 		assert.InDelta(t, 6250.0, float64(profile.AvgOrderValue), 1.0, "Average order value should be $62.50")
 
-		// Verify attribution
 		require.NotNil(t, profile.FirstUTMSource)
 		assert.Equal(t, "twitter", *profile.FirstUTMSource, "First UTM source should be twitter")
 
