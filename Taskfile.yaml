@@ -71,7 +71,7 @@ tasks:
       - test:migrate
     cmds:
       # - defer: { task: test-cleanup }
-      - go test ./...
+      - go test ./... {{.CLI_ARGS}}
 
   test:verbose:
     desc: Run all tests with verbose output

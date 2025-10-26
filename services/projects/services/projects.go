@@ -198,18 +198,13 @@ func (s *ProjectService) DeleteProject(c *ctx.Ctx) (map[string]string, error) {
 		return nil, echo.NewHTTPError(http.StatusBadRequest, "Project ID is required")
 	}
 
-	// Check if project exists
-	exists, err := s.data.ProjectExists(c.Echo.Request().Context(), projectID, c.OrgID())
-	if err != nil {
-		return nil, fmt.Errorf("failed to check project existence: %w", err)
-	}
-	if !exists {
-		return nil, echo.NewHTTPError(http.StatusNotFound, "Project not found")
-	}
-
-	err = s.data.DeleteProject(c, projectID)
+	rowsAffected, err := s.data.DeleteProject(c, projectID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to delete project: %w", err)
+	}
+
+	if rowsAffected == 0 {
+		return nil, echo.NewHTTPError(http.StatusNotFound, "Project not found")
 	}
 
 	return map[string]string{

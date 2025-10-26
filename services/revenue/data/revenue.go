@@ -622,7 +622,7 @@ func (r *RevenueData) GetCustomerProfile(ctx context.Context, projectID string, 
 			MAX(payment_timestamp_utc) as last_payment,
 			CASE
 				WHEN COUNT(*) > 0
-				THEN COALESCE(SUM(amount), 0) / COUNT(*)
+				THEN toInt64(COALESCE(SUM(amount), 0) / COUNT(*))
 				ELSE 0
 			END as avg_order_value,
 			any(currency) as currency

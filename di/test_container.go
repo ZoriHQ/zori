@@ -4,7 +4,9 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"net"
 	"testing"
+	"time"
 
 	"zori/internal/cache"
 	"zori/internal/config"
@@ -73,7 +75,9 @@ func NewTestPostgresDB(cfg *config.Config) (*postgres.PostgresDB, error) {
 
 func NewTestContainer(t *testing.T) *TestContainer {
 	tc := &TestContainer{}
-	tc.IngestionServerURL = "http://localhost:19324"
+
+	// Channel to communicate the actual server address
+	serverReady := make(chan string, 1)
 
 	app := fxtest.New(
 		t,
@@ -108,14 +112,27 @@ func NewTestContainer(t *testing.T) *TestContainer {
 		payments.BuildPaymentsDIContainer(),
 		revenue.BuildRevenueDIContainer(),
 
-		// Start fasthttp ingestion server for testing
+		// Start fasthttp ingestion server for testing with dynamic port
 		fx.Invoke(func(lc fx.Lifecycle, ingestionServer *ingestionWeb.IngestionServer) {
 			lc.Append(fx.Hook{
 				OnStart: func(ctx context.Context) error {
 					go func() {
-						address := "localhost:19324"
-						t.Logf("Starting test ingestion server on %s", address)
-						if err := fasthttp.ListenAndServe(address, ingestionServer.HandleRequest); err != nil {
+						// Use port 0 to let the OS assign a free port automatically
+						// This prevents port conflicts when running tests in parallel
+						ln, err := net.Listen("tcp", "localhost:0")
+						if err != nil {
+							t.Logf("Failed to create listener: %v", err)
+							serverReady <- ""
+							return
+						}
+
+						// Get the actual address assigned by the OS
+						addr := ln.Addr().String()
+						t.Logf("Starting test ingestion server on %s", addr)
+						serverReady <- fmt.Sprintf("http://%s", addr)
+
+						// Start serving
+						if err := fasthttp.Serve(ln, ingestionServer.HandleRequest); err != nil {
 							t.Logf("Ingestion server error: %v", err)
 						}
 					}()
@@ -140,12 +157,24 @@ func NewTestContainer(t *testing.T) *TestContainer {
 				},
 			})
 		}),
-
+		fx.NopLogger,
 		fx.Populate(&tc.DB, &tc.ClickHouse, &tc.NATS, &tc.Server, &tc.Config, &tc.Cache, &tc.Processor, &tc.PaymentProcessor, &tc.RevenueService, &tc.IngestionServer, &tc.RevenueData),
 	)
 
 	tc.App = app
 	app.RequireStart()
+
+	// Wait for the ingestion server to start and get its URL
+	select {
+	case url := <-serverReady:
+		if url == "" {
+			t.Fatal("Failed to start ingestion server")
+		}
+		tc.IngestionServerURL = url
+		t.Logf("Ingestion server ready at %s", url)
+	case <-time.After(5 * time.Second):
+		t.Fatal("Timeout waiting for ingestion server to start")
+	}
 
 	return tc
 }

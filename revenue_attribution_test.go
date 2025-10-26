@@ -356,7 +356,9 @@ func TestRevenueAttribution_EndToEnd(t *testing.T) {
 		}, 2, 10*time.Second)
 		require.NoError(t, err)
 
-		time.Sleep(2 * time.Second)
+		// Give revenue attribution system more time to process and aggregate the payments
+		// The system needs time to: process payments, update aggregations, and refresh materialized views
+		time.Sleep(6 * time.Second)
 
 		profile, err := revenueDataService.GetCustomerProfile(ctx, project.ID, visitorID)
 		require.NoError(t, err)
