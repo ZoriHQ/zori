@@ -95,7 +95,7 @@ func (m *Zori) TestWithCoverage(ctx context.Context, source *dagger.Directory) *
 		WithServiceBinding("nats", nats).
 		WithServiceBinding("redis", redis).
 		WithEnvVariable("POSTGRES_URL", "postgres://postgres:postgres@postgres:5432/postgres?sslmode=disable").
-		WithEnvVariable("CLICKHOUSE_URL", "clickhouse://default:default@clickhouse:9000").
+		WithEnvVariable("CLICKHOUSE_URL", "clickhouse:9000").
 		WithEnvVariable("CLICKHOUSE_USERNAME", "default").
 		WithEnvVariable("CLICKHOUSE_USER", "default").
 		WithEnvVariable("CLICKHOUSE_PASSWORD", "default").
