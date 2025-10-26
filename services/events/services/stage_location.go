@@ -16,8 +16,15 @@ type StageLocation struct {
 
 func NewStageLocation() StageLocation {
 	maxMindDB, err := maxminddb.Open("./ipdb.mmdb")
+
+	// We are not panicking here, but logging the error
+	// For a few reasons, we might want to disable location enrichment
+	// Or we might be running tests
 	if err != nil {
-		log.Fatal(err)
+		log.Printf("Warning: Could not open ipdb.mmdb: %v. Location enrichment will be disabled.", err)
+		return StageLocation{
+			maxMindDb: nil,
+		}
 	}
 
 	return StageLocation{
@@ -27,7 +34,7 @@ func NewStageLocation() StageLocation {
 
 // ProcessFrame for StageLocation parses the IP with MaxMindDB and extracts approximate location information (city and country)
 func (s StageLocation) ProcessFrame(event *types.ClientEventFrameV1) error {
-	if event.IP == "" {
+	if event.IP == "" || s.maxMindDb == nil {
 		return nil
 	}
 

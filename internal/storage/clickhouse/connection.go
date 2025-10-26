@@ -25,7 +25,7 @@ func NewClickhouseDB(cfg *config.Config) *ClickhouseDB {
 			Password: cfg.ClickHousePassword,
 		},
 		Protocol: goclick.Native,
-		Debug:    true,
+		Debug:    false,
 	})
 
 	if err != nil {

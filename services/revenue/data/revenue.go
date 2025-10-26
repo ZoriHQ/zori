@@ -364,6 +364,13 @@ func (r *RevenueData) GetAttributionByUTM(ctx context.Context, projectID string,
 			INNER JOIN visitors_in_period vip ON ft.visitor_id = vip.visitor_id
 			WHERE ft.project_id = ?
 			GROUP BY ft.visitor_id
+		),
+		visitor_counts_by_utm AS (
+			SELECT
+				utm_value,
+				uniq(visitor_id) as unique_visitors
+			FROM all_visitor_utm
+			GROUP BY utm_value
 		)
 		SELECT
 			vu.utm_value,
@@ -374,10 +381,10 @@ func (r *RevenueData) GetAttributionByUTM(ctx context.Context, projectID string,
 				ELSE 0
 			END as revenue_percentage,
 			uniq(p.visitor_id) as paying_customers,
-			(SELECT uniq(visitor_id) FROM all_visitor_utm WHERE utm_value = vu.utm_value) as unique_visitors,
+			COALESCE(vc.unique_visitors, 0) as unique_visitors,
 			CASE
-				WHEN (SELECT uniq(visitor_id) FROM all_visitor_utm WHERE utm_value = vu.utm_value) > 0
-				THEN (uniq(p.visitor_id) * 100.0 / (SELECT uniq(visitor_id) FROM all_visitor_utm WHERE utm_value = vu.utm_value))
+				WHEN COALESCE(vc.unique_visitors, 0) > 0
+				THEN (uniq(p.visitor_id) * 100.0 / vc.unique_visitors)
 				ELSE 0
 			END as conversion_rate,
 			CASE
@@ -389,7 +396,8 @@ func (r *RevenueData) GetAttributionByUTM(ctx context.Context, projectID string,
 			any(p.currency) as currency
 		FROM visitor_utm vu
 		LEFT JOIN payments_in_period p ON vu.visitor_id = p.visitor_id
-		GROUP BY vu.utm_value
+		LEFT JOIN visitor_counts_by_utm vc ON vu.utm_value = vc.utm_value
+		GROUP BY vu.utm_value, vc.unique_visitors
 		ORDER BY total_revenue DESC
 		LIMIT 20
 	`, utmField, utmField, utmField, utmField, utmField, utmField)
@@ -614,7 +622,7 @@ func (r *RevenueData) GetCustomerProfile(ctx context.Context, projectID string, 
 			MAX(payment_timestamp_utc) as last_payment,
 			CASE
 				WHEN COUNT(*) > 0
-				THEN COALESCE(SUM(amount), 0) / COUNT(*)
+				THEN toInt64(COALESCE(SUM(amount), 0) / COUNT(*))
 				ELSE 0
 			END as avg_order_value,
 			any(currency) as currency

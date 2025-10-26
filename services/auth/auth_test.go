@@ -249,7 +249,7 @@ func TestAuthService_Login(t *testing.T) {
 				Email:    randomEmail,
 				Password: "WrongPassword123!",
 			},
-			expectedStatus: http.StatusInternalServerError,
+			expectedStatus: http.StatusBadRequest,
 			expectError:    true,
 		},
 		{
@@ -258,7 +258,7 @@ func TestAuthService_Login(t *testing.T) {
 				Email:    "nonexistent@example.com",
 				Password: "SomePassword123!",
 			},
-			expectedStatus: http.StatusInternalServerError,
+			expectedStatus: http.StatusBadRequest,
 			expectError:    true,
 		},
 		{

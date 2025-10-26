@@ -22,9 +22,9 @@ SELECT
     project_id,
     visitor_id,
     argMinState(referrer_domain, client_timestamp_utc) as first_referrer_domain,
-    argMinState(utm_source, client_timestamp_utc) as first_utm_source,
-    argMinState(utm_medium, client_timestamp_utc) as first_utm_medium,
-    argMinState(utm_campaign, client_timestamp_utc) as first_utm_campaign
+    argMinState(utm_parameters['utm_source'], client_timestamp_utc) as first_utm_source,
+    argMinState(utm_parameters['utm_medium'], client_timestamp_utc) as first_utm_medium,
+    argMinState(utm_parameters['utm_campaign'], client_timestamp_utc) as first_utm_campaign
 FROM events
 GROUP BY organization_id, project_id, visitor_id;
 -- +goose StatementEnd
@@ -38,9 +38,9 @@ AS SELECT
     project_id,
     visitor_id,
     argMinState(referrer_domain, client_timestamp_utc) as first_referrer_domain,
-    argMinState(utm_source, client_timestamp_utc) as first_utm_source,
-    argMinState(utm_medium, client_timestamp_utc) as first_utm_medium,
-    argMinState(utm_campaign, client_timestamp_utc) as first_utm_campaign
+    argMinState(utm_parameters['utm_source'], client_timestamp_utc) as first_utm_source,
+    argMinState(utm_parameters['utm_medium'], client_timestamp_utc) as first_utm_medium,
+    argMinState(utm_parameters['utm_campaign'], client_timestamp_utc) as first_utm_campaign
 FROM events
 GROUP BY organization_id, project_id, visitor_id;
 -- +goose StatementEnd

@@ -100,13 +100,17 @@ func (p *ProjectData) UpdateProject(ctx context.Context, projectID string, orgID
 	return project, nil
 }
 
-func (p *ProjectData) DeleteProject(c *ctx.Ctx, projectID string) error {
-	_, err := p.db.NewDelete().
+func (p *ProjectData) DeleteProject(c *ctx.Ctx, projectID string) (int64, error) {
+	result, err := p.db.NewDelete().
 		Model(&models.Project{}).
 		Where("id = ?", projectID).
 		Where("organization_id = ?", c.OrgID()).
 		Exec(context.Background())
-	return err
+	if err != nil {
+		return 0, err
+	}
+	rowsAffected, err := result.RowsAffected()
+	return rowsAffected, err
 }
 
 func (p *ProjectData) SetFirstEventReceived(projectID string) error {

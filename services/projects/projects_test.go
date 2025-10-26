@@ -30,14 +30,16 @@ type ListProjectsTestResponse struct {
 }
 
 func setupTestUser(t *testing.T, tc *di.TestContainer) *services.AuthResponse {
-	randomEmail := fmt.Sprintf("test-%d@example.com", time.Now().UnixNano())
+	timestamp := time.Now().UnixNano()
+	randomEmail := fmt.Sprintf("test-%d@example.com", timestamp)
+	randomOrgName := fmt.Sprintf("Test Organization %d", timestamp)
 
 	registerUser := services.RegisterRequest{
 		Email:            randomEmail,
 		Password:         "ValidPass123!",
 		FirstName:        "Test",
 		LastName:         "User",
-		OrganizationName: "Test Organization",
+		OrganizationName: randomOrgName,
 	}
 
 	reqBody, _ := json.Marshal(registerUser)
@@ -45,6 +47,9 @@ func setupTestUser(t *testing.T, tc *di.TestContainer) *services.AuthResponse {
 	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 	rec := httptest.NewRecorder()
 	tc.Server.Echo.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Logf("Register failed with status %d. Response: %s", rec.Code, rec.Body.String())
+	}
 	require.Equal(t, http.StatusOK, rec.Code)
 
 	var authResponse services.AuthResponse
@@ -288,7 +293,9 @@ func TestProjectService_GetProject(t *testing.T) {
 	})
 
 	t.Run("get non-existent project", func(t *testing.T) {
-		req := httptest.NewRequest(http.MethodGet, "/api/v1/projects/non-existent-id", nil)
+		// Use a valid UUID format that doesn't exist in the database
+		nonExistentID := "00000000-0000-0000-0000-000000000000"
+		req := httptest.NewRequest(http.MethodGet, "/api/v1/projects/"+nonExistentID, nil)
 		req.Header.Set("Authorization", "Bearer "+authResponse.AccessToken)
 		rec := httptest.NewRecorder()
 
@@ -359,7 +366,7 @@ func TestProjectService_UpdateProject(t *testing.T) {
 		},
 		{
 			name:      "update non-existent project",
-			projectID: "non-existent-id",
+			projectID: "00000000-0000-0000-0000-000000000000",
 			request: types.UpdateProjectRequest{
 				Name: "Should Not Work",
 			},
@@ -470,7 +477,9 @@ func TestProjectService_DeleteProject(t *testing.T) {
 	})
 
 	t.Run("delete non-existent project", func(t *testing.T) {
-		req := httptest.NewRequest(http.MethodDelete, "/api/v1/projects/non-existent-id", nil)
+		// Use a valid UUID format that doesn't exist in the database
+		nonExistentID := "00000000-0000-0000-0000-000000000000"
+		req := httptest.NewRequest(http.MethodDelete, "/api/v1/projects/"+nonExistentID, nil)
 		req.Header.Set("Authorization", "Bearer "+authResponse.AccessToken)
 		rec := httptest.NewRecorder()
 
