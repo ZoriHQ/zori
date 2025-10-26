@@ -25,17 +25,17 @@ type PaymentEvent struct {
 	VisitorID *string `ch:"visitor_id"` // Nullable for unattributed payments
 
 	// Payment details
-	ProviderType   string        `ch:"provider_type,lc"`    // LowCardinality
-	PaymentStatus  PaymentStatus `ch:"payment_status,lc"`   // LowCardinality
-	ProductName    string        `ch:"product_name"`
+	ProviderType   string `ch:"provider_type"`    // LowCardinality
+	PaymentStatus  string `ch:"payment_status"`   // LowCardinality
+	ProductName    string `ch:"product_name"`
 
 	// Amounts (stored in smallest currency unit, e.g., cents)
 	Amount   int64  `ch:"amount"`
-	Currency string `ch:"currency,type:FixedString(3)"` // ISO 4217 currency code
+	Currency string `ch:"currency"` // ISO 4217 currency code
 
 	// Timestamps
 	PaymentTimestampUTC time.Time `ch:"payment_timestamp_utc"`
-	ServerTimestampUTC  time.Time `ch:"server_timestamp_utc,default:now64(3,'UTC')"`
+	ServerTimestampUTC  time.Time `ch:"server_timestamp_utc"`
 
 	// Organization hierarchy
 	ProjectID      string `ch:"project_id"`
@@ -45,5 +45,5 @@ type PaymentEvent struct {
 	Metadata map[string]string `ch:"metadata"`
 
 	// Metadata
-	CreatedAt time.Time `ch:"created_at,type:DateTime,default:now()"`
+	CreatedAt time.Time `ch:"created_at"`
 }

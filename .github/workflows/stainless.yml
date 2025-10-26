@@ -13,9 +13,9 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  STAINLESS_ORG: YOUR_ORG
-  STAINLESS_PROJECT: YOUR_PROJECT
-  OAS_PATH: YOUR_OAS_PATH
+  STAINLESS_ORG: zorihq
+  STAINLESS_PROJECT: zoriapi
+  OAS_PATH: docs/openapi.yaml
 
 jobs:
   preview:
