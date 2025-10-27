@@ -14,7 +14,7 @@ type Project struct {
 	Name                 string     `json:"name" bun:",notnull" example:"My Awesome Project"`
 	Domain               string     `json:"domain" bun:",notnull" example:"https://example.com"`
 	AllowLocalHost       bool       `json:"allow_local_host" bun:",notnull,default:false" example:"false"`
-	FirstEventReceivedAt *time.Time `json:"first_event_received_at" bun:",null" example:"2024-01-15T10:30:00Z"`
+	FirstEventReceivedAt *time.Time `json:"first_event_received_at" example:"2024-01-15T10:30:00Z"`
 	ProjectToken         string     `json:"project_token" bun:",notnull" example:"zori_pt_1234567890"`
 	CreatedAt            time.Time  `json:"created_at" bun:",notnull,default:current_timestamp" example:"2024-01-15T10:30:00Z"`
 	UpdatedAt            time.Time  `json:"updated_at" bun:",notnull,default:current_timestamp" example:"2024-01-15T10:30:00Z"`
