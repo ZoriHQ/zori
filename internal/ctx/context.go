@@ -11,9 +11,9 @@ import (
 // for handling user authentication and organization context
 type Ctx struct {
 	context.Context
-	Echo echo.Context
-	User *models.Account
-	Org  *models.Organization
+	Echo  echo.Context
+	User  *models.Account
+	orgID string
 }
 
 func NewCtx(c echo.Context) *Ctx {
@@ -27,8 +27,9 @@ func (c *Ctx) SetUser(user *models.Account) {
 	c.User = user
 }
 
-func (c *Ctx) SetOrg(org *models.Organization) {
-	c.Org = org
+// SetOrgID sets the organization ID from the external auth provider (Stack Auth)
+func (c *Ctx) SetOrgID(orgID string) {
+	c.orgID = orgID
 }
 
 func (c *Ctx) IsAuthenticated() bool {
@@ -36,7 +37,7 @@ func (c *Ctx) IsAuthenticated() bool {
 }
 
 func (c *Ctx) HasOrg() bool {
-	return c.Org != nil
+	return c.orgID != ""
 }
 
 func (c *Ctx) UserID() string {
@@ -47,8 +48,5 @@ func (c *Ctx) UserID() string {
 }
 
 func (c *Ctx) OrgID() string {
-	if c.Org != nil {
-		return c.Org.ID
-	}
-	return ""
+	return c.orgID
 }

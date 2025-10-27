@@ -112,14 +112,10 @@ func (m *StackAuthMiddleware) Middleware() echo.MiddlewareFunc {
 				Email: claims.Email,
 			})
 
-			reqCtx.SetOrg(&models.Organization{
-				ID: claims.SelectedTeamID,
-			})
-
-			// Get organization if needed
-			// You'll need to update this logic based on how you want to handle organizations
-			// For now, we'll skip organization lookup since Stack Auth doesn't provide it in the JWT
-			// You may want to store organization association in your database
+			// Set organization ID from Stack Auth (external provider)
+			if claims.SelectedTeamID != "" {
+				reqCtx.SetOrgID(claims.SelectedTeamID)
+			}
 
 			c.Set("ctx", reqCtx)
 

@@ -18,6 +18,4 @@ type Project struct {
 	ProjectToken         string     `json:"project_token" bun:",notnull" example:"zori_pt_1234567890"`
 	CreatedAt            time.Time  `json:"created_at" bun:",notnull,default:current_timestamp" example:"2024-01-15T10:30:00Z"`
 	UpdatedAt            time.Time  `json:"updated_at" bun:",notnull,default:current_timestamp" example:"2024-01-15T10:30:00Z"`
-
-	Organization *Organization `json:"organization,omitempty" bun:"rel:belongs-to,join:organization_id=id"`
 }

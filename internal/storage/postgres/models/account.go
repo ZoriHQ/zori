@@ -19,8 +19,7 @@ type Account struct {
 	UpdatedAt     time.Time `json:"updated_at" bun:",nullzero,notnull,default:current_timestamp"`
 
 	// Relations
-	Organizations []Organization `json:"organizations,omitempty" bun:"m2m:organization_members,join:Account=Organization"`
-	Sessions      []Session      `json:"-" bun:"rel:has-many,join:id=account_id"`
+	Sessions []Session `json:"-" bun:"rel:has-many,join:id=account_id"`
 }
 
 // FullName returns the account's full name
