@@ -27,14 +27,12 @@ type StackAuthClaims struct {
 type StackAuthMiddleware struct {
 	jwks                keyfunc.Keyfunc
 	OrganizationService *orgServices.OrganizationService
-	AccountService      *orgServices.AccountService
 	cancelFunc          context.CancelFunc
 }
 
 func NewStackAuthMiddleware(
 	cfg *config.Config,
 	orgService *orgServices.OrganizationService,
-	accountService *orgServices.AccountService,
 ) (*StackAuthMiddleware, error) {
 	jwksURL := cfg.GetStackAuthJWKSURL()
 
@@ -52,7 +50,6 @@ func NewStackAuthMiddleware(
 	return &StackAuthMiddleware{
 		jwks:                jwks,
 		OrganizationService: orgService,
-		AccountService:      accountService,
 		cancelFunc:          cancel,
 	}, nil
 }

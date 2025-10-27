@@ -7,7 +7,6 @@ import (
 )
 
 func RegisterRoutes(
-	accountService *services.AccountService,
 	organizationService *services.OrganizationService,
 	s *server.Server,
 	stackAuthMiddleware *middlewares.StackAuthMiddleware,

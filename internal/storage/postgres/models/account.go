@@ -1,25 +1,21 @@
 package models
 
 import (
-	"time"
-
 	"github.com/uptrace/bun"
 )
 
+// Account represents user account data from Stack Auth (external auth provider).
+// This model is used for in-memory representation only - accounts are NOT stored in our database.
+// All account data comes from Stack Auth JWT tokens and is managed externally.
+// Note: Bun tags are kept for backward compatibility but the table no longer exists.
 type Account struct {
 	bun.BaseModel `json:"-" bun:"table:accounts,alias:a"`
 
-	ID            string    `json:"id" bun:",pk,type:uuid,default:gen_random_uuid()"`
-	Email         string    `json:"email" bun:",unique,notnull" validate:"required,email"`
-	PasswordHash  string    `json:"-" bun:",notnull"`
-	FirstName     string    `json:"first_name" bun:",nullzero"`
-	LastName      string    `json:"last_name" bun:",nullzero"`
-	EmailVerified bool      `json:"email_verified" bun:",default:false"`
-	CreatedAt     time.Time `json:"created_at" bun:",nullzero,notnull,default:current_timestamp"`
-	UpdatedAt     time.Time `json:"updated_at" bun:",nullzero,notnull,default:current_timestamp"`
-
-	// Relations
-	Sessions []Session `json:"-" bun:"rel:has-many,join:id=account_id"`
+	ID            string `json:"id" bun:",pk"`
+	Email         string `json:"email"`
+	FirstName     string `json:"first_name,omitempty"`
+	LastName      string `json:"last_name,omitempty"`
+	EmailVerified bool   `json:"email_verified"`
 }
 
 // FullName returns the account's full name
