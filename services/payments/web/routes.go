@@ -9,10 +9,10 @@ import (
 func RegisterPaymentRoutes(
 	s *server.Server,
 	providerManager *services.ProviderManager,
-	jwtMiddleware *middlewares.JwtMiddleware,
+	stackAuthMiddleware *middlewares.StackAuthMiddleware,
 ) {
 	paymentGroup := s.Group("/api/v1/payment-providers")
-	paymentGroup.Use(jwtMiddleware.Middleware())
+	paymentGroup.Use(stackAuthMiddleware.Middleware())
 
 	server.GroupPOST(paymentGroup, "", providerManager.CreateProvider)
 	server.GroupGET(paymentGroup, "", providerManager.ListProviders)

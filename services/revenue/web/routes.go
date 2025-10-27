@@ -11,11 +11,11 @@ import (
 func RegisterRoutes(
 	s *server.Server,
 	revenueService *services.RevenueService,
-	jwtMiddleware *middlewares.JwtMiddleware,
+	stackAuthMiddleware *middlewares.StackAuthMiddleware,
 	cacheMiddleware *middlewares.CacheMiddleware,
 ) {
 	revenueRouteGroup := s.Group("/api/v1/revenue")
-	revenueRouteGroup.Use(jwtMiddleware.Middleware())
+	revenueRouteGroup.Use(stackAuthMiddleware.Middleware())
 
 	lowFrequencyTTL := 5 * time.Minute
 	mediumFrequencyTTL := 2 * time.Minute

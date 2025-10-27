@@ -13,7 +13,6 @@ import (
 	"zori/internal/storage/clickhouse"
 	"zori/internal/storage/postgres"
 	"zori/services/analytics"
-	"zori/services/auth"
 	"zori/services/events"
 	"zori/services/organizations"
 	"zori/services/payments"
@@ -33,14 +32,13 @@ func NewApplication() *fx.App {
 		),
 		fx.Provide(natsstream.NewStream),
 		fx.Provide(cache.NewCacheService),
-		auth.BuildAuthDIContainer(),
 		organizations.BuildOrganizationDIContainer(),
 		projects.BuildProjectsDIContainer(),
 		analytics.BuildAnalyticsDIContainer(),
 		revenue.BuildRevenueDIContainer(),
 		payments.BuildPaymentsDIContainer(),
 
-		fx.Provide(middlewares.NewJwtMiddleware),
+		fx.Provide(middlewares.NewStackAuthMiddleware),
 		fx.Provide(middlewares.NewCacheMiddleware),
 
 		fx.Invoke(registerDatabaseLifecycle),
@@ -48,7 +46,6 @@ func NewApplication() *fx.App {
 
 		projects.BuildProjectWebDIContainer(),
 		organizations.BuildOrganizationWebDIContainer(),
-		auth.BuildAuthWebDIContainer(),
 		analytics.BuildAnalyticsWebDIContainer(),
 		revenue.BuildRevenueWebDIContainer(),
 		payments.BuildPaymentsWebDIContainer(),

@@ -4,16 +4,14 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	"time"
 
 	"zori/di"
 	"zori/internal/storage/postgres/models"
-	"zori/services/auth/services"
 	"zori/services/projects/types"
+	"zori/testutil/fixtures"
 
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
@@ -29,34 +27,8 @@ type ListProjectsTestResponse struct {
 	Total    int               `json:"total"`
 }
 
-func setupTestUser(t *testing.T, tc *di.TestContainer) *services.AuthResponse {
-	timestamp := time.Now().UnixNano()
-	randomEmail := fmt.Sprintf("test-%d@example.com", timestamp)
-	randomOrgName := fmt.Sprintf("Test Organization %d", timestamp)
-
-	registerUser := services.RegisterRequest{
-		Email:            randomEmail,
-		Password:         "ValidPass123!",
-		FirstName:        "Test",
-		LastName:         "User",
-		OrganizationName: randomOrgName,
-	}
-
-	reqBody, _ := json.Marshal(registerUser)
-	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/register", bytes.NewBuffer(reqBody))
-	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
-	rec := httptest.NewRecorder()
-	tc.Server.Echo.ServeHTTP(rec, req)
-	if rec.Code != http.StatusOK {
-		t.Logf("Register failed with status %d. Response: %s", rec.Code, rec.Body.String())
-	}
-	require.Equal(t, http.StatusOK, rec.Code)
-
-	var authResponse services.AuthResponse
-	err := json.Unmarshal(rec.Body.Bytes(), &authResponse)
-	require.NoError(t, err)
-
-	return &authResponse
+func setupTestUser(t *testing.T, tc *di.TestContainer) *fixtures.AccountFixture {
+	return fixtures.CreateAccount(t, tc)
 }
 
 func TestProjectService_CreateProject(t *testing.T) {
@@ -86,7 +58,7 @@ func TestProjectService_CreateProject(t *testing.T) {
 				assert.Equal(t, "https://example.com", response.Domain)
 				assert.False(t, response.AllowLocalHost)
 				assert.NotEmpty(t, response.ProjectToken)
-				assert.Equal(t, authResponse.Organization.ID, response.OrganizationID)
+				assert.Equal(t, authResponse.OrgID, response.OrganizationID)
 				assert.Nil(t, response.FirstEventReceivedAt)
 			},
 			expectError: false,
@@ -172,7 +144,7 @@ func TestProjectService_CreateProject(t *testing.T) {
 				assert.Equal(t, tt.request.Name, project.Name)
 				assert.Equal(t, tt.request.WebsiteURL, project.Domain)
 				assert.Equal(t, tt.request.AllowLocalHost, project.AllowLocalHost)
-				assert.Equal(t, authResponse.Organization.ID, project.OrganizationID)
+				assert.Equal(t, authResponse.OrgID, project.OrganizationID)
 			}
 		})
 	}

@@ -16,7 +16,6 @@ import (
 	"zori/internal/storage/clickhouse"
 	"zori/internal/storage/postgres"
 	"zori/internal/storage/postgres/models"
-	"zori/services/auth"
 	"zori/services/events"
 	eventsServices "zori/services/events/services"
 	"zori/services/ingestion"
@@ -92,15 +91,13 @@ func NewTestContainer(t *testing.T) *TestContainer {
 			server.New,
 		),
 
-		auth.BuildAuthDIContainer(),
 		organizations.BuildOrganizationDIContainer(),
 		projects.BuildProjectsDIContainer(),
 
-		// Jwt middleware must be provided after the auth & org containers are built since it depends on some of the auth services
-		fx.Provide(middlewares.NewJwtMiddleware),
+		// Stack Auth middleware for authentication
+		fx.Provide(middlewares.NewStackAuthMiddleware),
 
 		// Register web routes for testing
-		auth.BuildAuthWebDIContainer(),
 		organizations.BuildOrganizationWebDIContainer(),
 		projects.BuildProjectWebDIContainer(),
 
