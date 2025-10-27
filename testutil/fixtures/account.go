@@ -34,6 +34,18 @@ func CreateAccount(t *testing.T, tc *di.TestContainer) *AccountFixture {
 
 	ctx := context.Background()
 
+	// Create organization first (required for foreign key constraint)
+	org := &models.Organization{
+		ID:        orgID,
+		Name:      orgName,
+		Slug:      fmt.Sprintf("test-org-%d", time.Now().UnixNano()),
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+	_, err := tc.DB.DB.NewInsert().Model(org).Exec(ctx)
+	require.NoError(t, err, "Failed to create organization")
+
+	// Now create account
 	account := &models.Account{
 		ID:        accountID,
 		Email:     randomEmail,
@@ -42,7 +54,7 @@ func CreateAccount(t *testing.T, tc *di.TestContainer) *AccountFixture {
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}
-	_, err := tc.DB.DB.NewInsert().Model(account).Exec(ctx)
+	_, err = tc.DB.DB.NewInsert().Model(account).Exec(ctx)
 	require.NoError(t, err, "Failed to create account")
 
 	mockToken := accountID

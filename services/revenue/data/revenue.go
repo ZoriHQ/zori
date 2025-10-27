@@ -21,6 +21,100 @@ func NewRevenueData(clickDb *clickhouse.ClickhouseDB, visitorRepository *ingesti
 	}
 }
 
+// CheckPaymentDataQuality checks for duplicate payment_ids and other data quality issues
+func (r *RevenueData) CheckPaymentDataQuality(ctx context.Context, projectID string) (*PaymentDataQualityReport, error) {
+	query := `
+		WITH payment_duplicates AS (
+			SELECT
+				payment_id,
+				COUNT(*) as row_count,
+				uniq(amount) as unique_amounts,
+				uniq(visitor_id) as unique_visitor_ids,
+				uniq(payment_status) as unique_statuses
+			FROM payment_events
+			WHERE project_id = ?
+			GROUP BY payment_id
+			HAVING row_count > 1
+		)
+		SELECT
+			COUNT(*) as duplicate_payment_count,
+			SUM(row_count) as total_duplicate_rows,
+			SUM(IF(unique_amounts > 1, 1, 0)) as payments_with_conflicting_amounts,
+			SUM(IF(unique_visitor_ids > 1, 1, 0)) as payments_with_conflicting_visitors
+		FROM payment_duplicates
+	`
+
+	var report PaymentDataQualityReport
+	row := r.clickDb.Db().QueryRow(ctx, query, projectID)
+
+	if err := row.Scan(
+		&report.DuplicatePaymentCount,
+		&report.TotalDuplicateRows,
+		&report.PaymentsWithConflictingAmounts,
+		&report.PaymentsWithConflictingVisitors,
+	); err != nil {
+		return nil, fmt.Errorf("failed to check payment data quality: %w", err)
+	}
+
+	// Get sample of duplicates for debugging
+	sampleQuery := `
+		SELECT
+			payment_id,
+			COUNT(*) as row_count,
+			groupArray(amount) as amounts,
+			groupArray(visitor_id) as visitor_ids,
+			groupArray(payment_status) as statuses
+		FROM payment_events
+		WHERE project_id = ?
+		GROUP BY payment_id
+		HAVING row_count > 1
+		ORDER BY row_count DESC
+		LIMIT 10
+	`
+
+	rows, err := r.clickDb.Db().Query(ctx, sampleQuery, projectID)
+	if err != nil {
+		// Non-fatal - return report without samples
+		return &report, nil
+	}
+	defer rows.Close()
+
+	var samples []DuplicatePaymentSample
+	for rows.Next() {
+		var sample DuplicatePaymentSample
+		if err := rows.Scan(
+			&sample.PaymentID,
+			&sample.RowCount,
+			&sample.Amounts,
+			&sample.VisitorIDs,
+			&sample.Statuses,
+		); err == nil {
+			samples = append(samples, sample)
+		}
+	}
+	report.Samples = samples
+
+	return &report, nil
+}
+
+// PaymentDataQualityReport contains metrics about payment data quality
+type PaymentDataQualityReport struct {
+	DuplicatePaymentCount           uint64                   `json:"duplicate_payment_count"`
+	TotalDuplicateRows              uint64                   `json:"total_duplicate_rows"`
+	PaymentsWithConflictingAmounts  uint64                   `json:"payments_with_conflicting_amounts"`
+	PaymentsWithConflictingVisitors uint64                   `json:"payments_with_conflicting_visitors"`
+	Samples                         []DuplicatePaymentSample `json:"samples,omitempty"`
+}
+
+// DuplicatePaymentSample shows an example of a duplicate payment
+type DuplicatePaymentSample struct {
+	PaymentID  string   `json:"payment_id"`
+	RowCount   uint64   `json:"row_count"`
+	Amounts    []int64  `json:"amounts"`
+	VisitorIDs []string `json:"visitor_ids"`
+	Statuses   []string `json:"statuses"`
+}
+
 // GetTimeRangeBounds returns the start time and interval for a given time range
 func GetTimeRangeBounds(timeRange types.TimeRange) (time.Time, string, error) {
 	now := time.Now().UTC()
@@ -51,16 +145,25 @@ func (r *RevenueData) GetDashboardMetrics(ctx context.Context, projectID string,
 	// Main dashboard query combining multiple metrics
 	query := `
 		WITH payment_data AS (
-			SELECT
-				amount,
+			SELECT DISTINCT
+				payment_id,
 				visitor_id,
 				currency,
-				payment_id
+				amount
 			FROM payment_events
 			WHERE project_id = ?
 				AND payment_timestamp_utc >= ?
 				AND payment_timestamp_utc <= now()
 				AND payment_status = 'succeeded'
+		),
+		visitor_stats AS (
+			SELECT
+				COUNT(DISTINCT visitor_id) as total_visitors,
+				COUNT(DISTINCT session_id) as total_sessions
+			FROM events
+			WHERE project_id = ?
+				AND client_timestamp_utc >= ?
+				AND client_timestamp_utc <= now()
 		),
 		identified_visitors AS (
 			SELECT DISTINCT visitor_id
@@ -86,8 +189,8 @@ func (r *RevenueData) GetDashboardMetrics(ctx context.Context, projectID string,
 			-- Customer metrics
 			COUNT(DISTINCT pd.visitor_id) as paying_customers,
 			CASE
-				WHEN (SELECT COUNT(DISTINCT visitor_id) FROM events WHERE project_id = ? AND client_timestamp_utc >= ? AND client_timestamp_utc <= now()) > 0
-				THEN COUNT(DISTINCT pd.visitor_id) * 100.0 / (SELECT COUNT(DISTINCT visitor_id) FROM events WHERE project_id = ? AND client_timestamp_utc >= ? AND client_timestamp_utc <= now())
+				WHEN (SELECT total_visitors FROM visitor_stats) > 0
+				THEN COUNT(DISTINCT pd.visitor_id) * 100.0 / (SELECT total_visitors FROM visitor_stats)
 				ELSE 0
 			END as conversion_rate,
 
@@ -103,8 +206,8 @@ func (r *RevenueData) GetDashboardMetrics(ctx context.Context, projectID string,
 				ELSE 0
 			END as avg_revenue_per_customer,
 			CASE
-				WHEN (SELECT COUNT(DISTINCT session_id) FROM events WHERE project_id = ? AND client_timestamp_utc >= ? AND client_timestamp_utc <= now()) > 0
-				THEN COALESCE(SUM(pd.amount), 0) / (SELECT COUNT(DISTINCT session_id) FROM events WHERE project_id = ? AND client_timestamp_utc >= ? AND client_timestamp_utc <= now())
+				WHEN (SELECT total_sessions FROM visitor_stats) > 0
+				THEN COALESCE(SUM(pd.amount), 0) / (SELECT total_sessions FROM visitor_stats)
 				ELSE 0
 			END as avg_revenue_per_session,
 
@@ -122,9 +225,8 @@ func (r *RevenueData) GetDashboardMetrics(ctx context.Context, projectID string,
 	var response types.DashboardResponse
 	row := r.clickDb.Db().QueryRow(ctx, query,
 		projectID, startTime, // payment_data
+		projectID, startTime, // visitor_stats
 		projectID, startTime, // identified_visitors
-		projectID, startTime, projectID, startTime, // conversion_rate subqueries
-		projectID, startTime, projectID, startTime, // avg_revenue_per_session subqueries
 	)
 
 	if err := row.Scan(
@@ -159,10 +261,10 @@ func (r *RevenueData) GetAttributionByOrigin(ctx context.Context, projectID stri
 
 	query := `
 		WITH payments_in_period AS (
-			SELECT
+			SELECT DISTINCT
+				payment_id,
 				visitor_id,
 				amount,
-				payment_id,
 				currency
 			FROM payment_events
 			WHERE project_id = ?
@@ -223,34 +325,39 @@ func (r *RevenueData) GetAttributionByOrigin(ctx context.Context, projectID stri
 				origin,
 				COALESCE(SUM(amount), 0) as total_revenue,
 				uniq(visitor_id) as paying_customers,
-				COUNT(payment_id) as payment_count,
+				uniq(payment_id) as payment_count,
 				any(currency) as currency
 			FROM payment_visitor_origins
 			GROUP BY origin
+		),
+		total_revenue AS (
+			SELECT COALESCE(SUM(amount), 0) as total_amount
+			FROM payments_in_period
 		)
 		SELECT
 			ps.origin,
 			ps.total_revenue,
-			CASE
-				WHEN (SELECT SUM(amount) FROM payments_in_period) > 0
-				THEN ps.total_revenue * 100.0 / (SELECT SUM(amount) FROM payments_in_period)
-				ELSE 0
-			END as revenue_percentage,
+			toFloat64(CASE
+				WHEN (SELECT total_amount FROM total_revenue) > 0
+				THEN toFloat64(ps.total_revenue) * 100.0 / toFloat64((SELECT total_amount FROM total_revenue))
+				ELSE 0.0
+			END) as revenue_percentage,
 			ps.paying_customers,
 			COALESCE(vc.unique_visitors, 0) as unique_visitors,
-			CASE
+			toFloat64(CASE
 				WHEN COALESCE(vc.unique_visitors, 0) > 0
-				THEN ps.paying_customers * 100.0 / vc.unique_visitors
-				ELSE 0
-			END as conversion_rate,
-			CASE
+				THEN toFloat64(ps.paying_customers) * 100.0 / toFloat64(vc.unique_visitors)
+				ELSE 0.0
+			END) as conversion_rate,
+			toFloat64(CASE
 				WHEN ps.paying_customers > 0
-				THEN ps.total_revenue / ps.paying_customers
-				ELSE 0
-			END as avg_revenue_per_customer,
+				THEN toFloat64(ps.total_revenue) / toFloat64(ps.paying_customers)
+				ELSE 0.0
+			END) as avg_revenue_per_customer,
 			ps.payment_count,
 			ps.currency
 		FROM payment_stats ps
+		CROSS JOIN total_revenue
 		LEFT JOIN visitor_counts_by_origin vc ON ps.origin = vc.origin
 		ORDER BY ps.total_revenue DESC
 		LIMIT 20
@@ -314,19 +421,11 @@ func (r *RevenueData) GetAttributionByUTM(ctx context.Context, projectID string,
 	}
 
 	query := fmt.Sprintf(`
-		WITH revenue_totals AS (
-			SELECT SUM(amount) as total_revenue
-			FROM payment_events
-			WHERE project_id = ?
-				AND payment_timestamp_utc >= ?
-				AND payment_timestamp_utc <= now()
-				AND payment_status = 'succeeded'
-		),
-		payments_in_period AS (
-			SELECT
+		WITH payments_in_period AS (
+			SELECT DISTINCT
+				payment_id,
 				visitor_id,
 				amount,
-				payment_id,
 				currency
 			FROM payment_events
 			WHERE project_id = ?
@@ -334,17 +433,22 @@ func (r *RevenueData) GetAttributionByUTM(ctx context.Context, projectID string,
 				AND payment_timestamp_utc <= now()
 				AND payment_status = 'succeeded'
 		),
+		revenue_totals AS (
+			SELECT COALESCE(SUM(amount), 0) as total_revenue
+			FROM payments_in_period
+		),
 		visitor_utm AS (
 			SELECT
-				ft.visitor_id,
+				pip.visitor_id,
 				CASE
+					WHEN ft.visitor_id IS NULL THEN '(not set)'
 					WHEN argMinMerge(ft.%s) IS NULL OR argMinMerge(ft.%s) = '' THEN '(not set)'
 					ELSE argMinMerge(ft.%s)
 				END as utm_value
-			FROM visitor_first_touch_attribution ft
-			INNER JOIN payments_in_period pip ON ft.visitor_id = pip.visitor_id
-			WHERE ft.project_id = ?
-			GROUP BY ft.visitor_id
+			FROM payments_in_period pip
+			LEFT JOIN visitor_first_touch_attribution ft
+				ON pip.visitor_id = ft.visitor_id AND ft.project_id = ?
+			GROUP BY pip.visitor_id
 		),
 		visitors_in_period AS (
 			SELECT DISTINCT visitor_id
@@ -375,26 +479,27 @@ func (r *RevenueData) GetAttributionByUTM(ctx context.Context, projectID string,
 		SELECT
 			vu.utm_value,
 			COALESCE(SUM(p.amount), 0) as total_revenue,
-			CASE
+			toFloat64(CASE
 				WHEN (SELECT total_revenue FROM revenue_totals) > 0
-				THEN (COALESCE(SUM(p.amount), 0) * 100.0 / (SELECT total_revenue FROM revenue_totals))
-				ELSE 0
-			END as revenue_percentage,
+				THEN toFloat64(COALESCE(SUM(p.amount), 0)) * 100.0 / toFloat64((SELECT total_revenue FROM revenue_totals))
+				ELSE 0.0
+			END) as revenue_percentage,
 			uniq(p.visitor_id) as paying_customers,
 			COALESCE(vc.unique_visitors, 0) as unique_visitors,
-			CASE
+			toFloat64(CASE
 				WHEN COALESCE(vc.unique_visitors, 0) > 0
-				THEN (uniq(p.visitor_id) * 100.0 / vc.unique_visitors)
-				ELSE 0
-			END as conversion_rate,
-			CASE
+				THEN toFloat64(uniq(p.visitor_id)) * 100.0 / toFloat64(vc.unique_visitors)
+				ELSE 0.0
+			END) as conversion_rate,
+			toFloat64(CASE
 				WHEN uniq(p.visitor_id) > 0
-				THEN COALESCE(SUM(p.amount), 0) / uniq(p.visitor_id)
-				ELSE 0
-			END as avg_revenue_per_customer,
-			countIf(p.payment_id IS NOT NULL) as payment_count,
+				THEN toFloat64(COALESCE(SUM(p.amount), 0)) / toFloat64(uniq(p.visitor_id))
+				ELSE 0.0
+			END) as avg_revenue_per_customer,
+			uniqIf(p.payment_id, p.payment_id IS NOT NULL) as payment_count,
 			any(p.currency) as currency
 		FROM visitor_utm vu
+		CROSS JOIN revenue_totals
 		LEFT JOIN payments_in_period p ON vu.visitor_id = p.visitor_id
 		LEFT JOIN visitor_counts_by_utm vc ON vu.utm_value = vc.utm_value
 		GROUP BY vu.utm_value, vc.unique_visitors
@@ -403,11 +508,10 @@ func (r *RevenueData) GetAttributionByUTM(ctx context.Context, projectID string,
 	`, utmField, utmField, utmField, utmField, utmField, utmField)
 
 	rows, err := r.clickDb.Db().Query(ctx, query,
-		projectID, startTime, // revenue_totals
 		projectID, startTime, // payments_in_period
-		projectID,            // visitor_utm
+		projectID,            // visitor_utm LEFT JOIN
 		projectID, startTime, // visitors_in_period
-		projectID, // all_visitor_utm
+		projectID,            // all_visitor_utm LEFT JOIN
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query attribution by UTM: %w", err)
@@ -480,18 +584,26 @@ func (r *RevenueData) GetTimeline(ctx context.Context, projectID string, timeRan
 			ORDER BY time_bucket ASC
 		`
 	} else {
-		// Fall back to raw query for sub-hour granularity
+		// Fall back to raw query for sub-hour granularity with proper deduplication
 		query = fmt.Sprintf(`
+			WITH distinct_payments AS (
+				SELECT DISTINCT
+					payment_id,
+					amount,
+					currency,
+					payment_timestamp_utc
+				FROM payment_events
+				WHERE project_id = ?
+					AND payment_timestamp_utc >= ?
+					AND payment_timestamp_utc <= now()
+					AND payment_status = 'succeeded'
+			)
 			SELECT
 				%s(payment_timestamp_utc) as time_bucket,
 				COALESCE(SUM(amount), 0) as total_revenue,
-				COUNT(*) as payment_count,
+				COUNT(DISTINCT payment_id) as payment_count,
 				any(currency) as currency
-			FROM payment_events
-			WHERE project_id = ?
-				AND payment_timestamp_utc >= ?
-				AND payment_timestamp_utc <= now()
-				AND payment_status = 'succeeded'
+			FROM distinct_payments
 			GROUP BY time_bucket
 			ORDER BY time_bucket ASC
 		`, intervalFunc)
@@ -531,31 +643,40 @@ func (r *RevenueData) GetTopCustomers(ctx context.Context, projectID string, tim
 	}
 
 	query := `
+		WITH distinct_payments AS (
+			SELECT DISTINCT
+				visitor_id,
+				payment_id,
+				amount,
+				payment_timestamp_utc,
+				currency
+			FROM payment_events
+			WHERE project_id = ?
+				AND payment_timestamp_utc >= ?
+				AND payment_timestamp_utc <= now()
+				AND payment_status = 'succeeded'
+		)
 		SELECT
 			p.visitor_id,
 			COALESCE(SUM(p.amount), 0) as total_revenue,
-			COUNT(*) as payment_count,
+			COUNT(DISTINCT p.payment_id) as payment_count,
 			MIN(p.payment_timestamp_utc) as first_payment_date,
 			MAX(p.payment_timestamp_utc) as last_payment_date,
 			CASE
-				WHEN COUNT(*) > 0
-				THEN COALESCE(SUM(p.amount), 0) / COUNT(*)
+				WHEN COUNT(DISTINCT p.payment_id) > 0
+				THEN COALESCE(SUM(p.amount), 0) / COUNT(DISTINCT p.payment_id)
 				ELSE 0
 			END as avg_order_value,
 			any(p.currency) as currency,
 			any(e.location_country_iso) as location_country_iso
-		FROM payment_events p
+		FROM distinct_payments p
 		LEFT JOIN events e ON p.visitor_id = e.visitor_id AND e.project_id = ?
-		WHERE p.project_id = ?
-			AND p.payment_timestamp_utc >= ?
-			AND p.payment_timestamp_utc <= now()
-			AND p.payment_status = 'succeeded'
 		GROUP BY p.visitor_id
 		ORDER BY total_revenue DESC
 		LIMIT ?
 	`
 
-	rows, err := r.clickDb.Db().Query(ctx, query, projectID, projectID, startTime, limit)
+	rows, err := r.clickDb.Db().Query(ctx, query, projectID, startTime, projectID, limit)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query top customers: %w", err)
 	}
@@ -615,21 +736,29 @@ func (r *RevenueData) GetCustomerProfile(ctx context.Context, projectID string, 
 
 	// Get revenue summary
 	summaryQuery := `
+		WITH distinct_payments AS (
+			SELECT DISTINCT
+				payment_id,
+				amount,
+				payment_timestamp_utc,
+				currency
+			FROM payment_events
+			WHERE project_id = ?
+				AND visitor_id = ?
+				AND payment_status = 'succeeded'
+		)
 		SELECT
 			COALESCE(SUM(amount), 0) as total_revenue,
-			COUNT(*) as payment_count,
+			COUNT(DISTINCT payment_id) as payment_count,
 			MIN(payment_timestamp_utc) as first_payment,
 			MAX(payment_timestamp_utc) as last_payment,
 			CASE
-				WHEN COUNT(*) > 0
-				THEN toInt64(COALESCE(SUM(amount), 0) / COUNT(*))
+				WHEN COUNT(DISTINCT payment_id) > 0
+				THEN toInt64(COALESCE(SUM(amount), 0) / COUNT(DISTINCT payment_id))
 				ELSE 0
 			END as avg_order_value,
 			any(currency) as currency
-		FROM payment_events
-		WHERE project_id = ?
-			AND visitor_id = ?
-			AND payment_status = 'succeeded'
+		FROM distinct_payments
 	`
 
 	row := r.clickDb.Db().QueryRow(ctx, summaryQuery, projectID, visitorID)
@@ -722,7 +851,7 @@ func (r *RevenueData) GetCustomerProfile(ctx context.Context, projectID string, 
 		SELECT
 			toStartOfDay(payment_timestamp_utc) as time_bucket,
 			COALESCE(SUM(amount), 0) as total_revenue,
-			COUNT(*) as payment_count
+			COUNT(DISTINCT payment_id) as payment_count
 		FROM payment_events
 		WHERE project_id = ?
 			AND visitor_id = ?
@@ -781,14 +910,29 @@ func (r *RevenueData) GetConversionMetrics(ctx context.Context, projectID string
 			SELECT
 				visitor_id,
 				MIN(payment_timestamp_utc) as first_payment,
-				COUNT(*) as payment_count,
+				COUNT(DISTINCT payment_id) as payment_count,
 				SUM(amount) as total_revenue
-			FROM payment_events
-			WHERE project_id = ?
-				AND payment_timestamp_utc >= ?
-				AND payment_timestamp_utc <= now()
-				AND payment_status = 'succeeded'
+			FROM (
+				SELECT DISTINCT
+					visitor_id,
+					payment_id,
+					payment_timestamp_utc,
+					amount
+				FROM payment_events
+				WHERE project_id = ?
+					AND payment_timestamp_utc >= ?
+					AND payment_timestamp_utc <= now()
+					AND payment_status = 'succeeded'
+			)
 			GROUP BY visitor_id
+		),
+		-- Get all visitors who visited in the period, regardless of payment
+		all_visitors AS (
+			SELECT visitor_id FROM visitor_data
+		),
+		-- Get all visitors who paid (may include visitors who paid but didn't visit in period)
+		paying_visitor_ids AS (
+			SELECT DISTINCT visitor_id FROM payment_data
 		),
 		joined_data AS (
 			SELECT
@@ -801,11 +945,22 @@ func (r *RevenueData) GetConversionMetrics(ctx context.Context, projectID string
 			LEFT JOIN payment_data pd ON vd.visitor_id = pd.visitor_id
 		)
 		SELECT
-			COUNT(DISTINCT visitor_id) as total_visitors,
-			countIf(first_payment IS NOT NULL) as paying_customers,
+			-- Total visitors from events table (all visitors)
+			(SELECT COUNT(DISTINCT visitor_id) FROM all_visitors) as total_visitors,
+			-- Paying customers who visited in the period
+			(SELECT COUNT(*) FROM (
+				SELECT DISTINCT vd.visitor_id
+				FROM visitor_data vd
+				INNER JOIN paying_visitor_ids pv ON vd.visitor_id = pv.visitor_id
+			)) as paying_customers,
+			-- Conversion rate based on all visitors
 			CASE
-				WHEN COUNT(DISTINCT visitor_id) > 0
-				THEN countIf(first_payment IS NOT NULL) * 100.0 / COUNT(DISTINCT visitor_id)
+				WHEN (SELECT COUNT(DISTINCT visitor_id) FROM all_visitors) > 0
+				THEN (SELECT COUNT(*) FROM (
+					SELECT DISTINCT vd.visitor_id
+					FROM visitor_data vd
+					INNER JOIN paying_visitor_ids pv ON vd.visitor_id = pv.visitor_id
+				)) * 100.0 / (SELECT COUNT(DISTINCT visitor_id) FROM all_visitors)
 				ELSE 0
 			END as conversion_rate,
 			COALESCE(avgIf(dateDiff('hour', first_visit, first_payment), first_payment IS NOT NULL AND first_payment >= first_visit), 0) as avg_time_to_purchase,
@@ -843,5 +998,24 @@ func (r *RevenueData) GetConversionMetrics(ctx context.Context, projectID string
 		return nil, fmt.Errorf("failed to get conversion metrics: %w", err)
 	}
 
+	// Replace NaN values with 0 for JSON compatibility
+	response.ConversionRate = sanitizeFloat(response.ConversionRate)
+	response.AvgTimeToFirstPurchase = sanitizeFloat(response.AvgTimeToFirstPurchase)
+	response.MedianTimeToFirstPurchase = sanitizeFloat(response.MedianTimeToFirstPurchase)
+	response.CustomerLifetimeValue = sanitizeFloat(response.CustomerLifetimeValue)
+	response.RepeatPurchaseRate = sanitizeFloat(response.RepeatPurchaseRate)
+	response.AvgPurchasesPerCustomer = sanitizeFloat(response.AvgPurchasesPerCustomer)
+
 	return &response, nil
+}
+
+// sanitizeFloat replaces NaN and Inf values with 0 for JSON compatibility
+func sanitizeFloat(f float64) float64 {
+	if f != f { // NaN check
+		return 0
+	}
+	if f > 1e308 || f < -1e308 { // Inf check
+		return 0
+	}
+	return f
 }
