@@ -9,7 +9,6 @@ import (
 	"zori/internal/natsstream"
 	"zori/internal/server"
 	"zori/internal/storage/postgres"
-	"zori/services/auth"
 	"zori/services/ingestion"
 	"zori/services/ingestion/web"
 	"zori/services/organizations"
@@ -31,7 +30,6 @@ func NewIngestionApplication() *fx.App {
 		fx.Provide(natsstream.NewStream),
 		fx.Provide(cache.NewCacheService),
 
-		auth.BuildAuthDIContainer(),
 		organizations.BuildOrganizationDIContainer(),
 		projects.BuildProjectsDIContainer(),
 		payments.BuildPaymentsDIContainer(),

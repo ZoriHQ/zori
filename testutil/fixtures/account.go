@@ -1,18 +1,15 @@
 package fixtures
 
 import (
-	"bytes"
-	"encoding/json"
+	"context"
 	"fmt"
-	"net/http"
-	"net/http/httptest"
 	"testing"
 	"time"
 
 	"zori/di"
-	"zori/services/auth/services"
+	"zori/internal/storage/postgres/models"
 
-	"github.com/labstack/echo/v4"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 )
 
@@ -27,43 +24,63 @@ type AccountFixture struct {
 	OrgName      string
 }
 
-// CreateAccount creates a new account with organization via the register endpoint
+// CreateAccount creates a new account with organization directly in the database
+// NOTE: This bypasses Stack Auth for testing purposes
 func CreateAccount(t *testing.T, tc *di.TestContainer) *AccountFixture {
 	t.Helper()
 
 	randomEmail := fmt.Sprintf("test-%d@example.com", time.Now().UnixNano())
-	password := "ValidPass123!"
 	orgName := fmt.Sprintf("Test Org %d", time.Now().UnixNano())
+	accountID := uuid.New().String()
+	orgID := uuid.New().String()
 
-	registerReq := services.RegisterRequest{
-		Email:            randomEmail,
-		Password:         password,
-		FirstName:        "Test",
-		LastName:         "User",
-		OrganizationName: orgName,
+	ctx := context.Background()
+
+	// Create account directly in database
+	account := &models.Account{
+		ID:        accountID,
+		Email:     randomEmail,
+		FirstName: "Test",
+		LastName:  "User",
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
 	}
+	_, err := tc.DB.DB.NewInsert().Model(account).Exec(ctx)
+	require.NoError(t, err, "Failed to create account")
 
-	reqBody, err := json.Marshal(registerReq)
-	require.NoError(t, err)
+	// Create organization directly in database
+	org := &models.Organization{
+		ID:        orgID,
+		Name:      orgName,
+		Slug:      fmt.Sprintf("test-org-%d", time.Now().UnixNano()),
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+	_, err = tc.DB.DB.NewInsert().Model(org).Exec(ctx)
+	require.NoError(t, err, "Failed to create organization")
 
-	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/register", bytes.NewBuffer(reqBody))
-	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
-	rec := httptest.NewRecorder()
+	// Create organization membership
+	member := &models.OrganizationMember{
+		ID:             uuid.New().String(),
+		OrganizationID: orgID,
+		AccountID:      accountID,
+		Role:           models.RoleOwner,
+		JoinedAt:       time.Now(),
+	}
+	_, err = tc.DB.DB.NewInsert().Model(member).Exec(ctx)
+	require.NoError(t, err, "Failed to create organization member")
 
-	tc.Server.Echo.ServeHTTP(rec, req)
-	require.Equal(t, http.StatusOK, rec.Code, "Failed to register account: %s", rec.Body.String())
-
-	var authResponse services.AuthResponse
-	err = json.Unmarshal(rec.Body.Bytes(), &authResponse)
-	require.NoError(t, err)
+	// For Stack Auth integration, we use the accountID as a mock token
+	// In real tests, you would use actual Stack Auth tokens
+	mockToken := accountID
 
 	return &AccountFixture{
 		Email:        randomEmail,
-		Password:     password,
-		AccessToken:  authResponse.AccessToken,
-		RefreshToken: authResponse.RefreshToken,
-		AccountID:    authResponse.Account.ID,
-		OrgID:        authResponse.Organization.ID,
-		OrgName:      authResponse.Organization.Name,
+		Password:     "test-password",
+		AccessToken:  mockToken,
+		RefreshToken: "",
+		AccountID:    accountID,
+		OrgID:        orgID,
+		OrgName:      orgName,
 	}
 }

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/http"
 	"zori/internal/server"
-	authServices "zori/services/auth/services"
 	"zori/services/events/services"
 	projectsService "zori/services/projects/services"
 
@@ -21,7 +20,7 @@ var (
 	}
 )
 
-func RegisterRoutes(s *server.Server, projectService *projectsService.ProjectService, jwtService *authServices.JWTService, eventsService *services.EventsService) {
+func RegisterRoutes(s *server.Server, projectService *projectsService.ProjectService, jwtService *services.JWTService, eventsService *services.EventsService) {
 	s.Echo.GET("/events/stream", func(c echo.Context) error {
 		ws, err := upgrader.Upgrade(c.Response(), c.Request(), nil)
 		if err != nil {

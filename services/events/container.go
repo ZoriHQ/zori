@@ -13,6 +13,7 @@ func BuildEventsDIContainer() fx.Option {
 		fx.Provide(services.NewProcessor),
 		fx.Provide(services.NewIdentifyProcessor),
 		fx.Provide(services.NewEventsService),
+		fx.Provide(services.NewJWTService),
 		fx.Invoke(func(lc fx.Lifecycle, processorService *services.Processor, identifyProcessor *services.IdentifyProcessor) {
 			lc.Append(fx.Hook{
 				OnStart: func(ctx context.Context) error {

@@ -11,11 +11,11 @@ import (
 func RegisterRoutes(
 	s *server.Server,
 	analyticsService *services.AnalyticsService,
-	jwtMiddleware *middlewares.JwtMiddleware,
+	stackAuthMiddleware *middlewares.StackAuthMiddleware,
 	cacheMiddleware *middlewares.CacheMiddleware,
 ) {
 	analyticsRouteGroup := s.Group("/api/v1/analytics")
-	analyticsRouteGroup.Use(jwtMiddleware.Middleware())
+	analyticsRouteGroup.Use(stackAuthMiddleware.Middleware())
 
 	highFrequencyTTL := 1 * time.Minute
 	mediumFrequencyTTL := 2 * time.Minute

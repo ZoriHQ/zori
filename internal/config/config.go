@@ -1,8 +1,6 @@
 package config
 
 import (
-	"time"
-
 	"github.com/caarlos0/env/v11"
 	_ "github.com/joho/godotenv/autoload"
 )
@@ -17,19 +15,23 @@ type Config struct {
 	RedisADDS string `env:"REDIS_ADDRS,required"`
 	RedisPASS string `env:"REDIS_PASSWORD,required"`
 
-	// JWT Configuration
-	JWTSecretKey       string        `env:"JWT_SECRET_KEY" envDefault:"your-super-secret-key-change-in-production-min-32-chars"`
-	JWTAccessTokenTTL  time.Duration `env:"JWT_ACCESS_TOKEN_TTL" envDefault:"15m"`
-	JWTRefreshTokenTTL time.Duration `env:"JWT_REFRESH_TOKEN_TTL" envDefault:"168h"`
+	// Stack Auth Configuration
+	StackAuthProjectID string `env:"STACK_AUTH_PROJECT_ID,required"`
+	StackAuthJWKSURL   string `env:"STACK_AUTH_JWKS_URL"`
 
 	NatsCredentialsContent string `env:"NATS_CREDENTIALS_CONTENT,required"`
 	NatsStreamURL          string `env:"NATS_STREAM_URL,required"`
 
-	// Bcrypt Configuration
-	BcryptCost int `env:"BCRYPT_COST" envDefault:"12"`
-
 	// Encryption Configuration (for payment provider credentials)
 	EncryptionKey string `env:"ENCRYPTION_KEY,required"`
+}
+
+func (c *Config) GetStackAuthJWKSURL() string {
+	if c.StackAuthJWKSURL != "" {
+		return c.StackAuthJWKSURL
+	}
+	// Default JWKS URL based on project ID
+	return "https://api.stack-auth.com/api/v1/projects/" + c.StackAuthProjectID + "/.well-known/jwks.json"
 }
 
 func NewConfig() *Config {

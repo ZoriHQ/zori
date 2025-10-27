@@ -37,6 +37,8 @@ require (
 	github.com/Cleverse/go-utilities/errors v0.0.0-20231113142714-2364608744a9 // indirect
 	github.com/ClickHouse/ch-go v0.69.0 // indirect
 	github.com/KyleBanks/depth v1.2.1 // indirect
+	github.com/MicahParks/jwkset v0.11.0 // indirect
+	github.com/MicahParks/keyfunc/v3 v3.7.0 // indirect
 	github.com/andybalholm/brotli v1.2.0 // indirect
 	github.com/boyter/go-string v1.0.5 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
