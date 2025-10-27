@@ -100,6 +100,8 @@ func (m *Zori) TestWithCoverage(ctx context.Context, source *dagger.Directory) *
 		WithEnvVariable("CLICKHOUSE_USER", "default").
 		WithEnvVariable("CLICKHOUSE_PASSWORD", "default").
 		WithEnvVariable("CLICKHOUSE_DATABASE", "default").
+		WithEnvVariable("STACK_AUTH_PROJECT_ID", "mock").
+		WithEnvVariable("STACK_AUTH_CLIENT_ID", "https://api.stack-auth.com/api/v1/projects/${project_mock_id}/.well-known/jwks.json").
 		WithEnvVariable("JWT_SECRET_KEY", "test-secret-key-for-testing-purposes-min-32-chars").
 		WithEnvVariable("JWT_ACCESS_TOKEN_TTL", "15m").
 		WithEnvVariable("JWT_REFRESH_TOKEN_TTL", "168h").
