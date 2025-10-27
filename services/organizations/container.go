@@ -11,10 +11,8 @@ import (
 func BuildOrganizationDIContainer() fx.Option {
 	return fx.Module("organizatioon",
 		fx.Provide(
-			data.NewAccountData,
 			data.NewOrganizationData,
 			services.NewOrganizationService,
-			services.NewAccountService,
 		),
 	)
 }

@@ -9,8 +9,8 @@ ALTER TABLE payment_providers DROP CONSTRAINT IF EXISTS payment_providers_organi
 DROP TRIGGER IF EXISTS update_organizations_updated_at ON organizations;
 DROP INDEX IF EXISTS idx_organization_members_account_id;
 DROP INDEX IF EXISTS idx_organization_members_org_id;
-DROP TABLE IF EXISTS organization_members;
-DROP TABLE IF EXISTS organizations;
+DROP TABLE IF EXISTS organization_members CASCADE;
+DROP TABLE IF EXISTS organizations CASCADE;
 
 -- +goose Down
 -- Recreate organizations table
