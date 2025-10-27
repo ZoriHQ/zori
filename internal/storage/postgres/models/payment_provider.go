@@ -39,6 +39,5 @@ type PaymentProvider struct {
 	UpdatedAt time.Time `json:"updated_at" bun:",notnull,default:current_timestamp" example:"2024-01-15T10:30:00Z"`
 
 	// Relations
-	Project      *Project      `json:"project,omitempty" bun:"rel:belongs-to,join:project_id=id"`
-	Organization *Organization `json:"organization,omitempty" bun:"rel:belongs-to,join:organization_id=id"`
+	Project *Project `json:"project,omitempty" bun:"rel:belongs-to,join:project_id=id"`
 }
