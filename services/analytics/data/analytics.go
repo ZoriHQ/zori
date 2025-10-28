@@ -270,7 +270,7 @@ func (a *AnalyticsData) GetRecentEvents(ctx context.Context, req types.RecentEve
 		return nil, 0, fmt.Errorf("failed to get total count: %w", err)
 	}
 
-	// Build main query with all fields including lat/long
+	// Build main query with all fields including lat/long and click data
 	query := fmt.Sprintf(`
 		SELECT
 			event_name,
@@ -287,7 +287,20 @@ func (a *AnalyticsData) GetRecentEvents(ctx context.Context, req types.RecentEve
 			location_country_iso,
 			location_city,
 			location_latitude,
-			location_longitude
+			location_longitude,
+			click_element_tag,
+			click_element_selector,
+			click_element_text,
+			click_position_x,
+			click_position_y,
+			click_screen_width,
+			click_screen_height,
+			click_element_type,
+			click_element_category,
+			is_cta_click,
+			link_destination,
+			is_external_link,
+			is_download_link
 		FROM events
 		%s
 		ORDER BY client_timestamp_utc DESC
@@ -324,6 +337,19 @@ func (a *AnalyticsData) GetRecentEvents(ctx context.Context, req types.RecentEve
 			&event.LocationCity,
 			&event.LocationLatitude,
 			&event.LocationLongitude,
+			&event.ClickElementTag,
+			&event.ClickElementSelector,
+			&event.ClickElementText,
+			&event.ClickPositionX,
+			&event.ClickPositionY,
+			&event.ClickScreenWidth,
+			&event.ClickScreenHeight,
+			&event.ClickElementType,
+			&event.ClickElementCategory,
+			&event.IsCTAClick,
+			&event.LinkDestination,
+			&event.IsExternalLink,
+			&event.IsDownloadLink,
 		); err != nil {
 			return nil, 0, fmt.Errorf("failed to scan row: %w", err)
 		}
@@ -535,7 +561,20 @@ func (a *AnalyticsData) GetVisitorProfile(ctx context.Context, projectID string,
 			page_path,
 			referrer_url,
 			device_type,
-			browser_name
+			browser_name,
+			click_element_tag,
+			click_element_selector,
+			click_element_text,
+			click_position_x,
+			click_position_y,
+			click_screen_width,
+			click_screen_height,
+			click_element_type,
+			click_element_category,
+			is_cta_click,
+			link_destination,
+			is_external_link,
+			is_download_link
 		FROM events
 		WHERE project_id = ?
 			AND visitor_id = ?
@@ -560,6 +599,19 @@ func (a *AnalyticsData) GetVisitorProfile(ctx context.Context, projectID string,
 			&event.ReferrerURL,
 			&event.DeviceType,
 			&event.BrowserName,
+			&event.ClickElementTag,
+			&event.ClickElementSelector,
+			&event.ClickElementText,
+			&event.ClickPositionX,
+			&event.ClickPositionY,
+			&event.ClickScreenWidth,
+			&event.ClickScreenHeight,
+			&event.ClickElementType,
+			&event.ClickElementCategory,
+			&event.IsCTAClick,
+			&event.LinkDestination,
+			&event.IsExternalLink,
+			&event.IsDownloadLink,
 		); err != nil {
 			return nil, fmt.Errorf("failed to scan event row: %w", err)
 		}

@@ -49,6 +49,14 @@ type Event struct {
 	ClickScreenWidth      *uint16  `ch:"click_screen_width"`      // Browser viewport width
 	ClickScreenHeight     *uint16  `ch:"click_screen_height"`     // Browser viewport height
 
+	// Click element classification
+	ClickElementType     *string `ch:"click_element_type"`     // Classified element type (button, link, input, etc.)
+	ClickElementCategory *string `ch:"click_element_category"` // High-level category (cta, navigation, form, etc.)
+	IsCTAClick           *bool   `ch:"is_cta_click"`           // Whether this is a CTA click
+	LinkDestination      *string `ch:"link_destination"`       // Destination URL for link clicks
+	IsExternalLink       *bool   `ch:"is_external_link"`       // Whether link is external
+	IsDownloadLink       *bool   `ch:"is_download_link"`       // Whether link is a download
+
 	//UTM parameters
 	UTMParameters map[string]string `ch:"utm_parameters"`
 
