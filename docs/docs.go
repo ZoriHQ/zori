@@ -1195,308 +1195,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/auth/login": {
-            "post": {
-                "description": "Authenticate a user with email and password",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Authentication"
-                ],
-                "summary": "User login",
-                "parameters": [
-                    {
-                        "description": "Login credentials",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/services.LoginRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successfully authenticated",
-                        "schema": {
-                            "$ref": "#/definitions/services.AuthResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid email or password",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/auth/logout": {
-            "post": {
-                "description": "Invalidate the current session and refresh token",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Authentication"
-                ],
-                "summary": "User logout",
-                "parameters": [
-                    {
-                        "description": "Logout request",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/services.LogoutRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successfully logged out",
-                        "schema": {
-                            "$ref": "#/definitions/services.MessageResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid request",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/auth/recover": {
-            "post": {
-                "description": "Send a password recovery email to the registered email address",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Authentication"
-                ],
-                "summary": "Request password recovery",
-                "parameters": [
-                    {
-                        "description": "Recovery request",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/services.RecoverRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Recovery email sent if account exists",
-                        "schema": {
-                            "$ref": "#/definitions/services.MessageResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid email format",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/auth/recover-confirm": {
-            "post": {
-                "description": "Reset password using recovery token received via email",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Authentication"
-                ],
-                "summary": "Confirm password recovery",
-                "parameters": [
-                    {
-                        "description": "Recovery confirmation",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/services.RecoverConfirmRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Password successfully reset",
-                        "schema": {
-                            "$ref": "#/definitions/services.MessageResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid or expired token",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "422": {
-                        "description": "Password validation failed",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/auth/refresh": {
-            "post": {
-                "description": "Exchange a valid refresh token for new access and refresh tokens",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Authentication"
-                ],
-                "summary": "Refresh access token",
-                "parameters": [
-                    {
-                        "description": "Refresh token",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/services.RefreshRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successfully refreshed tokens",
-                        "schema": {
-                            "$ref": "#/definitions/services.AuthResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid or expired refresh token",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "401": {
-                        "description": "Session not found or expired",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/auth/register": {
-            "post": {
-                "description": "Create a new user account with an organization",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Authentication"
-                ],
-                "summary": "Register a new account",
-                "parameters": [
-                    {
-                        "description": "Registration details",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/services.RegisterRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successfully registered and authenticated",
-                        "schema": {
-                            "$ref": "#/definitions/services.AuthResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid request or validation failed",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "409": {
-                        "description": "Account with email already exists",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
         "/api/v1/payment-providers": {
             "get": {
                 "security": [
@@ -2624,77 +2322,6 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "models.Account": {
-            "type": "object",
-            "required": [
-                "email"
-            ],
-            "properties": {
-                "created_at": {
-                    "type": "string"
-                },
-                "email": {
-                    "type": "string"
-                },
-                "email_verified": {
-                    "type": "boolean"
-                },
-                "first_name": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "last_name": {
-                    "type": "string"
-                },
-                "organizations": {
-                    "description": "Relations",
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/models.Organization"
-                    }
-                },
-                "updated_at": {
-                    "type": "string"
-                }
-            }
-        },
-        "models.Organization": {
-            "type": "object",
-            "required": [
-                "name",
-                "slug"
-            ],
-            "properties": {
-                "created_at": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "members": {
-                    "description": "Relations",
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/models.Account"
-                    }
-                },
-                "name": {
-                    "type": "string",
-                    "maxLength": 255,
-                    "minLength": 1
-                },
-                "slug": {
-                    "type": "string",
-                    "maxLength": 255,
-                    "minLength": 1
-                },
-                "updated_at": {
-                    "type": "string"
-                }
-            }
-        },
         "models.Project": {
             "type": "object",
             "properties": {
@@ -2721,9 +2348,6 @@ const docTemplate = `{
                 "name": {
                     "type": "string",
                     "example": "My Awesome Project"
-                },
-                "organization": {
-                    "$ref": "#/definitions/models.Organization"
                 },
                 "organization_id": {
                     "type": "string",
@@ -2756,29 +2380,6 @@ const docTemplate = `{
                 "ProviderTypeSquare"
             ]
         },
-        "services.AuthResponse": {
-            "type": "object",
-            "properties": {
-                "access_token": {
-                    "type": "string",
-                    "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-                },
-                "account": {
-                    "$ref": "#/definitions/models.Account"
-                },
-                "expires_in": {
-                    "type": "integer",
-                    "example": 900
-                },
-                "organization": {
-                    "$ref": "#/definitions/models.Organization"
-                },
-                "refresh_token": {
-                    "type": "string",
-                    "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-                }
-            }
-        },
         "services.ListProjectsResponse": {
             "type": "object",
             "properties": {
@@ -2791,44 +2392,6 @@ const docTemplate = `{
                 "total": {
                     "type": "integer",
                     "example": 10
-                }
-            }
-        },
-        "services.LoginRequest": {
-            "type": "object",
-            "required": [
-                "email",
-                "password"
-            ],
-            "properties": {
-                "email": {
-                    "type": "string",
-                    "example": "user@example.com"
-                },
-                "password": {
-                    "type": "string",
-                    "example": "SecurePassword123!"
-                }
-            }
-        },
-        "services.LogoutRequest": {
-            "type": "object",
-            "required": [
-                "refresh_token"
-            ],
-            "properties": {
-                "refresh_token": {
-                    "type": "string",
-                    "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-                }
-            }
-        },
-        "services.MessageResponse": {
-            "type": "object",
-            "properties": {
-                "message": {
-                    "type": "string",
-                    "example": "Operation completed successfully"
                 }
             }
         },
@@ -2859,9 +2422,6 @@ const docTemplate = `{
                     "type": "string",
                     "example": "My Awesome Project"
                 },
-                "organization": {
-                    "$ref": "#/definitions/models.Organization"
-                },
                 "organization_id": {
                     "type": "string",
                     "example": "660e8400-e29b-41d4-a716-446655440001"
@@ -2873,79 +2433,6 @@ const docTemplate = `{
                 "updated_at": {
                     "type": "string",
                     "example": "2024-01-15T10:30:00Z"
-                }
-            }
-        },
-        "services.RecoverConfirmRequest": {
-            "type": "object",
-            "required": [
-                "password",
-                "token"
-            ],
-            "properties": {
-                "password": {
-                    "type": "string",
-                    "minLength": 8,
-                    "example": "NewSecurePassword123!"
-                },
-                "token": {
-                    "type": "string",
-                    "example": "recovery-token-from-email"
-                }
-            }
-        },
-        "services.RecoverRequest": {
-            "type": "object",
-            "required": [
-                "email"
-            ],
-            "properties": {
-                "email": {
-                    "type": "string",
-                    "example": "user@example.com"
-                }
-            }
-        },
-        "services.RefreshRequest": {
-            "type": "object",
-            "required": [
-                "refresh_token"
-            ],
-            "properties": {
-                "refresh_token": {
-                    "type": "string",
-                    "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-                }
-            }
-        },
-        "services.RegisterRequest": {
-            "type": "object",
-            "required": [
-                "email",
-                "organization_name",
-                "password"
-            ],
-            "properties": {
-                "email": {
-                    "type": "string",
-                    "example": "user@example.com"
-                },
-                "first_name": {
-                    "type": "string",
-                    "example": "John"
-                },
-                "last_name": {
-                    "type": "string",
-                    "example": "Doe"
-                },
-                "organization_name": {
-                    "type": "string",
-                    "example": "Acme Corporation"
-                },
-                "password": {
-                    "type": "string",
-                    "minLength": 8,
-                    "example": "SecurePassword123!"
                 }
             }
         },
@@ -3099,7 +2586,6 @@ const docTemplate = `{
                     "type": "number"
                 },
                 "total_visitors": {
-                    "description": "Funnel metrics",
                     "type": "integer"
                 }
             }
@@ -3297,7 +2783,7 @@ const docTemplate = `{
             "properties": {
                 "avg_order_value": {
                     "description": "Average metrics",
-                    "type": "integer"
+                    "type": "number"
                 },
                 "avg_revenue_per_customer": {
                     "description": "Average revenue per paying customer",
@@ -3308,7 +2794,7 @@ const docTemplate = `{
                 },
                 "avg_revenue_per_session": {
                     "description": "Average revenue per session",
-                    "type": "integer"
+                    "type": "number"
                 },
                 "conversion_rate": {
                     "description": "% of visitors who paid",
@@ -3553,6 +3039,35 @@ const docTemplate = `{
                 "browser_name": {
                     "type": "string"
                 },
+                "click_element_category": {
+                    "type": "string"
+                },
+                "click_element_selector": {
+                    "type": "string"
+                },
+                "click_element_tag": {
+                    "description": "Click element details",
+                    "type": "string"
+                },
+                "click_element_text": {
+                    "type": "string"
+                },
+                "click_element_type": {
+                    "description": "Click element classification",
+                    "type": "string"
+                },
+                "click_position_x": {
+                    "type": "number"
+                },
+                "click_position_y": {
+                    "type": "number"
+                },
+                "click_screen_height": {
+                    "type": "integer"
+                },
+                "click_screen_width": {
+                    "type": "integer"
+                },
                 "client_timestamp_utc": {
                     "type": "string"
                 },
@@ -3563,6 +3078,18 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "external_id": {
+                    "type": "string"
+                },
+                "is_cta_click": {
+                    "type": "boolean"
+                },
+                "is_download_link": {
+                    "type": "boolean"
+                },
+                "is_external_link": {
+                    "type": "boolean"
+                },
+                "link_destination": {
                     "type": "string"
                 },
                 "location_city": {
@@ -3676,7 +3203,7 @@ const docTemplate = `{
                 },
                 "total_revenue": {
                     "description": "Revenue in smallest currency unit (cents)",
-                    "type": "number"
+                    "type": "integer"
                 }
             }
         },
@@ -3695,7 +3222,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "avg_order_value": {
-                    "type": "integer"
+                    "type": "number"
                 },
                 "currency": {
                     "type": "string"
@@ -3918,6 +3445,35 @@ const docTemplate = `{
                 "browser_name": {
                     "type": "string"
                 },
+                "click_element_category": {
+                    "type": "string"
+                },
+                "click_element_selector": {
+                    "type": "string"
+                },
+                "click_element_tag": {
+                    "description": "Click element details",
+                    "type": "string"
+                },
+                "click_element_text": {
+                    "type": "string"
+                },
+                "click_element_type": {
+                    "description": "Click element classification",
+                    "type": "string"
+                },
+                "click_position_x": {
+                    "type": "number"
+                },
+                "click_position_y": {
+                    "type": "number"
+                },
+                "click_screen_height": {
+                    "type": "integer"
+                },
+                "click_screen_width": {
+                    "type": "integer"
+                },
                 "client_timestamp_utc": {
                     "type": "string"
                 },
@@ -3925,6 +3481,18 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "event_name": {
+                    "type": "string"
+                },
+                "is_cta_click": {
+                    "type": "boolean"
+                },
+                "is_download_link": {
+                    "type": "boolean"
+                },
+                "is_external_link": {
+                    "type": "boolean"
+                },
+                "link_destination": {
                     "type": "string"
                 },
                 "page_path": {

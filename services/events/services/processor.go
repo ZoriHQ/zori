@@ -45,6 +45,7 @@ func NewProcessor(natsStream *natsstream.Stream, clickDb *clickhouse.ClickhouseD
 		NewStageUserAgent(),
 		NewStageReferrer(),
 		NewStageIdentity(),
+		NewStageClickClassification(),
 	}
 
 	p := &Processor{
@@ -153,9 +154,10 @@ func (p *Processor) Start() error {
 				page_url, page_path, referrer_url, referrer_domain, referrer_path, utm_parameters,
 				click_element_tag, click_element_selector, click_element_text,
 				click_position_x, click_position_y, click_screen_width, click_screen_height,
+				click_element_type, click_element_category, is_cta_click, link_destination, is_external_link, is_download_link,
 				project_id, organization_id,
 				user_id, external_id, email_hash
-			) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, true,
+			) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, true,
 			eventFrame.IP,
 			eventFrame.VisitorID,
 			eventFrame.SessionID,
@@ -185,6 +187,12 @@ func (p *Processor) Start() error {
 			clickPositionY,
 			clickScreenWidth,
 			clickScreenHeight,
+			eventFrame.ClickElementType,
+			eventFrame.ClickElementCategory,
+			eventFrame.IsCTAClick,
+			eventFrame.LinkDestination,
+			eventFrame.IsExternalLink,
+			eventFrame.IsDownloadLink,
 			eventFrame.ProjectID,
 			eventFrame.OrganizationID,
 			eventFrame.UserID,
