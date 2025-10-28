@@ -247,7 +247,9 @@ func TestRevenueAttribution_EndToEnd(t *testing.T) {
 		err := fixtures.SendEventToTestServer(t, tc, project, firstVisit)
 		require.NoError(t, err)
 
-		time.Sleep(500 * time.Millisecond)
+		// Sleep to ensure the second event has a different timestamp
+		// This is critical for argMin to correctly identify the first touch
+		time.Sleep(1 * time.Second)
 
 		secondVisit := fixtures.NewEventBuilder().
 			WithVisitorID(visitorID).
@@ -269,7 +271,52 @@ func TestRevenueAttribution_EndToEnd(t *testing.T) {
 		}, 2, 10*time.Second)
 		require.NoError(t, err)
 
-		time.Sleep(2 * time.Second)
+		// Wait for the first-touch attribution materialized view to be populated
+		// This is critical - we need to ensure the aggregation table is updated before sending payment
+		maxWait := 10 * time.Second
+		checkInterval := 500 * time.Millisecond
+		deadline := time.Now().Add(maxWait)
+		attributionFound := false
+
+		for time.Now().Before(deadline) {
+			// Check if first-touch attribution data exists for this visitor
+			query := `
+				SELECT argMinMerge(first_utm_source) as first_source
+				FROM visitor_first_touch_attribution
+				WHERE project_id = ? AND visitor_id = ?
+				GROUP BY visitor_id
+			`
+			var firstSource string
+			row := tc.ClickHouse.Db().QueryRow(ctx, query, project.ID, visitorID)
+			scanErr := row.Scan(&firstSource)
+			if scanErr == nil && firstSource == "google" {
+				attributionFound = true
+				t.Logf("✓ First-touch attribution found: source=%s", firstSource)
+				break
+			} else if scanErr != nil {
+				t.Logf("Attribution query error (will retry): %v", scanErr)
+			} else {
+				t.Logf("Attribution found but wrong source: %s (expected: google)", firstSource)
+			}
+			time.Sleep(checkInterval)
+		}
+
+		if !attributionFound {
+			// As a fallback, try to manually force the aggregation by querying events directly
+			t.Logf("⚠ First-touch attribution MV not updated, trying direct query...")
+			directQuery := `
+				SELECT argMin(utm_parameters['utm_source'], client_timestamp_utc) as first_source
+				FROM events
+				WHERE project_id = ? AND visitor_id = ?
+			`
+			var directSource string
+			directRow := tc.ClickHouse.Db().QueryRow(ctx, directQuery, project.ID, visitorID)
+			if err := directRow.Scan(&directSource); err == nil {
+				t.Logf("Direct query shows first_source=%s", directSource)
+			} else {
+				t.Logf("Direct query failed: %v", err)
+			}
+		}
 
 		payment := fixtures.NewPaymentBuilder(project.ID, project.OrganizationID).
 			WithVisitorID(visitorID).
