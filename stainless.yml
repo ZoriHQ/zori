@@ -146,29 +146,6 @@ resources:
           get: get /api/v1/projects/{id}
           update: put /api/v1/projects/{id}
           delete: delete /api/v1/projects/{id}
-      auth:
-        # Configure the methods defined in this resource. Each key in the object is the
-        # name of the method and the value is either an endpoint (for example, `get /foo`)
-        # or an object with more detail.
-        #
-        # [reference]: https://www.stainless.com/docs/reference/config#method
-        # Configure the models--named types--defined in the resource. Each key in the
-        # object is the name of the model and the value is either the name of a schema in
-        # `#/components/schemas` or an object with more detail.
-        #
-        # [reference]: https://www.stainless.com/docs/reference/config#model
-        models:
-          account: "#/components/schemas/models.Account"
-          organization: "#/components/schemas/models.Organization"
-          auth_response: "#/components/schemas/services.AuthResponse"
-          message_response: "#/components/schemas/services.MessageResponse"
-        methods:
-          login: post /api/v1/auth/login
-          logout: post /api/v1/auth/logout
-          request_password_recovery: post /api/v1/auth/recover
-          confirm_password_recovery: post /api/v1/auth/recover-confirm
-          refresh_access_token: post /api/v1/auth/refresh
-          register_account: post /api/v1/auth/register
       payment_providers:
         models:
           payment_provider_response: "#/components/schemas/types.PaymentProviderResponse"
