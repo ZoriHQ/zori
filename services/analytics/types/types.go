@@ -115,6 +115,23 @@ type RecentEvent struct {
 	LocationCity       *string   `json:"location_city,omitempty"`
 	LocationLatitude   *float64  `json:"location_latitude,omitempty"`
 	LocationLongitude  *float64  `json:"location_longitude,omitempty"`
+
+	// Click element details
+	ClickElementTag      *string  `json:"click_element_tag,omitempty"`
+	ClickElementSelector *string  `json:"click_element_selector,omitempty"`
+	ClickElementText     *string  `json:"click_element_text,omitempty"`
+	ClickPositionX       *float64 `json:"click_position_x,omitempty"`
+	ClickPositionY       *float64 `json:"click_position_y,omitempty"`
+	ClickScreenWidth     *uint16  `json:"click_screen_width,omitempty"`
+	ClickScreenHeight    *uint16  `json:"click_screen_height,omitempty"`
+
+	// Click element classification
+	ClickElementType     *string `json:"click_element_type,omitempty"`
+	ClickElementCategory *string `json:"click_element_category,omitempty"`
+	IsCTAClick           *bool   `json:"is_cta_click,omitempty"`
+	LinkDestination      *string `json:"link_destination,omitempty"`
+	IsExternalLink       *bool   `json:"is_external_link,omitempty"`
+	IsDownloadLink       *bool   `json:"is_download_link,omitempty"`
 }
 
 // TopVisitorsRequest represents a request for top visitors
@@ -176,6 +193,23 @@ type VisitorEvent struct {
 	ReferrerURL        string    `json:"referrer_url,omitempty"`
 	DeviceType         *string   `json:"device_type,omitempty"`
 	BrowserName        *string   `json:"browser_name,omitempty"`
+
+	// Click element details
+	ClickElementTag      *string  `json:"click_element_tag,omitempty"`
+	ClickElementSelector *string  `json:"click_element_selector,omitempty"`
+	ClickElementText     *string  `json:"click_element_text,omitempty"`
+	ClickPositionX       *float64 `json:"click_position_x,omitempty"`
+	ClickPositionY       *float64 `json:"click_position_y,omitempty"`
+	ClickScreenWidth     *uint16  `json:"click_screen_width,omitempty"`
+	ClickScreenHeight    *uint16  `json:"click_screen_height,omitempty"`
+
+	// Click element classification
+	ClickElementType     *string `json:"click_element_type,omitempty"`
+	ClickElementCategory *string `json:"click_element_category,omitempty"`
+	IsCTAClick           *bool   `json:"is_cta_click,omitempty"`
+	LinkDestination      *string `json:"link_destination,omitempty"`
+	IsExternalLink       *bool   `json:"is_external_link,omitempty"`
+	IsDownloadLink       *bool   `json:"is_download_link,omitempty"`
 }
 
 // EventsOverTimeDataPoint represents event count at a point in time

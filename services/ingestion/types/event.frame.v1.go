@@ -22,4 +22,12 @@ type ClientEventFrameV1 struct {
 
 	// Identity fields (processed from ClientEventV1)
 	EmailHash *string `json:"email_hash"` // SHA256 hash of email for privacy-safe storage
+
+	// Click element classification (computed during processing)
+	ClickElementType     *string `json:"click_element_type"`
+	ClickElementCategory *string `json:"click_element_category"`
+	IsCTAClick           *bool   `json:"is_cta_click"`
+	LinkDestination      *string `json:"link_destination"`
+	IsExternalLink       *bool   `json:"is_external_link"`
+	IsDownloadLink       *bool   `json:"is_download_link"`
 }
