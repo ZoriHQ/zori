@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"strings"
 	"time"
+	"zori/internal/config"
 	"zori/internal/natsstream"
 	"zori/internal/storage/postgres/models"
 	"zori/services/payments/types"
@@ -27,18 +28,77 @@ type WebhookHandler struct {
 	natsStream      *natsstream.Stream
 	projectData     *data.ProjectData
 	providerManager *ProviderManager
+	config          *config.Config
 }
 
 func NewWebhookHandler(
 	natsStream *natsstream.Stream,
 	projectData *data.ProjectData,
 	providerManager *ProviderManager,
+	conf *config.Config,
 ) *WebhookHandler {
 	return &WebhookHandler{
 		natsStream:      natsStream,
+		config:          conf,
 		projectData:     projectData,
 		providerManager: providerManager,
 	}
+}
+
+// HandleStripeConnectWebhook handles webhook for cloud version of Zori
+// For regular self-hosted versions this can be enabled, but generally not used, not recommended
+// As you'd need to have two separate Stripe accounts to make this work.
+func (wh *WebhookHandler) HandleStripeConnectWebhook(c echo.Context) error {
+	signature := c.Request().Header.Get("Stripe-Signature")
+	if signature == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "Missing Stripe-Signature header")
+	}
+
+	var rawStripeEvent stripe.Event
+	if err := c.Bind(&rawStripeEvent); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Failed to bind request body")
+	}
+
+	webhookSecret := wh.config.ZoriStripeConnectWebhookSecret
+	if !rawStripeEvent.Livemode {
+		webhookSecret = wh.config.ZoriStripeConnectWebhookSandboxSecret
+	}
+
+	payload, err := io.ReadAll(c.Request().Body)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Failed to read request body")
+	}
+
+	event, err := webhook.ConstructEvent(payload, signature, webhookSecret)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("Webhook signature verification failed: %v", err))
+	}
+
+	paymentProvider, err := wh.providerManager.GetProviderByAccountID(c.Request().Context(), event.Account)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusNotFound, "Account not found")
+	}
+
+	project, err := wh.projectData.GetProjectByID(c.Request().Context(), paymentProvider.ProjectID)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusNotFound, "Project not found")
+	}
+
+	paymentFrame, err := wh.extractStripePaymentData(&event, project)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Failed to extract payment data: %v", err))
+	}
+
+	paymentFrameBytes, err := json.Marshal(paymentFrame)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to serialize payment event")
+	}
+
+	if err := wh.natsStream.GetConnection().Publish(paymentEventsSubject, paymentFrameBytes); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to publish payment event")
+	}
+
+	return c.String(http.StatusOK, "Payment event received and queued for processing")
 }
 
 func (wh *WebhookHandler) HandleStripeWebhook(c echo.Context) error {
@@ -110,7 +170,7 @@ func (wh *WebhookHandler) extractStripePaymentData(event *stripe.Event, project 
 	var metadata map[string]string
 
 	switch event.Type {
-	case "charge.succeeded":
+	case stripe.EventTypeChargeSucceeded:
 		var charge stripe.Charge
 		if err := json.Unmarshal(event.Data.Raw, &charge); err != nil {
 			return nil, fmt.Errorf("failed to parse charge: %w", err)
@@ -122,7 +182,7 @@ func (wh *WebhookHandler) extractStripePaymentData(event *stripe.Event, project 
 		created = charge.Created
 		metadata = charge.Metadata
 
-	case "payment_intent.succeeded":
+	case stripe.EventTypePaymentIntentSucceeded:
 		var paymentIntent stripe.PaymentIntent
 		if err := json.Unmarshal(event.Data.Raw, &paymentIntent); err != nil {
 			return nil, fmt.Errorf("failed to parse payment intent: %w", err)
@@ -134,7 +194,7 @@ func (wh *WebhookHandler) extractStripePaymentData(event *stripe.Event, project 
 		created = paymentIntent.Created
 		metadata = paymentIntent.Metadata
 
-	case "invoice.payment_succeeded":
+	case stripe.EventTypeInvoicePaymentSucceeded:
 		var invoice stripe.Invoice
 		if err := json.Unmarshal(event.Data.Raw, &invoice); err != nil {
 			return nil, fmt.Errorf("failed to parse invoice: %w", err)

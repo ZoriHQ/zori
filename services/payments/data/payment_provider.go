@@ -35,6 +35,15 @@ func (p *PaymentProviderData) GetProvider(ctx context.Context, providerID string
 	return provider, err
 }
 
+func (p *PaymentProviderData) GetProviderByAccountID(ctx context.Context, accountID string) (*models.PaymentProvider, error) {
+	provider := &models.PaymentProvider{}
+	err := p.db.NewSelect().
+		Model(provider).
+		Where("account_id = ?", accountID).
+		Scan(ctx)
+	return provider, err
+}
+
 func (p *PaymentProviderData) GetProviderByProjectAndType(ctx context.Context, projectID string, providerType models.ProviderType) (*models.PaymentProvider, error) {
 	provider := &models.PaymentProvider{}
 	err := p.db.NewSelect().
