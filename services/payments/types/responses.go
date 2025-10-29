@@ -29,6 +29,30 @@ type SyncStatusResponse struct {
 	Message        string    `json:"message,omitempty" example:"Successfully synced 150 payments"`
 }
 
+type ProviderField struct {
+	Name        string `json:"name" example:"api_key"`
+	Label       string `json:"label" example:"API Key"`
+	Type        string `json:"type" example:"password"`
+	Required    bool   `json:"required" example:"true"`
+	Placeholder string `json:"placeholder,omitempty" example:"sk_live_xxxxx"`
+	HelpText    string `json:"help_text,omitempty" example:"Your Stripe secret key"`
+}
+
+type ProviderInstructionsResponse struct {
+	ProviderType     models.ProviderType `json:"provider_type" example:"stripe"`
+	ConnectionMethod string              `json:"connection_method" example:"oauth"` // "oauth" or "manual"
+	OAuthURL         string              `json:"oauth_url,omitempty" example:"https://connect.stripe.com/oauth/authorize?..."`
+	Fields           []ProviderField     `json:"fields,omitempty"`
+	Instructions     string              `json:"instructions,omitempty" example:"Click the button below to connect your Stripe account"`
+}
+
+type StripeConnectCallbackResponse struct {
+	Success        bool                     `json:"success" example:"true"`
+	Message        string                   `json:"message" example:"Successfully connected Stripe account"`
+	Provider       *PaymentProviderResponse `json:"provider,omitempty"`
+	BackfillStatus string                   `json:"backfill_status,omitempty" example:"started"`
+}
+
 func ToPaymentProviderResponse(provider *models.PaymentProvider) *PaymentProviderResponse {
 	return &PaymentProviderResponse{
 		ID:             provider.ID,

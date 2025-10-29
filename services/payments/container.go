@@ -16,6 +16,7 @@ func BuildPaymentsDIContainer() fx.Option {
 		fx.Provide(data.NewPaymentProviderData),
 		fx.Provide(services.NewBackfillService),
 		fx.Provide(services.NewProviderManager),
+		fx.Provide(services.NewConnectionService),
 		fx.Provide(services.NewWebhookHandler),
 		fx.Provide(services.NewPaymentProcessor),
 		fx.Provide(func(cfg *config.Config) *utils.Encryptor {
