@@ -21,13 +21,15 @@ const (
 type PaymentProvider struct {
 	bun.BaseModel `json:"-" bun:"table:payment_providers,alias:pp"`
 
-	ID             string       `json:"id" bun:",pk,type:uuid,default:gen_random_uuid()" example:"550e8400-e29b-41d4-a716-446655440000"`
+	ID string `json:"id" bun:",pk,type:uuid,default:gen_random_uuid()" example:"550e8400-e29b-41d4-a716-446655440000"`
+	// AccountID represents external account id of the linked payment provider
+	AccountID      string       `json:"account_id" bun:",notnull" example:"880e8400-e29b-41d4-a716-446655440003"`
 	ProjectID      string       `json:"project_id" bun:",notnull" example:"660e8400-e29b-41d4-a716-446655440001"`
 	OrganizationID string       `json:"organization_id" bun:",notnull" example:"770e8400-e29b-41d4-a716-446655440002"`
 	ProviderType   ProviderType `json:"provider_type" bun:",notnull" example:"stripe"`
 
 	// Encrypted credentials - these should never be returned in API responses
-	APIKeyEncrypted       string `json:"-" bun:",notnull"`
+	APIKeyEncrypted        string `json:"-" bun:",notnull"`
 	WebhookSecretEncrypted string `json:"-" bun:",notnull"`
 
 	// Status fields

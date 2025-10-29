@@ -13,6 +13,7 @@ import (
 	projectsData "zori/services/projects/data"
 
 	"github.com/labstack/echo/v4"
+	"github.com/stripe/stripe-go/v82"
 )
 
 type ProviderManager struct {
@@ -80,8 +81,19 @@ func (pm *ProviderManager) CreateProvider(c *ctx.Ctx) (*types.PaymentProviderRes
 		return nil, fmt.Errorf("failed to encrypt webhook secret: %w", err)
 	}
 
+	var accountID string
+	if req.ProviderType == models.ProviderTypeStripe {
+		providerClient := stripe.NewClient(req.APIKey)
+		account, err := providerClient.V1Accounts.Retrieve(c, nil)
+		if err != nil {
+			return nil, fmt.Errorf("failed to retrieve Stripe account: %w", err)
+		}
+		accountID = account.ID
+	}
+
 	provider := &models.PaymentProvider{
 		ProjectID:              project.ID,
+		AccountID:              accountID,
 		OrganizationID:         project.OrganizationID,
 		ProviderType:           req.ProviderType,
 		APIKeyEncrypted:        encryptedAPIKey,
@@ -284,4 +296,8 @@ func (pm *ProviderManager) DecryptWebhookSecret(encrypted string) (string, error
 
 func (pm *ProviderManager) GetProviderByProjectAndType(ctx context.Context, projectID string, providerType models.ProviderType) (*models.PaymentProvider, error) {
 	return pm.data.GetProviderByProjectAndType(ctx, projectID, providerType)
+}
+
+func (pm *ProviderManager) GetProviderByAccountID(ctx context.Context, accountID string) (*models.PaymentProvider, error) {
+	return pm.data.GetProviderByAccountID(ctx, accountID)
 }

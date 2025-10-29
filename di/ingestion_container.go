@@ -36,7 +36,6 @@ func NewIngestionApplication() *fx.App {
 
 		fx.Invoke(registerDatabaseLifecycle),
 		ingestion.BuildIngestionDiContainer(),
-		payments.BuildPaymentsWebhookDIContainer(),
 
 		fx.Invoke(func(lc fx.Lifecycle, ingestionServer *web.IngestionServer) {
 			lc.Append(fx.Hook{

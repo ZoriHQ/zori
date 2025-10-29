@@ -52,6 +52,7 @@ func NewApplication() *fx.App {
 		events.BuildEventsDIContainer(),
 		events.BuildEventsWebContainer(),
 		payments.BuildPaymentsProcessorDIContainer(),
+		payments.BuildPaymentsWebhookDIContainer(),
 
 		fx.Invoke(func(lc fx.Lifecycle, srv *server.Server) {
 			lc.Append(fx.Hook{
