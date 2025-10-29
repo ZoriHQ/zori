@@ -1317,6 +1317,124 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/payment-providers/instructions": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Get instructions for connecting a payment provider (OAuth URL or manual credentials)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Payment Providers"
+                ],
+                "summary": "Get provider connection instructions",
+                "parameters": [
+                    {
+                        "enum": [
+                            "stripe",
+                            "paddle",
+                            "paypal",
+                            "lemon_squeezy",
+                            "square"
+                        ],
+                        "type": "string",
+                        "description": "Provider type",
+                        "name": "provider_type",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Connection instructions",
+                        "schema": {
+                            "$ref": "#/definitions/types.ProviderInstructionsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/payment-providers/stripe/connect/callback": {
+            "get": {
+                "description": "Handle the OAuth redirect from Stripe Connect and create payment provider",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Payment Providers"
+                ],
+                "summary": "Handle Stripe Connect OAuth callback",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Authorization code",
+                        "name": "code",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "State parameter for CSRF protection",
+                        "name": "state",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Project ID",
+                        "name": "project_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Connection successful",
+                        "schema": {
+                            "$ref": "#/definitions/types.StripeConnectCallbackResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/payment-providers/{id}": {
             "get": {
                 "security": [
@@ -3033,6 +3151,67 @@ const docTemplate = `{
                 }
             }
         },
+        "types.ProviderField": {
+            "type": "object",
+            "properties": {
+                "help_text": {
+                    "type": "string",
+                    "example": "Your Stripe secret key"
+                },
+                "label": {
+                    "type": "string",
+                    "example": "API Key"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "api_key"
+                },
+                "placeholder": {
+                    "type": "string",
+                    "example": "sk_live_xxxxx"
+                },
+                "required": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "type": {
+                    "type": "string",
+                    "example": "password"
+                }
+            }
+        },
+        "types.ProviderInstructionsResponse": {
+            "type": "object",
+            "properties": {
+                "connection_method": {
+                    "description": "\"oauth\" or \"manual\"",
+                    "type": "string",
+                    "example": "oauth"
+                },
+                "fields": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/types.ProviderField"
+                    }
+                },
+                "instructions": {
+                    "type": "string",
+                    "example": "Click the button below to connect your Stripe account"
+                },
+                "oauth_url": {
+                    "type": "string",
+                    "example": "https://connect.stripe.com/oauth/authorize?..."
+                },
+                "provider_type": {
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.ProviderType"
+                        }
+                    ],
+                    "example": "stripe"
+                }
+            }
+        },
         "types.RecentEvent": {
             "type": "object",
             "properties": {
@@ -3186,6 +3365,26 @@ const docTemplate = `{
                 },
                 "total_sessions": {
                     "type": "integer"
+                }
+            }
+        },
+        "types.StripeConnectCallbackResponse": {
+            "type": "object",
+            "properties": {
+                "backfill_status": {
+                    "type": "string",
+                    "example": "started"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "Successfully connected Stripe account"
+                },
+                "provider": {
+                    "$ref": "#/definitions/types.PaymentProviderResponse"
+                },
+                "success": {
+                    "type": "boolean",
+                    "example": true
                 }
             }
         },

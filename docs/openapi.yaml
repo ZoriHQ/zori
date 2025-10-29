@@ -1012,6 +1012,98 @@ paths:
         description: Payment provider details
         required: true
       summary: Create a new payment provider
+  /api/v1/payment-providers/instructions:
+    get:
+      parameters:
+        - description: Provider type
+          in: query
+          name: provider_type
+          required: true
+          schema:
+            enum:
+              - stripe
+              - paddle
+              - paypal
+              - lemon_squeezy
+              - square
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/types.ProviderInstructionsResponse'
+          description: Connection instructions
+        '400':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Invalid request
+        '401':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Unauthorized
+      security:
+        - ApiKeyAuth: []
+      tags:
+        - Payment Providers
+      description: >-
+        Get instructions for connecting a payment provider (OAuth URL or manual
+        credentials)
+      summary: Get provider connection instructions
+  /api/v1/payment-providers/stripe/connect/callback:
+    get:
+      parameters:
+        - description: Authorization code
+          in: query
+          name: code
+          required: true
+          schema:
+            type: string
+        - description: State parameter for CSRF protection
+          in: query
+          name: state
+          required: true
+          schema:
+            type: string
+        - description: Project ID
+          in: query
+          name: project_id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/types.StripeConnectCallbackResponse'
+          description: Connection successful
+        '400':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Invalid request
+        '500':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Internal server error
+      tags:
+        - Payment Providers
+      description: >-
+        Handle the OAuth redirect from Stripe Connect and create payment
+        provider
+      summary: Handle Stripe Connect OAuth callback
   '/api/v1/payment-providers/{id}':
     delete:
       parameters:
@@ -2276,6 +2368,48 @@ components:
           example: '2024-01-15T10:30:00Z'
           type: string
       type: object
+    types.ProviderField:
+      properties:
+        help_text:
+          example: Your Stripe secret key
+          type: string
+        label:
+          example: API Key
+          type: string
+        name:
+          example: api_key
+          type: string
+        placeholder:
+          example: sk_live_xxxxx
+          type: string
+        required:
+          example: true
+          type: boolean
+        type:
+          example: password
+          type: string
+      type: object
+    types.ProviderInstructionsResponse:
+      properties:
+        connection_method:
+          description: '"oauth" or "manual"'
+          example: oauth
+          type: string
+        fields:
+          items:
+            $ref: '#/components/schemas/types.ProviderField'
+          type: array
+        instructions:
+          example: Click the button below to connect your Stripe account
+          type: string
+        oauth_url:
+          example: 'https://connect.stripe.com/oauth/authorize?...'
+          type: string
+        provider_type:
+          allOf:
+            - $ref: '#/components/schemas/models.ProviderType'
+          example: stripe
+      type: object
     types.RecentEvent:
       properties:
         browser_name:
@@ -2378,6 +2512,20 @@ components:
           type: number
         total_sessions:
           type: integer
+      type: object
+    types.StripeConnectCallbackResponse:
+      properties:
+        backfill_status:
+          example: started
+          type: string
+        message:
+          example: Successfully connected Stripe account
+          type: string
+        provider:
+          $ref: '#/components/schemas/types.PaymentProviderResponse'
+        success:
+          example: true
+          type: boolean
       type: object
     types.TimelineDataPoint:
       properties:

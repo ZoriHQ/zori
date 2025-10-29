@@ -152,12 +152,15 @@ resources:
           list_payment_providers_response: "#/components/schemas/types.ListPaymentProvidersResponse"
           create_payment_provider_request: "#/components/schemas/types.CreatePaymentProviderRequest"
           update_payment_provider_request: "#/components/schemas/types.UpdatePaymentProviderRequest"
+          provider_instructions_response: "#/components/schemas/types.ProviderInstructionsResponse"
+          provider_field: "#/components/schemas/types.ProviderField"
         methods:
           create: post /api/v1/payment-providers
           list: get /api/v1/payment-providers
           get: get /api/v1/payment-providers/{id}
           update: put /api/v1/payment-providers/{id}
           delete: delete /api/v1/payment-providers/{id}
+          instructions: get /api/v1/payment-providers/instructions
 
 settings:
   # All generated integration tests that hit the prism mock http server are marked
