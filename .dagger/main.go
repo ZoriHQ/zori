@@ -114,6 +114,7 @@ func (m *Zori) TestWithCoverage(ctx context.Context, source *dagger.Directory) *
 		WithEnvVariable("REDIS_PASSWORD", "").
 		WithEnvVariable("NATS_CREDENTIALS_CONTENT", "").
 		WithEnvVariable("NATS_STREAM_URL", "nats://nats:4222").
+		WithEnvVariable("ZORI_API_HOST", "http://localhost:1323").
 		WithEnvVariable("ENCRYPTION_KEY", "test-encryption-key-must-be-32-chars-long!").
 		WithEnvVariable("TELEMETRY_ENABLED", "false").
 		WithEnvVariable("DATADOG_ENABLED", "false").
