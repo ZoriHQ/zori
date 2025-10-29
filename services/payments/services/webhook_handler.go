@@ -54,20 +54,13 @@ func (wh *WebhookHandler) HandleStripeConnectWebhook(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "Missing Stripe-Signature header")
 	}
 
-	var rawStripeEvent stripe.Event
-	if err := c.Bind(&rawStripeEvent); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "Failed to bind request body")
-	}
-
-	webhookSecret := wh.config.ZoriStripeConnectWebhookSecret
-	if !rawStripeEvent.Livemode {
-		webhookSecret = wh.config.ZoriStripeConnectWebhookSandboxSecret
-	}
-
 	payload, err := io.ReadAll(c.Request().Body)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "Failed to read request body")
 	}
+
+	// Use platform webhook secret
+	webhookSecret := wh.config.ZoriStripeConnectWebhookSecret
 
 	event, err := webhook.ConstructEvent(payload, signature, webhookSecret)
 	if err != nil {

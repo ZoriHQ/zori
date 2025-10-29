@@ -25,15 +25,13 @@ type Config struct {
 	// Encryption Configuration (for payment provider credentials)
 	EncryptionKey string `env:"ENCRYPTION_KEY,required"`
 
-	ZoriOSS bool `env:"ZORI_IS_OSS"`
+	ZoriOSS     bool   `env:"ZORI_IS_OSS"`
+	ZoriAPIHost string `env:"ZORI_API_HOST,required"`
 
-	ZoriStripeConnect                     bool   `env:"ZORI_STRIPE_CONNECT"`
-	ZoriStripeConnectSecretKey            string `env:"ZORI_STRIPE_CONNECT_SECRET_KEY"`
-	ZoriStripeConnectSandboxKey           string `env:"ZORI_STRIPE_CONNECT_SANDBOX_SECRET_KEY"`
-	ZoriStripeConnectClientID             string `env:"ZORI_STRIPE_CONNECT_CLIENT_ID"`
-	ZoriStripeConnectWebhookSecret        string `env:"ZORI_STRIPE_CONNECT_WEBHOOK_SECRET"`
-	ZoriStripeConnectWebhookSandboxSecret string `env:"ZORI_STRIPE_CONNECT_WEBHOOK_SANDBOX_SECRET"`
-	ZoriStripeConnectClientSandboxID      string `env:"ZORI_STRIPE_CONNECT_CLIENT_SANDBOX_ID"`
+	ZoriStripeConnect              bool   `env:"ZORI_STRIPE_CONNECT"`
+	ZoriStripeConnectSecretKey     string `env:"ZORI_STRIPE_CONNECT_SECRET_KEY"`
+	ZoriStripeConnectClientID      string `env:"ZORI_STRIPE_CONNECT_CLIENT_ID"`
+	ZoriStripeConnectWebhookSecret string `env:"ZORI_STRIPE_CONNECT_WEBHOOK_SECRET"`
 }
 
 func (c *Config) GetStackAuthJWKSURL() string {

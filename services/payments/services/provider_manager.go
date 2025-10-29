@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"time"
+	"zori/internal/config"
 	"zori/internal/ctx"
 	"zori/internal/storage/postgres/models"
 	"zori/internal/utils"
@@ -21,6 +22,7 @@ type ProviderManager struct {
 	projectData     *projectsData.ProjectData
 	encryptor       *utils.Encryptor
 	backfillService *BackfillService
+	config          *config.Config
 }
 
 func NewProviderManager(
@@ -28,12 +30,14 @@ func NewProviderManager(
 	projectData *projectsData.ProjectData,
 	encryptor *utils.Encryptor,
 	backfillService *BackfillService,
+	cfg *config.Config,
 ) *ProviderManager {
 	return &ProviderManager{
 		data:            data,
 		projectData:     projectData,
 		encryptor:       encryptor,
 		backfillService: backfillService,
+		config:          cfg,
 	}
 }
 
@@ -59,6 +63,11 @@ func (pm *ProviderManager) CreateProvider(c *ctx.Ctx) (*types.PaymentProviderRes
 
 	if err := utils.ValidateStruct(req); err != nil {
 		return nil, echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	// Prevent manual Stripe provider creation when Stripe Connect is enabled
+	if req.ProviderType == models.ProviderTypeStripe && pm.config.ZoriStripeConnect && !pm.config.ZoriOSS {
+		return nil, echo.NewHTTPError(http.StatusBadRequest, "Manual Stripe provider creation is not allowed. Please use Stripe Connect OAuth flow via /api/v1/payment-providers/instructions?provider_type=stripe")
 	}
 
 	project, err := pm.projectData.GetProject(c.Echo.Request().Context(), req.ProjectID, c.OrgID())

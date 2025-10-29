@@ -18,3 +18,12 @@ type UpdatePaymentProviderRequest struct {
 type SyncPaymentProviderRequest struct {
 	FullSync bool `json:"full_sync" example:"false"` // If true, sync all historical data
 }
+
+type GetProviderInstructionsRequest struct {
+	ProviderType string `query:"provider_type" validate:"required,oneof=stripe paddle paypal lemon_squeezy square" example:"stripe"`
+}
+
+type StripeConnectCallbackRequest struct {
+	Code  string `query:"code" validate:"required" example:"ac_xxxxx"`
+	State string `query:"state" validate:"required" example:"random_state_string"`
+}
