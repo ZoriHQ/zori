@@ -10,10 +10,10 @@ func RegisterPaymentRoutes(
 	s *server.Server,
 	providerManager *services.ProviderManager,
 	connectionService *services.ConnectionService,
-	stackAuthMiddleware *middlewares.StackAuthMiddleware,
+	authMiddleware middlewares.AuthMiddleware,
 ) {
 	paymentGroup := s.Group("/api/v1/payment-providers")
-	paymentGroup.Use(stackAuthMiddleware.Middleware())
+	paymentGroup.Use(authMiddleware.Middleware())
 
 	// Provider connection instructions
 	server.GroupGET(paymentGroup, "/instructions", connectionService.GetProviderInstructions)

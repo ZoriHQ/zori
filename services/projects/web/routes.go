@@ -6,9 +6,9 @@ import (
 	"zori/services/projects/services"
 )
 
-func RegisterRoutes(s *server.Server, projectService *services.ProjectService, stackAuthMiddleware *middlewares.StackAuthMiddleware) {
+func RegisterRoutes(s *server.Server, projectService *services.ProjectService, authMiddleware middlewares.AuthMiddleware) {
 	projectRouteGroup := s.Group("/api/v1/projects")
-	projectRouteGroup.Use(stackAuthMiddleware.Middleware())
+	projectRouteGroup.Use(authMiddleware.Middleware())
 
 	server.GroupGET(projectRouteGroup, "/list", projectService.ListProjects)
 
