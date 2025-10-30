@@ -1597,6 +1597,14 @@
               ],
               "type": "string"
             }
+          },
+          {
+            "description": "Project ID (required for Stripe Connect)",
+            "in": "query",
+            "name": "project_id",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -1661,15 +1669,6 @@
             "description": "State parameter for CSRF protection",
             "in": "query",
             "name": "state",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "description": "Project ID",
-            "in": "query",
-            "name": "project_id",
             "required": true,
             "schema": {
               "type": "string"

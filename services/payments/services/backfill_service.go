@@ -11,8 +11,8 @@ import (
 	"zori/internal/utils"
 	"zori/services/payments/types"
 
-	"github.com/stripe/stripe-go/v81"
-	"github.com/stripe/stripe-go/v81/client"
+	"github.com/stripe/stripe-go/v83"
+	"github.com/stripe/stripe-go/v83/client"
 )
 
 type BackfillService struct {
@@ -46,12 +46,14 @@ func (bs *BackfillService) BackfillStripePayments(
 
 	log.Printf("Starting backfill for provider %s from %s", provider.ID, startDate.Format(time.RFC3339))
 
-	if err := bs.backfillCharges(ctx, sc, provider, project, startDate); err != nil {
-		return fmt.Errorf("failed to backfill charges: %w", err)
+	// Backfill subscription payments via invoices
+	if err := bs.backfillInvoices(ctx, sc, provider, project, startDate); err != nil {
+		return fmt.Errorf("failed to backfill invoices: %w", err)
 	}
 
-	if err := bs.backfillPaymentIntents(ctx, sc, provider, project, startDate); err != nil {
-		return fmt.Errorf("failed to backfill payment intents: %w", err)
+	// Backfill one-off charges (those without invoices)
+	if err := bs.backfillCharges(ctx, sc, provider, project, startDate); err != nil {
+		return fmt.Errorf("failed to backfill charges: %w", err)
 	}
 
 	log.Printf("Completed backfill for provider %s", provider.ID)
@@ -88,6 +90,11 @@ func (bs *BackfillService) backfillCharges(
 			continue
 		}
 
+		// Note: This backfills ALL charges including subscription ones
+		// Subscription charges will also be captured via invoice backfill
+		// Deduplication should happen at the analytics layer based on payment_id
+		metadata := charge.Metadata
+
 		paymentFrame := &types.PaymentEventFrame{
 			PaymentID:        charge.ID,
 			ProviderType:     "stripe",
@@ -98,10 +105,10 @@ func (bs *BackfillService) backfillCharges(
 			PaymentTimestamp: time.Unix(charge.Created, 0).UTC(),
 			ProjectID:        project.ID,
 			OrganizationID:   project.OrganizationID,
-			Metadata:         charge.Metadata,
+			Metadata:         metadata,
 		}
 
-		if visitorID, ok := charge.Metadata["zori_visitor_id"]; ok && visitorID != "" {
+		if visitorID, ok := metadata["zori_visitor_id"]; ok && visitorID != "" {
 			paymentFrame.VisitorID = &visitorID
 		}
 
@@ -127,22 +134,23 @@ func (bs *BackfillService) backfillCharges(
 	return nil
 }
 
-func (bs *BackfillService) backfillPaymentIntents(
+func (bs *BackfillService) backfillInvoices(
 	ctx context.Context,
 	sc *client.API,
 	provider *models.PaymentProvider,
 	project *models.Project,
 	startDate time.Time,
 ) error {
-	params := &stripe.PaymentIntentListParams{
+	params := &stripe.InvoiceListParams{
 		ListParams: stripe.ListParams{
 			Limit: stripe.Int64(100),
 		},
+		Status: stripe.String("paid"),
 	}
 	params.Filters.AddFilter("created", "gte", fmt.Sprintf("%d", startDate.Unix()))
 
 	count := 0
-	iter := sc.PaymentIntents.List(params)
+	iter := sc.Invoices.List(params)
 	for iter.Next() {
 		select {
 		case <-ctx.Done():
@@ -150,37 +158,42 @@ func (bs *BackfillService) backfillPaymentIntents(
 		default:
 		}
 
-		pi := iter.PaymentIntent()
+		invoice := iter.Invoice()
 
-		if pi.Status != stripe.PaymentIntentStatusSucceeded {
-			continue
+		// Start with invoice's own metadata
+		metadata := invoice.Metadata
+
+		// Extract and merge subscription metadata if available
+		subscriptionMetadata := extractSubscriptionMetadataFromInvoice(invoice)
+		if subscriptionMetadata != nil {
+			metadata = mergeMetadata(metadata, subscriptionMetadata)
 		}
 
 		paymentFrame := &types.PaymentEventFrame{
-			PaymentID:        pi.ID,
+			PaymentID:        invoice.ID,
 			ProviderType:     "stripe",
 			PaymentStatus:    "succeeded",
-			ProductName:      getPaymentIntentDescription(pi),
-			Amount:           pi.Amount,
-			Currency:         string(pi.Currency),
-			PaymentTimestamp: time.Unix(pi.Created, 0).UTC(),
+			ProductName:      getInvoiceDescription(invoice),
+			Amount:           invoice.Total,
+			Currency:         string(invoice.Currency),
+			PaymentTimestamp: time.Unix(invoice.Created, 0).UTC(),
 			ProjectID:        project.ID,
 			OrganizationID:   project.OrganizationID,
-			Metadata:         pi.Metadata,
+			Metadata:         metadata,
 		}
 
-		if visitorID, ok := pi.Metadata["zori_visitor_id"]; ok && visitorID != "" {
+		if visitorID, ok := metadata["zori_visitor_id"]; ok && visitorID != "" {
 			paymentFrame.VisitorID = &visitorID
 		}
 
 		paymentFrameBytes, err := json.Marshal(paymentFrame)
 		if err != nil {
-			log.Printf("Failed to marshal payment frame for payment intent %s: %v", pi.ID, err)
+			log.Printf("Failed to marshal payment frame for invoice %s: %v", invoice.ID, err)
 			continue
 		}
 
 		if err := bs.natsStream.GetConnection().Publish("payments:raw", paymentFrameBytes); err != nil {
-			log.Printf("Failed to publish payment event for payment intent %s: %v", pi.ID, err)
+			log.Printf("Failed to publish payment event for invoice %s: %v", invoice.ID, err)
 			continue
 		}
 
@@ -188,10 +201,10 @@ func (bs *BackfillService) backfillPaymentIntents(
 	}
 
 	if err := iter.Err(); err != nil {
-		return fmt.Errorf("error iterating payment intents: %w", err)
+		return fmt.Errorf("error iterating invoices: %w", err)
 	}
 
-	log.Printf("Backfilled %d payment intents", count)
+	log.Printf("Backfilled %d subscription invoices", count)
 	return nil
 }
 
@@ -202,9 +215,37 @@ func getChargeDescription(charge *stripe.Charge) string {
 	return "Unknown Product"
 }
 
-func getPaymentIntentDescription(pi *stripe.PaymentIntent) string {
-	if pi.Description != "" {
-		return pi.Description
+func getInvoiceDescription(invoice *stripe.Invoice) string {
+	if invoice.Description != "" {
+		return invoice.Description
 	}
-	return "Unknown Product"
+	return "Subscription Payment"
+}
+
+// extractSubscriptionMetadataFromInvoice extracts metadata from an invoice's parent subscription if available
+func extractSubscriptionMetadataFromInvoice(invoice *stripe.Invoice) map[string]string {
+	if invoice != nil &&
+	   invoice.Parent != nil &&
+	   invoice.Parent.SubscriptionDetails != nil &&
+	   invoice.Parent.SubscriptionDetails.Metadata != nil {
+		return invoice.Parent.SubscriptionDetails.Metadata
+	}
+	return nil
+}
+
+// mergeMetadata merges subscription metadata with existing metadata
+// Existing metadata keys take precedence (won't be overwritten)
+func mergeMetadata(existingMetadata, subscriptionMetadata map[string]string) map[string]string {
+	if existingMetadata == nil {
+		existingMetadata = make(map[string]string)
+	}
+
+	// Only add subscription metadata keys that don't already exist
+	for key, value := range subscriptionMetadata {
+		if _, exists := existingMetadata[key]; !exists && value != "" {
+			existingMetadata[key] = value
+		}
+	}
+
+	return existingMetadata
 }

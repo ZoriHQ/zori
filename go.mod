@@ -5,6 +5,7 @@ go 1.24.4
 require (
 	github.com/Cleverse/go-utilities/nullable v0.0.0-20250808171844-1347aec4138e
 	github.com/ClickHouse/clickhouse-go/v2 v2.40.3
+	github.com/MicahParks/keyfunc/v3 v3.7.0
 	github.com/caarlos0/env/v11 v11.3.1
 	github.com/go-playground/validator/v10 v10.27.0
 	github.com/golang-jwt/jwt/v5 v5.3.0
@@ -19,6 +20,8 @@ require (
 	github.com/speps/go-hashids/v2 v2.0.1
 	github.com/stretchr/testify v1.11.1
 	github.com/stripe/stripe-go/v81 v81.4.0
+	github.com/stripe/stripe-go/v82 v82.5.1
+	github.com/stripe/stripe-go/v83 v83.1.0
 	github.com/swaggo/echo-swagger v1.4.1
 	github.com/swaggo/swag v1.16.6
 	github.com/uptrace/bun v1.2.15
@@ -29,7 +32,6 @@ require (
 	github.com/urfave/cli/v3 v3.4.1
 	github.com/valyala/fasthttp v1.66.0
 	go.uber.org/fx v1.24.0
-	golang.org/x/crypto v0.42.0
 	golang.org/x/sync v0.17.0
 )
 
@@ -38,7 +40,6 @@ require (
 	github.com/ClickHouse/ch-go v0.69.0 // indirect
 	github.com/KyleBanks/depth v1.2.1 // indirect
 	github.com/MicahParks/jwkset v0.11.0 // indirect
-	github.com/MicahParks/keyfunc/v3 v3.7.0 // indirect
 	github.com/andybalholm/brotli v1.2.0 // indirect
 	github.com/boyter/go-string v1.0.5 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
@@ -76,7 +77,6 @@ require (
 	github.com/puzpuzpuz/xsync/v3 v3.5.1 // indirect
 	github.com/segmentio/asm v1.2.1 // indirect
 	github.com/shopspring/decimal v1.4.0 // indirect
-	github.com/stripe/stripe-go/v82 v82.5.1 // indirect
 	github.com/swaggo/files/v2 v2.0.2 // indirect
 	github.com/tmthrgd/go-hex v0.0.0-20190904060850-447a3041c3bc // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
@@ -89,6 +89,7 @@ require (
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
+	golang.org/x/crypto v0.42.0 // indirect
 	golang.org/x/exp v0.0.0-20230213192124-5e25df0256eb // indirect
 	golang.org/x/mod v0.28.0 // indirect
 	golang.org/x/net v0.44.0 // indirect

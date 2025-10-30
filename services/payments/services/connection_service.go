@@ -52,6 +52,7 @@ func NewConnectionService(
 // @Produce json
 // @Security ApiKeyAuth
 // @Param provider_type query string true "Provider type" Enums(stripe, paddle, paypal, lemon_squeezy, square)
+// @Param project_id query string false "Project ID (required for Stripe Connect)"
 // @Success 200 {object} types.ProviderInstructionsResponse "Connection instructions"
 // @Failure 400 {object} map[string]interface{} "Invalid request"
 // @Failure 401 {object} map[string]interface{} "Unauthorized"
@@ -76,14 +77,24 @@ func (cs *ConnectionService) GetProviderInstructions(c *ctx.Ctx) (*types.Provide
 
 	// Check if we're using Stripe Connect for cloud version
 	if providerType == "stripe" && cs.config.ZoriStripeConnect && !cs.config.ZoriOSS {
-		return cs.getStripeConnectInstructions(c)
+		projectID := c.Echo.QueryParam("project_id")
+		if projectID == "" {
+			return nil, echo.NewHTTPError(http.StatusBadRequest, "project_id query parameter is required for Stripe Connect")
+		}
+		return cs.getStripeConnectInstructions(c, projectID)
 	}
 
 	// Return manual connection instructions for OSS or non-Stripe providers
 	return cs.getManualConnectionInstructions(providerType)
 }
 
-func (cs *ConnectionService) getStripeConnectInstructions(c *ctx.Ctx) (*types.ProviderInstructionsResponse, error) {
+func (cs *ConnectionService) getStripeConnectInstructions(c *ctx.Ctx, projectID string) (*types.ProviderInstructionsResponse, error) {
+	// Verify project exists and belongs to organization
+	_, err := cs.projectData.GetProject(c.Echo.Request().Context(), projectID, c.OrgID())
+	if err != nil {
+		return nil, echo.NewHTTPError(http.StatusNotFound, "Project not found or does not belong to organization")
+	}
+
 	// Generate secure random state for CSRF protection
 	state, err := generateSecureState()
 	if err != nil {
@@ -94,8 +105,9 @@ func (cs *ConnectionService) getStripeConnectInstructions(c *ctx.Ctx) (*types.Pr
 	// For now, we'll include org_id and project_id in the state (base64 encoded)
 	stateData := map[string]string{
 		"org_id":     c.OrgID(),
+		"project_id": projectID,
 		"random":     state,
-		"timestamp": fmt.Sprintf("%d", time.Now().Unix()),
+		"timestamp":  fmt.Sprintf("%d", time.Now().Unix()),
 	}
 	stateJSON, _ := json.Marshal(stateData)
 	encodedState := base64.URLEncoding.EncodeToString(stateJSON)
@@ -200,7 +212,6 @@ func (cs *ConnectionService) getManualConnectionInstructions(providerType string
 // @Produce json
 // @Param code query string true "Authorization code"
 // @Param state query string true "State parameter for CSRF protection"
-// @Param project_id query string true "Project ID"
 // @Success 200 {object} types.StripeConnectCallbackResponse "Connection successful"
 // @Failure 400 {object} map[string]interface{} "Invalid request"
 // @Failure 500 {object} map[string]interface{} "Internal server error"
@@ -208,10 +219,9 @@ func (cs *ConnectionService) getManualConnectionInstructions(providerType string
 func (cs *ConnectionService) HandleStripeConnectCallback(c echo.Context) error {
 	code := c.QueryParam("code")
 	state := c.QueryParam("state")
-	projectID := c.QueryParam("project_id")
 
-	if code == "" || state == "" || projectID == "" {
-		return echo.NewHTTPError(http.StatusBadRequest, "Missing required parameters (code, state, project_id)")
+	if code == "" || state == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "Missing required parameters (code, state)")
 	}
 
 	// Decode and validate state
@@ -225,22 +235,37 @@ func (cs *ConnectionService) HandleStripeConnectCallback(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "Invalid state: missing organization ID")
 	}
 
+	projectID := stateData["project_id"]
+	if projectID == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid state: missing project ID")
+	}
+
+	// Helper function to redirect with error
+	redirectWithError := func(errorMsg string) error {
+		redirectURL := fmt.Sprintf(
+			"https://app.zorihq.com/projects/%s?status=error&provider=stripe&error=%s",
+			url.QueryEscape(projectID),
+			url.QueryEscape(errorMsg),
+		)
+		return c.Redirect(http.StatusFound, redirectURL)
+	}
+
 	// Verify project exists and belongs to organization
 	project, err := cs.projectData.GetProject(c.Request().Context(), projectID, orgID)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusNotFound, "Project not found")
+		return redirectWithError("Project not found")
 	}
 
 	// Check if Stripe provider already exists for this project
 	existing, err := cs.data.GetProviderByProjectAndType(c.Request().Context(), projectID, models.ProviderTypeStripe)
 	if err == nil && existing != nil {
-		return echo.NewHTTPError(http.StatusConflict, "Stripe provider already exists for this project")
+		return redirectWithError("Stripe provider already exists for this project")
 	}
 
 	// Exchange authorization code for access token
 	tokenData, err := cs.exchangeCodeForToken(code)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to exchange code for token: %v", err))
+		return redirectWithError("Failed to connect to Stripe")
 	}
 
 	// Extract credentials from token response
@@ -255,14 +280,14 @@ func (cs *ConnectionService) HandleStripeConnectCallback(c echo.Context) error {
 	// The webhook secret will be the platform's webhook secret (already configured)
 	encryptedAccessToken, err := cs.encryptor.Encrypt(accessToken)
 	if err != nil {
-		return fmt.Errorf("failed to encrypt access token: %w", err)
+		return redirectWithError("Failed to encrypt credentials")
 	}
 
 	// Use platform webhook secret
 	webhookSecret := cs.config.ZoriStripeConnectWebhookSecret
 	encryptedWebhookSecret, err := cs.encryptor.Encrypt(webhookSecret)
 	if err != nil {
-		return fmt.Errorf("failed to encrypt webhook secret: %w", err)
+		return redirectWithError("Failed to encrypt credentials")
 	}
 
 	// Create payment provider record
@@ -277,11 +302,10 @@ func (cs *ConnectionService) HandleStripeConnectCallback(c echo.Context) error {
 	}
 
 	if err := cs.data.CreateProvider(c.Request().Context(), provider); err != nil {
-		return fmt.Errorf("failed to create provider: %w", err)
+		return redirectWithError("Failed to save provider")
 	}
 
 	// Start backfill in background
-	backfillStatus := "not_started"
 	if cs.backfillService != nil {
 		go func() {
 			ctx := context.Background()
@@ -291,18 +315,17 @@ func (cs *ConnectionService) HandleStripeConnectCallback(c echo.Context) error {
 				fmt.Printf("Backfill failed for provider %s: %v\n", provider.ID, err)
 			}
 		}()
-		backfillStatus = "started"
 	}
 
 	// Store refresh token if needed (TODO: implement refresh token storage)
 	_ = refreshToken
 
-	return c.JSON(http.StatusOK, &types.StripeConnectCallbackResponse{
-		Success:        true,
-		Message:        "Successfully connected Stripe account via Stripe Connect",
-		Provider:       types.ToPaymentProviderResponse(provider),
-		BackfillStatus: backfillStatus,
-	})
+	// Redirect to frontend with connection result
+	redirectURL := fmt.Sprintf(
+		"https://app.zorihq.com/projects/%s?status=success&provider=stripe",
+		url.QueryEscape(projectID),
+	)
+	return c.Redirect(http.StatusFound, redirectURL)
 }
 
 func (cs *ConnectionService) exchangeCodeForToken(code string) (map[string]interface{}, error) {
