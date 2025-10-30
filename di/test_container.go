@@ -75,7 +75,6 @@ func NewTestPostgresDB(cfg *config.Config) (*postgres.PostgresDB, error) {
 func NewTestContainer(t *testing.T) *TestContainer {
 	tc := &TestContainer{}
 
-	// Channel to communicate the actual server address
 	serverReady := make(chan string, 1)
 
 	app := fxtest.New(
@@ -94,22 +93,22 @@ func NewTestContainer(t *testing.T) *TestContainer {
 		organizations.BuildOrganizationDIContainer(),
 		projects.BuildProjectsDIContainer(),
 
-		// Stack Auth middleware for authentication
-		fx.Provide(middlewares.NewStackAuthMiddleware),
-
-		// Register web routes for testing
 		organizations.BuildOrganizationWebDIContainer(),
 		projects.BuildProjectWebDIContainer(),
 
-		// Add ingestion and events modules
 		ingestion.BuildIngestionDiContainer(),
 		events.BuildEventsDIContainer(),
 
-		// Add payments and revenue modules
 		payments.BuildPaymentsDIContainer(),
 		revenue.BuildRevenueDIContainer(),
 
-		// Start fasthttp ingestion server for testing with dynamic port
+		fx.Provide(
+			fx.Annotate(
+				provideAuthMiddleware,
+				fx.As(new(middlewares.AuthMiddleware)),
+			),
+		),
+
 		fx.Invoke(func(lc fx.Lifecycle, ingestionServer *ingestionWeb.IngestionServer) {
 			lc.Append(fx.Hook{
 				OnStart: func(ctx context.Context) error {
@@ -123,12 +122,10 @@ func NewTestContainer(t *testing.T) *TestContainer {
 							return
 						}
 
-						// Get the actual address assigned by the OS
 						addr := ln.Addr().String()
 						t.Logf("Starting test ingestion server on %s", addr)
 						serverReady <- fmt.Sprintf("http://%s", addr)
 
-						// Start serving
 						if err := fasthttp.Serve(ln, ingestionServer.HandleRequest); err != nil {
 							t.Logf("Ingestion server error: %v", err)
 						}
@@ -141,7 +138,6 @@ func NewTestContainer(t *testing.T) *TestContainer {
 			})
 		}),
 
-		// Start payment processor for testing
 		fx.Invoke(func(lc fx.Lifecycle, processor *paymentsServices.PaymentProcessor) {
 			lc.Append(fx.Hook{
 				OnStart: func(ctx context.Context) error {
@@ -161,7 +157,6 @@ func NewTestContainer(t *testing.T) *TestContainer {
 	tc.App = app
 	app.RequireStart()
 
-	// Wait for the ingestion server to start and get its URL
 	select {
 	case url := <-serverReady:
 		if url == "" {

@@ -1,11 +1,13 @@
 package init
 
 import (
+	"bufio"
 	"context"
 	"crypto/rand"
 	"database/sql"
 	"encoding/base64"
 	"fmt"
+	"os"
 	"strings"
 
 	"zori/internal/config"
@@ -83,6 +85,80 @@ func (o *OSSInitializer) Initialize(ctx context.Context) error {
 
 	// Display credentials prominently in logs
 	o.displayCredentials(username, password, defaultOrgID)
+
+	return nil
+}
+
+func (o *OSSInitializer) ResetAuth(ctx context.Context) error {
+	if !o.cfg.ZoriOSS {
+		return nil
+	}
+
+	fmt.Println("===========================================")
+	fmt.Println("OSS AUTH RESET MODE")
+	fmt.Println("===========================================")
+
+	system, err := o.getSystemConfig(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get system config: %w", err)
+	}
+
+	// Check if credentials exist
+	if system.AdminUsername == nil || *system.AdminUsername == "" {
+		fmt.Println("No existing credentials found. Nothing to reset.")
+		fmt.Println("===========================================")
+		return nil
+	}
+
+	// Prompt for confirmation
+	fmt.Print("\nAre you sure you want to reset admin credentials? This will invalidate the current username and password. (y/n): ")
+	reader := bufio.NewReader(os.Stdin)
+	response, err := reader.ReadString('\n')
+	if err != nil {
+		return fmt.Errorf("failed to read user input: %w", err)
+	}
+
+	response = strings.TrimSpace(strings.ToLower(response))
+	if response != "y" && response != "yes" {
+		fmt.Println("Reset cancelled. Starting server with existing credentials...")
+		fmt.Println("===========================================")
+		return nil
+	}
+
+	// Generate new credentials (username and password only)
+	username, password, err := o.generateCredentials()
+	if err != nil {
+		return fmt.Errorf("failed to generate credentials: %w", err)
+	}
+
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return fmt.Errorf("failed to hash password: %w", err)
+	}
+
+	// Update only username and password, keep existing org ID
+	hashedPasswordStr := string(hashedPassword)
+	system.AdminUsername = &username
+	system.AdminPasswordHash = &hashedPasswordStr
+
+	_, err = o.db.DB.NewUpdate().
+		Model(system).
+		Column("admin_username", "admin_password_hash").
+		Where("id = ?", system.ID).
+		Exec(ctx)
+
+	if err != nil {
+		return fmt.Errorf("failed to update system config: %w", err)
+	}
+
+	fmt.Println("\n✓ Credentials reset successfully!")
+
+	// Display new credentials
+	orgID := ""
+	if system.DefaultOrgID != nil {
+		orgID = *system.DefaultOrgID
+	}
+	o.displayCredentials(username, password, orgID)
 
 	return nil
 }
