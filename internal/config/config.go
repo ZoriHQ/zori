@@ -15,9 +15,12 @@ type Config struct {
 	RedisADDS string `env:"REDIS_ADDRS,required"`
 	RedisPASS string `env:"REDIS_PASSWORD,required"`
 
-	// Stack Auth Configuration
-	StackAuthProjectID string `env:"STACK_AUTH_PROJECT_ID,required"`
+	// Stack Auth Configuration (not required in OSS mode)
+	StackAuthProjectID string `env:"STACK_AUTH_PROJECT_ID"`
 	StackAuthJWKSURL   string `env:"STACK_AUTH_JWKS_URL"`
+
+	// OSS Auth Configuration (only used when ZoriOSS is true)
+	JWTSecret string `env:"JWT_SECRET"`
 
 	NatsCredentialsContent string `env:"NATS_CREDENTIALS_CONTENT,required"`
 	NatsStreamURL          string `env:"NATS_STREAM_URL,required"`

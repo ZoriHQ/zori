@@ -9,10 +9,10 @@ import (
 func RegisterRoutes(
 	organizationService *services.OrganizationService,
 	s *server.Server,
-	stackAuthMiddleware *middlewares.StackAuthMiddleware,
+	authMiddleware middlewares.AuthMiddleware,
 ) {
 	g := s.Group("/api/v1/organization")
-	g.Use(stackAuthMiddleware.Middleware())
+	g.Use(authMiddleware.Middleware())
 
 	server.GroupGET(g, "/", organizationService.GetOrganization)
 }
