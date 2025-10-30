@@ -15,8 +15,9 @@ import (
 	"zori/services/projects/data"
 
 	"github.com/labstack/echo/v4"
-	"github.com/stripe/stripe-go/v81"
-	"github.com/stripe/stripe-go/v81/webhook"
+	"github.com/stripe/stripe-go/v83"
+	"github.com/stripe/stripe-go/v83/client"
+	"github.com/stripe/stripe-go/v83/webhook"
 )
 
 const (
@@ -59,7 +60,6 @@ func (wh *WebhookHandler) HandleStripeConnectWebhook(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "Failed to read request body")
 	}
 
-	// Use platform webhook secret
 	webhookSecret := wh.config.ZoriStripeConnectWebhookSecret
 
 	event, err := webhook.ConstructEvent(payload, signature, webhookSecret)
@@ -77,7 +77,7 @@ func (wh *WebhookHandler) HandleStripeConnectWebhook(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusNotFound, "Project not found")
 	}
 
-	paymentFrame, err := wh.extractStripePaymentData(&event, project)
+	paymentFrame, err := wh.extractStripePaymentData(&event, project, paymentProvider)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Failed to extract payment data: %v", err))
 	}
@@ -132,12 +132,12 @@ func (wh *WebhookHandler) HandleStripeWebhook(c echo.Context) error {
 	}
 
 	switch event.Type {
-	case "charge.succeeded", "payment_intent.succeeded", "invoice.payment_succeeded":
+	case "charge.succeeded", "invoice.payment_succeeded":
 	default:
 		return c.String(http.StatusOK, fmt.Sprintf("Event type %s acknowledged but not processed", event.Type))
 	}
 
-	paymentFrame, err := wh.extractStripePaymentData(&event, project)
+	paymentFrame, err := wh.extractStripePaymentData(&event, project, provider)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Failed to extract payment data: %v", err))
 	}
@@ -154,13 +154,92 @@ func (wh *WebhookHandler) HandleStripeWebhook(c echo.Context) error {
 	return c.String(http.StatusOK, "Payment event received and queued for processing")
 }
 
-func (wh *WebhookHandler) extractStripePaymentData(event *stripe.Event, project *models.Project) (*types.PaymentEventFrame, error) {
+func mergeSubscriptionMetadata(existingMetadata, subscriptionMetadata map[string]string) map[string]string {
+	if existingMetadata == nil {
+		existingMetadata = make(map[string]string)
+	}
+
+	for key, value := range subscriptionMetadata {
+		if _, exists := existingMetadata[key]; !exists && value != "" {
+			existingMetadata[key] = value
+		}
+	}
+
+	return existingMetadata
+}
+
+func extractSubscriptionMetadata(invoice *stripe.Invoice) map[string]string {
+	if invoice != nil &&
+		invoice.Parent != nil &&
+		invoice.Parent.SubscriptionDetails != nil &&
+		invoice.Parent.SubscriptionDetails.Metadata != nil {
+		return invoice.Parent.SubscriptionDetails.Metadata
+	}
+	return nil
+}
+
+func (wh *WebhookHandler) createStripeClient(provider *models.PaymentProvider) (*client.API, error) {
+	sc := &client.API{}
+
+	if wh.config.ZoriStripeConnect && !wh.config.ZoriOSS {
+		sc.Init(wh.config.ZoriStripeConnectSecretKey, &stripe.Backends{
+			API: stripe.GetBackendWithConfig(stripe.APIBackend, &stripe.BackendConfig{
+				URL: stripe.String(stripe.APIURL),
+			}),
+		})
+	} else {
+		apiKey, err := wh.providerManager.DecryptAPIKey(provider.APIKeyEncrypted)
+		if err != nil {
+			return nil, fmt.Errorf("failed to decrypt API key: %w", err)
+		}
+		sc.Init(apiKey, nil)
+	}
+
+	return sc, nil
+}
+
+func (wh *WebhookHandler) fetchChargeWithInvoice(chargeID string, provider *models.PaymentProvider) (*stripe.Charge, error) {
+	sc, err := wh.createStripeClient(provider)
+	if err != nil {
+		return nil, err
+	}
+
+	params := &stripe.ChargeParams{}
+	params.AddExpand("invoice")
+
+	if wh.config.ZoriStripeConnect && !wh.config.ZoriOSS {
+		// For Connect, specify the account
+		params.SetStripeAccount(provider.AccountID)
+	}
+
+	return sc.Charges.Get(chargeID, params)
+}
+
+func (wh *WebhookHandler) fetchPaymentIntentWithInvoice(paymentIntentID string, provider *models.PaymentProvider) (*stripe.PaymentIntent, error) {
+	sc, err := wh.createStripeClient(provider)
+	if err != nil {
+		return nil, err
+	}
+
+	params := &stripe.PaymentIntentParams{}
+	params.AddExpand("invoice")
+
+	if wh.config.ZoriStripeConnect && !wh.config.ZoriOSS {
+		// For Connect, specify the account
+		params.SetStripeAccount(provider.AccountID)
+	}
+
+	return sc.PaymentIntents.Get(paymentIntentID, params)
+}
+
+func (wh *WebhookHandler) extractStripePaymentData(event *stripe.Event, project *models.Project, provider *models.PaymentProvider) (*types.PaymentEventFrame, error) {
 	var paymentID string
 	var amount int64
 	var currency string
 	var productName string
 	var created int64
 	var metadata map[string]string
+	var invoice *stripe.Invoice
 
 	switch event.Type {
 	case stripe.EventTypeChargeSucceeded:
@@ -168,6 +247,7 @@ func (wh *WebhookHandler) extractStripePaymentData(event *stripe.Event, project 
 		if err := json.Unmarshal(event.Data.Raw, &charge); err != nil {
 			return nil, fmt.Errorf("failed to parse charge: %w", err)
 		}
+
 		paymentID = charge.ID
 		amount = charge.Amount
 		currency = string(charge.Currency)
@@ -175,29 +255,27 @@ func (wh *WebhookHandler) extractStripePaymentData(event *stripe.Event, project 
 		created = charge.Created
 		metadata = charge.Metadata
 
-	case stripe.EventTypePaymentIntentSucceeded:
-		var paymentIntent stripe.PaymentIntent
-		if err := json.Unmarshal(event.Data.Raw, &paymentIntent); err != nil {
-			return nil, fmt.Errorf("failed to parse payment intent: %w", err)
+		fullCharge, err := wh.fetchChargeWithInvoice(charge.ID, provider)
+		if err == nil && fullCharge != nil {
+			_ = fullCharge
 		}
-		paymentID = paymentIntent.ID
-		amount = paymentIntent.Amount
-		currency = string(paymentIntent.Currency)
-		productName = paymentIntent.Description
-		created = paymentIntent.Created
-		metadata = paymentIntent.Metadata
 
 	case stripe.EventTypeInvoicePaymentSucceeded:
-		var invoice stripe.Invoice
-		if err := json.Unmarshal(event.Data.Raw, &invoice); err != nil {
+		var invoiceData stripe.Invoice
+		if err := json.Unmarshal(event.Data.Raw, &invoiceData); err != nil {
 			return nil, fmt.Errorf("failed to parse invoice: %w", err)
 		}
-		paymentID = invoice.ID
-		amount = invoice.Total
-		currency = string(invoice.Currency)
-		productName = invoice.Description
-		created = invoice.Created
-		metadata = invoice.Metadata
+		paymentID = invoiceData.ID
+		amount = invoiceData.Total
+		currency = string(invoiceData.Currency)
+		productName = invoiceData.Description
+		created = invoiceData.Created
+		metadata = invoiceData.Metadata
+		invoice = &invoiceData
+
+		if subscriptionMetadata := extractSubscriptionMetadata(invoice); subscriptionMetadata != nil {
+			metadata = mergeSubscriptionMetadata(metadata, subscriptionMetadata)
+		}
 
 	default:
 		return nil, fmt.Errorf("unsupported event type: %s", event.Type)

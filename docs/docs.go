@@ -1349,6 +1349,12 @@ const docTemplate = `{
                         "name": "provider_type",
                         "in": "query",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Project ID (required for Stripe Connect)",
+                        "name": "project_id",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -1400,13 +1406,6 @@ const docTemplate = `{
                         "type": "string",
                         "description": "State parameter for CSRF protection",
                         "name": "state",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Project ID",
-                        "name": "project_id",
                         "in": "query",
                         "required": true
                     }
