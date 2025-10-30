@@ -50,6 +50,7 @@ func (m *Zori) Test(ctx context.Context, source *dagger.Directory) (string, erro
 		WithEnvVariable("DATADOG_ENABLED", "false").
 		WithEnvVariable("OTEL_ENABLED", "false").
 		WithEnvVariable("LOG_LEVEL", "error").
+		WithEnvVariable("ZORI_API_HOST", "http://localhost:1323").
 		WithEnvVariable("TEST_TIMEOUT", "30s").
 		WithEnvVariable("TEST_DB_TIMEOUT", "5s").
 		WithEnvVariable("FEATURE_EMAIL_VERIFICATION", "false").
@@ -113,6 +114,7 @@ func (m *Zori) TestWithCoverage(ctx context.Context, source *dagger.Directory) *
 		WithEnvVariable("REDIS_PASSWORD", "").
 		WithEnvVariable("NATS_CREDENTIALS_CONTENT", "").
 		WithEnvVariable("NATS_STREAM_URL", "nats://nats:4222").
+		WithEnvVariable("ZORI_API_HOST", "http://localhost:1323").
 		WithEnvVariable("ENCRYPTION_KEY", "test-encryption-key-must-be-32-chars-long!").
 		WithEnvVariable("TELEMETRY_ENABLED", "false").
 		WithEnvVariable("DATADOG_ENABLED", "false").
