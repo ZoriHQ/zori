@@ -34,18 +34,27 @@ func NewAuthService(authData *data.AuthData, cfg *config.Config) *AuthService {
 }
 
 // Login validates credentials and returns a JWT token
+// @Summary      Login to OSS deployment
+// @Description  Authenticate with admin credentials and receive a JWT token (OSS mode only)
+// @Tags         Authentication
+// @Accept       json
+// @Produce      json
+// @Param        credentials  body      types.LoginRequest   true  "Admin credentials"
+// @Success      200          {object}  types.LoginResponse  "JWT token and organization ID"
+// @Failure      400          {object}  map[string]string    "Invalid request body"
+// @Failure      401          {object}  map[string]string    "Invalid credentials"
+// @Failure      500          {object}  map[string]string    "Internal server error"
+// @Router       /api/v1/auth/login [post]
 func (s *AuthService) Login(c *ctx.Ctx) (*types.LoginResponse, error) {
 	var req types.LoginRequest
 	if err := c.Echo.Bind(&req); err != nil {
 		return nil, echo.NewHTTPError(http.StatusBadRequest, "Invalid request body")
 	}
 
-	// Validate request
 	if req.Username == "" || req.Password == "" {
 		return nil, echo.NewHTTPError(http.StatusBadRequest, "Username and password are required")
 	}
 
-	// Get system config
 	system, err := s.authData.GetSystemConfig(context.Background())
 	if err != nil {
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to retrieve system configuration")
@@ -55,23 +64,19 @@ func (s *AuthService) Login(c *ctx.Ctx) (*types.LoginResponse, error) {
 		return nil, echo.NewHTTPError(http.StatusUnauthorized, "System not initialized")
 	}
 
-	// Validate username
 	if *system.AdminUsername != req.Username {
 		return nil, echo.NewHTTPError(http.StatusUnauthorized, "Invalid credentials")
 	}
 
-	// Validate password
 	err = bcrypt.CompareHashAndPassword([]byte(*system.AdminPasswordHash), []byte(req.Password))
 	if err != nil {
 		return nil, echo.NewHTTPError(http.StatusUnauthorized, "Invalid credentials")
 	}
 
-	// Get org ID
 	if system.DefaultOrgID == nil {
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Organization not configured")
 	}
 
-	// Generate JWT token
 	token, err := s.generateToken(*system.DefaultOrgID)
 	if err != nil {
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to generate token")

@@ -18,7 +18,6 @@ func NewAuthData(db *postgres.PostgresDB) *AuthData {
 	return &AuthData{db: db.DB}
 }
 
-// GetSystemConfig retrieves the system configuration
 func (a *AuthData) GetSystemConfig(ctx context.Context) (*models.System, error) {
 	system := &models.System{}
 	err := a.db.NewSelect().

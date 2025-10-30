@@ -31,6 +31,12 @@ environments:
 resources:
   v1:
     subresources:
+      auth:
+        models:
+          login_request: "#/components/schemas/types.LoginRequest"
+          login_response: "#/components/schemas/types.LoginResponse"
+        methods:
+          login: post /api/v1/auth/login
       analytics:
         models:
           visitor_data_point: "#/components/schemas/types.VisitorDataPoint"

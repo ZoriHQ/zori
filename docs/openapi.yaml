@@ -921,6 +921,52 @@ paths:
         - Analytics
       description: Get a list of the most active visitors ranked by event count
       summary: Get top visitors
+  /api/v1/auth/login:
+    post:
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/types.LoginResponse'
+          description: JWT token and organization ID
+        '400':
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: string
+                type: object
+          description: Invalid request body
+        '401':
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: string
+                type: object
+          description: Invalid credentials
+        '500':
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: string
+                type: object
+          description: Internal server error
+      tags:
+        - Authentication
+      description: >-
+        Authenticate with admin credentials and receive a JWT token (OSS mode
+        only)
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/types.LoginRequest'
+        description: Admin credentials
+        required: true
+      summary: Login to OSS deployment
   /api/v1/payment-providers:
     get:
       parameters:
@@ -2256,6 +2302,23 @@ components:
         total:
           example: 3
           type: integer
+      type: object
+    types.LoginRequest:
+      properties:
+        password:
+          type: string
+        username:
+          type: string
+      required:
+        - password
+        - username
+      type: object
+    types.LoginResponse:
+      properties:
+        org_id:
+          type: string
+        token:
+          type: string
       type: object
     types.ManualIdentifyRequest:
       properties:

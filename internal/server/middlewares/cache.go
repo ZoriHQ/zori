@@ -72,12 +72,9 @@ func (m *CacheMiddleware) Middleware(config CacheConfig) echo.MiddlewareFunc {
 	}
 }
 
-// generateCacheKey creates a unique cache key based on the endpoint and query parameters
 func (m *CacheMiddleware) generateCacheKey(prefix string, c echo.Context) string {
-	// Get the path
 	path := c.Path()
 
-	// Get and sort query parameters for consistent cache keys
 	queryParams := c.QueryParams()
 	params := make([]string, 0, len(queryParams))
 	for key, values := range queryParams {
@@ -87,18 +84,15 @@ func (m *CacheMiddleware) generateCacheKey(prefix string, c echo.Context) string
 	}
 	sort.Strings(params)
 
-	// Create a deterministic query string
 	queryString := ""
 	if len(params) > 0 {
 		queryString = "?" + url.QueryEscape(fmt.Sprint(params))
 	}
 
-	// Hash the full key to keep it reasonable length
 	fullKey := fmt.Sprintf("%s:%s%s", prefix, path, queryString)
 	hash := md5.Sum([]byte(fullKey))
 	hashStr := hex.EncodeToString(hash[:])
 
-	// Return prefix with hash for readability and uniqueness
 	projectID := c.QueryParam("project_id")
 	if projectID != "" {
 		return fmt.Sprintf("%s:project:%s:hash:%s", prefix, projectID, hashStr)
@@ -107,7 +101,6 @@ func (m *CacheMiddleware) generateCacheKey(prefix string, c echo.Context) string
 	return fmt.Sprintf("%s:hash:%s", prefix, hashStr)
 }
 
-// responseCapture is a custom response writer that captures the response body
 type responseCapture struct {
 	http.ResponseWriter
 	body       []byte
