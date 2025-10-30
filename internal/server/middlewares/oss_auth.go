@@ -38,9 +38,7 @@ func (m *OSSAuthMiddleware) Middleware() echo.MiddlewareFunc {
 
 			tokenString := strings.TrimPrefix(authHeader, "Bearer ")
 
-			// Parse and validate the JWT
 			token, err := jwt.ParseWithClaims(tokenString, &OSSAuthClaims{}, func(token *jwt.Token) (interface{}, error) {
-				// Verify signing method
 				if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 					return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 				}
@@ -60,21 +58,17 @@ func (m *OSSAuthMiddleware) Middleware() echo.MiddlewareFunc {
 				return echo.NewHTTPError(http.StatusUnauthorized, "Invalid token claims")
 			}
 
-			// Verify org ID exists
 			if claims.OrgID == "" {
 				return echo.NewHTTPError(http.StatusUnauthorized, "Missing organization ID in token")
 			}
 
-			// Set context values
 			reqCtx := ctx.NewCtx(c)
 
-			// Create a minimal account representation
 			reqCtx.SetUser(&models.Account{
 				ID:    "oss-admin", // OSS mode doesn't have user IDs, using a static identifier
 				Email: "admin@localhost",
 			})
 
-			// Set organization ID from JWT claims
 			reqCtx.SetOrgID(claims.OrgID)
 
 			c.Set("ctx", reqCtx)
