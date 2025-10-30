@@ -52,6 +52,10 @@ func (h *IngestionServer) HandleRequest(ctx *fasthttp.RequestCtx) {
 		h.Injest(ctx)
 	case "/identify":
 		h.Identify(ctx)
+	case "/health":
+		ctx.Response.SetStatusCode(fasthttp.StatusOK)
+		ctx.Response.SetBodyString("Zori - Ingestion Server")
+		break
 	default:
 		ctx.Error("Not Found", fasthttp.StatusNotFound)
 	}

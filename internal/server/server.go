@@ -21,6 +21,10 @@ func New() *Server {
 	e.Use(middleware.Recover())
 	e.Use(middleware.CORS())
 
+	e.GET("/health", func(c echo.Context) error {
+		return c.String(http.StatusOK, "Zori - API Server")
+	})
+
 	return &Server{
 		Echo: e,
 	}
@@ -72,7 +76,7 @@ func wrapHandler[T any](s *Server, handler HandlerFunc[T]) echo.HandlerFunc {
 		if statusCode == 0 {
 			statusCode = http.StatusOK
 		}
-		
+
 		return c.JSON(statusCode, result)
 	}
 }
@@ -84,7 +88,7 @@ func (s *Server) handleError(c echo.Context, err error) error {
 			"error": fmt.Sprintf("%v", he.Message),
 		})
 	}
-	
+
 	// Default to 500 for other errors
 	return c.JSON(http.StatusInternalServerError, map[string]string{
 		"error": err.Error(),
