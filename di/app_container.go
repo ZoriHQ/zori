@@ -3,6 +3,7 @@ package di
 import (
 	"context"
 	"fmt"
+	"os"
 
 	_ "zori/docs" // Import generated swagger docs
 	"zori/internal/cache"
@@ -24,6 +25,21 @@ import (
 
 	"go.uber.org/fx"
 )
+
+func provideForOSS() fx.Option {
+	if os.Getenv("ZORI_IS_OSS") == "true" {
+		return auth.BuildAuthDIContainer()
+	}
+	return fx.Options()
+}
+
+func buildForOSS() fx.Option {
+	if os.Getenv("ZORI_IS_OSS") == "true" {
+		fmt.Println("Building OSS")
+		return auth.BuildAuthWebDIContainer()
+	}
+	return fx.Options()
+}
 
 func NewApplication() *fx.App {
 	return fx.New(
@@ -50,17 +66,8 @@ func NewApplication() *fx.App {
 			),
 		),
 		fx.Provide(middlewares.NewCacheMiddleware),
-
-		// Conditional auth service (only in OSS mode)
-		fx.Invoke(func(cfg *config.Config) fx.Option {
-			if cfg.ZoriOSS {
-				return fx.Options(
-					auth.BuildAuthDIContainer(),
-					auth.BuildAuthWebDIContainer(),
-				)
-			}
-			return fx.Options()
-		}),
+		provideForOSS(),
+		buildForOSS(),
 
 		fx.Invoke(registerDatabaseLifecycle),
 		fx.Invoke(registerOSSInitializer),
@@ -103,7 +110,7 @@ func provideAuthMiddleware(cfg *config.Config, db *postgres.PostgresDB, orgServi
 	if cfg.ZoriOSS {
 		return middlewares.NewOSSAuthMiddleware(cfg), nil
 	}
-	return middlewares.NewStackAuthMiddleware(cfg, orgService)
+	return middlewares.NewClerkAuthMiddleware(cfg, orgService)
 }
 
 // registerDatabaseLifecycle registers database lifecycle hooks
@@ -120,10 +127,17 @@ func registerDatabaseLifecycle(lc fx.Lifecycle, db *postgres.PostgresDB) {
 }
 
 // registerOSSInitializer runs OSS initialization if enabled
-func registerOSSInitializer(lc fx.Lifecycle, initializer *ossInit.OSSInitializer) {
+func registerOSSInitializer(lc fx.Lifecycle, initializer *ossInit.OSSInitializer, cfg *config.Config) {
 	lc.Append(fx.Hook{
 		OnStart: func(ctx context.Context) error {
-			return initializer.Initialize(ctx)
+			// Extract reset-auth flag from context
+			resetAuth := false
+			if val := ctx.Value(config.ResetAuthKey); val != nil {
+				if b, ok := val.(bool); ok {
+					resetAuth = b
+				}
+			}
+			return initializer.InitializeOrReset(ctx, resetAuth)
 		},
 	})
 }

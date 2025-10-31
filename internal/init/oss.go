@@ -33,6 +33,13 @@ func NewOSSInitializer(cfg *config.Config, db *postgres.PostgresDB) *OSSInitiali
 	}
 }
 
+func (o *OSSInitializer) InitializeOrReset(ctx context.Context, resetAuth bool) error {
+	if resetAuth {
+		return o.ResetAuth(ctx)
+	}
+	return o.Initialize(ctx)
+}
+
 func (o *OSSInitializer) Initialize(ctx context.Context) error {
 	if !o.cfg.ZoriOSS {
 		return nil
@@ -63,7 +70,8 @@ func (o *OSSInitializer) Initialize(ctx context.Context) error {
 		return fmt.Errorf("failed to hash password: %w", err)
 	}
 
-	defaultOrgID := uuid.New().String()
+	// Generate Clerk-compatible org ID (format: org_xxxxxxxxxxxxxxxxxxxxxxxxxx)
+	defaultOrgID := o.generateClerkCompatibleOrgID()
 
 	hashedPasswordStr := string(hashedPassword)
 	defaultOrgIDStr := defaultOrgID
@@ -81,12 +89,83 @@ func (o *OSSInitializer) Initialize(ctx context.Context) error {
 		return fmt.Errorf("failed to update system config: %w", err)
 	}
 
-	// Display credentials prominently in logs
 	o.displayCredentials(username, password, defaultOrgID)
 
 	return nil
 }
 
+<<<<<<< Updated upstream
+=======
+func (o *OSSInitializer) ResetAuth(ctx context.Context) error {
+	if !o.cfg.ZoriOSS {
+		return nil
+	}
+
+	fmt.Println("===========================================")
+	fmt.Println("OSS AUTH RESET MODE")
+	fmt.Println("===========================================")
+
+	system, err := o.getSystemConfig(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get system config: %w", err)
+	}
+
+	if system.AdminUsername == nil || *system.AdminUsername == "" {
+		fmt.Println("No existing credentials found. Nothing to reset.")
+		fmt.Println("===========================================")
+		return nil
+	}
+
+	fmt.Print("\nAre you sure you want to reset admin credentials? This will invalidate the current username and password. (y/n): ")
+	reader := bufio.NewReader(os.Stdin)
+	response, err := reader.ReadString('\n')
+	if err != nil {
+		return fmt.Errorf("failed to read user input: %w", err)
+	}
+
+	response = strings.TrimSpace(strings.ToLower(response))
+	if response != "y" && response != "yes" {
+		fmt.Println("Reset cancelled. Starting server with existing credentials...")
+		fmt.Println("===========================================")
+		return nil
+	}
+
+	username, password, err := o.generateCredentials()
+	if err != nil {
+		return fmt.Errorf("failed to generate credentials: %w", err)
+	}
+
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return fmt.Errorf("failed to hash password: %w", err)
+	}
+
+	hashedPasswordStr := string(hashedPassword)
+	system.AdminUsername = &username
+	system.AdminPasswordHash = &hashedPasswordStr
+
+	_, err = o.db.DB.NewUpdate().
+		Model(system).
+		Column("admin_username", "admin_password_hash").
+		Where("id = ?", system.ID).
+		Exec(ctx)
+
+	if err != nil {
+		return fmt.Errorf("failed to update system config: %w", err)
+	}
+
+	fmt.Println("\n✓ Credentials reset successfully!")
+
+	orgID := ""
+	if system.DefaultOrgID != nil {
+		orgID = *system.DefaultOrgID
+	}
+	o.displayCredentials(username, password, orgID)
+
+	return nil
+}
+
+>>>>>>> Stashed changes
 func (o *OSSInitializer) getSystemConfig(ctx context.Context) (*models.System, error) {
 	system := &models.System{}
 	err := o.db.DB.NewSelect().
@@ -96,7 +175,6 @@ func (o *OSSInitializer) getSystemConfig(ctx context.Context) (*models.System, e
 
 	if err != nil {
 		if err == sql.ErrNoRows {
-			// Create a new system record if none exists
 			system.ID = uuid.New().String()
 			_, err = o.db.DB.NewInsert().
 				Model(system).
@@ -130,6 +208,28 @@ func (o *OSSInitializer) generateCredentials() (username, password string, err e
 	return username, password, nil
 }
 
+// generateClerkCompatibleOrgID generates an organization ID in Clerk's format
+// Format: org_xxxxxxxxxxxxxxxxxxxxxxxxxx (org_ prefix + 26 random alphanumeric characters)
+func (o *OSSInitializer) generateClerkCompatibleOrgID() string {
+	const charset = "abcdefghijklmnopqrstuvwxyz0123456789"
+	const idLength = 26
+
+	randomBytes := make([]byte, idLength)
+	_, err := rand.Read(randomBytes)
+	if err != nil {
+		// Fallback to UUID-based generation if random fails
+		return "org_" + strings.ReplaceAll(uuid.New().String(), "-", "")[:idLength]
+	}
+
+	// Convert random bytes to alphanumeric characters
+	id := make([]byte, idLength)
+	for i := 0; i < idLength; i++ {
+		id[i] = charset[randomBytes[i]%byte(len(charset))]
+	}
+
+	return "org_" + string(id)
+}
+
 func (o *OSSInitializer) displayCredentials(username, password, orgID string) {
 	banner := `
 ╔═══════════════════════════════════════════════════════════════╗
@@ -149,21 +249,12 @@ func (o *OSSInitializer) displayCredentials(username, password, orgID string) {
 ╚═══════════════════════════════════════════════════════════════╝
 `
 
-	// Pad the API host to fit the format
 	apiHost := o.cfg.ZoriAPIHost
 	if len(apiHost) > 30 {
 		apiHost = apiHost[:27] + "..."
 	}
 
-	formattedBanner := fmt.Sprintf(banner, username, password, orgID, padRight(apiHost, 30))
+	formattedBanner := fmt.Sprintf(banner, username, password)
 
 	fmt.Println(formattedBanner)
-}
-
-// padRight pads a string with spaces on the right to reach the desired length
-func padRight(s string, length int) string {
-	if len(s) >= length {
-		return s
-	}
-	return s + strings.Repeat(" ", length-len(s))
 }

@@ -19,17 +19,17 @@ type JWTClaims struct {
 
 // JWTService provides JWT validation for websocket connections
 // NOTE: This is a legacy service maintained only for websocket event streaming.
-// All HTTP endpoints should use StackAuthMiddleware instead.
+// All HTTP endpoints should use ClerkAuthMiddleware (or OSSAuthMiddleware in OSS mode) instead.
 type JWTService struct{}
 
 func NewJWTService() *JWTService {
 	return &JWTService{}
 }
 
-// ValidateAccessToken validates a Stack Auth JWT token
-// This now works with Stack Auth tokens instead of generating its own
+// ValidateAccessToken validates a Clerk JWT token
+// This now works with Clerk tokens instead of generating its own
 func (j *JWTService) ValidateAccessToken(tokenString string) (*JWTClaims, error) {
-	// Parse without verification - Stack Auth tokens will be verified by their middleware
+	// Parse without verification - Clerk tokens will be verified by their middleware
 	// This is just to extract claims for websocket routing
 	token, _, err := jwt.NewParser().ParseUnverified(tokenString, &JWTClaims{})
 	if err != nil {
