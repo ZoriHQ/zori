@@ -1,11 +1,13 @@
 package init
 
 import (
+	"bufio"
 	"context"
 	"crypto/rand"
 	"database/sql"
 	"encoding/base64"
 	"fmt"
+	"os"
 	"strings"
 
 	"zori/internal/config"
@@ -94,8 +96,6 @@ func (o *OSSInitializer) Initialize(ctx context.Context) error {
 	return nil
 }
 
-<<<<<<< Updated upstream
-=======
 func (o *OSSInitializer) ResetAuth(ctx context.Context) error {
 	if !o.cfg.ZoriOSS {
 		return nil
@@ -165,7 +165,6 @@ func (o *OSSInitializer) ResetAuth(ctx context.Context) error {
 	return nil
 }
 
->>>>>>> Stashed changes
 func (o *OSSInitializer) getSystemConfig(ctx context.Context) (*models.System, error) {
 	system := &models.System{}
 	err := o.db.DB.NewSelect().

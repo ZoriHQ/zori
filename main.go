@@ -10,10 +10,13 @@ import (
 	"time"
 
 	"zori/di"
-	"zori/internal/config"
 
 	"github.com/urfave/cli/v3"
 )
+
+type contextKey string
+
+const resetAuthKey contextKey = "reset-auth"
 
 // @title           OpenAPI Specification for Zori server
 // @version         1.0
@@ -55,6 +58,10 @@ func main() {
 						Aliases: []string{"H"},
 						Value:   "0.0.0.0",
 						Usage:   "Host to bind server to",
+					},
+					&cli.BoolFlag{
+						Name:  "reset-auth",
+						Usage: "Reset OSS admin credentials (prompts for confirmation)",
 					},
 				},
 				Action: runServer,
@@ -110,13 +117,6 @@ func runIngestionServer(ctx context.Context, cmd *cli.Command) error {
 }
 
 func runServer(ctx context.Context, cmd *cli.Command) error {
-<<<<<<< Updated upstream
-=======
-	// Get the reset-auth flag value and add it to context
-	resetAuth := cmd.Bool("reset-auth")
-	ctx = context.WithValue(ctx, config.ResetAuthKey, resetAuth)
-
->>>>>>> Stashed changes
 	app := di.NewApplication()
 
 	ctx, cancel := context.WithCancel(ctx)
