@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"fmt"
 	"zori/services/auth/data"
 	"zori/services/auth/services"
 	"zori/services/auth/web"
@@ -18,6 +19,7 @@ func BuildAuthDIContainer() fx.Option {
 }
 
 func BuildAuthWebDIContainer() fx.Option {
+	fmt.Println("Registering")
 	return fx.Module("auth_web",
 		fx.Invoke(web.RegisterRoutes),
 	)

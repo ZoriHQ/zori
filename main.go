@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"zori/di"
+	"zori/internal/config"
 
 	"github.com/urfave/cli/v3"
 )
@@ -109,6 +110,13 @@ func runIngestionServer(ctx context.Context, cmd *cli.Command) error {
 }
 
 func runServer(ctx context.Context, cmd *cli.Command) error {
+<<<<<<< Updated upstream
+=======
+	// Get the reset-auth flag value and add it to context
+	resetAuth := cmd.Bool("reset-auth")
+	ctx = context.WithValue(ctx, config.ResetAuthKey, resetAuth)
+
+>>>>>>> Stashed changes
 	app := di.NewApplication()
 
 	ctx, cancel := context.WithCancel(ctx)

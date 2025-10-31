@@ -11,14 +11,14 @@ tasks:
       - s
     desc: Start the API HTTP server (default port 1323)
     cmds:
-      - go run . server
+      - go run . server {{.CLI_ARGS}}
 
   ingestion:
     aliases:
       - i
     desc: Start the Ingestion HTTP server (default port 1324)
     cmds:
-      - go run . ingestion
+      - go run . ingestion {{.CLI_ARGS}}
 
   migrate:up:
     desc: Run all pending database migrations

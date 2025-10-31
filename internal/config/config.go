@@ -5,6 +5,10 @@ import (
 	_ "github.com/joho/godotenv/autoload"
 )
 
+type ContextKey string
+
+const ResetAuthKey ContextKey = "reset-auth"
+
 type Config struct {
 	ClickHouseURL      string `env:"CLICKHOUSE_URL,required"`
 	ClickHouseUsername string `env:"CLICKHOUSE_USERNAME,required"`
@@ -15,9 +19,8 @@ type Config struct {
 	RedisADDS string `env:"REDIS_ADDRS,required"`
 	RedisPASS string `env:"REDIS_PASSWORD,required"`
 
-	// Stack Auth Configuration (not required in OSS mode)
-	StackAuthProjectID string `env:"STACK_AUTH_PROJECT_ID"`
-	StackAuthJWKSURL   string `env:"STACK_AUTH_JWKS_URL"`
+	// Clerk Auth Configuration (not required in OSS mode)
+	ClerkSecretKey string `env:"CLERK_SECRET_KEY"`
 
 	// OSS Auth Configuration (only used when ZoriOSS is true)
 	JWTSecret string `env:"JWT_SECRET"`
@@ -35,14 +38,6 @@ type Config struct {
 	ZoriStripeConnectSecretKey     string `env:"ZORI_STRIPE_CONNECT_SECRET_KEY"`
 	ZoriStripeConnectClientID      string `env:"ZORI_STRIPE_CONNECT_CLIENT_ID"`
 	ZoriStripeConnectWebhookSecret string `env:"ZORI_STRIPE_CONNECT_WEBHOOK_SECRET"`
-}
-
-func (c *Config) GetStackAuthJWKSURL() string {
-	if c.StackAuthJWKSURL != "" {
-		return c.StackAuthJWKSURL
-	}
-	// Default JWKS URL based on project ID
-	return "https://api.stack-auth.com/api/v1/projects/" + c.StackAuthProjectID + "/.well-known/jwks.json"
 }
 
 func NewConfig() *Config {
