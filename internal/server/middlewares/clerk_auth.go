@@ -48,7 +48,6 @@ func (m *ClerkAuthMiddleware) Middleware() echo.MiddlewareFunc {
 
 			tokenString := strings.TrimPrefix(authHeader, "Bearer ")
 
-			// Verify the JWT token using Clerk's JWT verification
 			claims, err := jwt.Verify(context.Background(), &jwt.VerifyParams{
 				Token: tokenString,
 			})
@@ -56,28 +55,21 @@ func (m *ClerkAuthMiddleware) Middleware() echo.MiddlewareFunc {
 				return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("Invalid token: %v", err))
 			}
 
-			// Extract user ID from claims (subject)
 			userID := claims.Subject
 			if userID == "" {
 				return echo.NewHTTPError(http.StatusUnauthorized, "Missing user ID in token")
 			}
 
-			// Set account ID to Clerk user ID
 			c.Set("account_id", userID)
 			c.Set("clerk_user_id", userID)
 
 			reqCtx := ctx.NewCtx(c)
 
-			// Note: Email is not available in Clerk JWT claims by default
-			// If you need user email, you can fetch it from Clerk API using the user ID
-			// or include it in custom claims
 			reqCtx.SetUser(&models.Account{
 				ID:    userID,
 				Email: "", // Email not available in JWT claims
 			})
 
-			// Set organization ID from Clerk claims
-			// Clerk uses ActiveOrganizationID for the current organization context
 			if claims.ActiveOrganizationID != "" {
 				reqCtx.SetOrgID(claims.ActiveOrganizationID)
 			}

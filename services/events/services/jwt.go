@@ -17,6 +17,22 @@ type JWTClaims struct {
 	jwt.RegisteredClaims
 }
 
+// OSSJWTClaims represents OSS JWT token structure with flat org_id field
+type OSSJWTClaims struct {
+	OrgID string `json:"org_id"`
+	jwt.RegisteredClaims
+}
+
+// ClerkJWTClaims represents Clerk JWT token structure with nested organization object
+type ClerkJWTClaims struct {
+	O struct {
+		ID   string `json:"id"`
+		Role string `json:"rol"`
+		Slug string `json:"slg"`
+	} `json:"o"`
+	jwt.RegisteredClaims
+}
+
 // JWTService provides JWT validation for websocket connections
 // NOTE: This is a legacy service maintained only for websocket event streaming.
 // All HTTP endpoints should use ClerkAuthMiddleware (or OSSAuthMiddleware in OSS mode) instead.
@@ -26,19 +42,34 @@ func NewJWTService() *JWTService {
 	return &JWTService{}
 }
 
-// ValidateAccessToken validates a Clerk JWT token
-// This now works with Clerk tokens instead of generating its own
+// ValidateAccessToken validates JWT tokens from both Clerk and OSS auth systems
+// This works with both token formats and normalizes them into JWTClaims
 func (j *JWTService) ValidateAccessToken(tokenString string) (*JWTClaims, error) {
-	// Parse without verification - Clerk tokens will be verified by their middleware
+	// Parse without verification - tokens will be verified by their respective middleware
 	// This is just to extract claims for websocket routing
-	token, _, err := jwt.NewParser().ParseUnverified(tokenString, &JWTClaims{})
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse token: %w", err)
+
+	// Try parsing as Clerk token first (nested structure)
+	clerkToken, _, err := jwt.NewParser().ParseUnverified(tokenString, &ClerkJWTClaims{})
+	if err == nil {
+		if clerkClaims, ok := clerkToken.Claims.(*ClerkJWTClaims); ok && clerkClaims.O.ID != "" {
+			// Found valid Clerk token with organization info
+			return &JWTClaims{
+				OrganizationID: clerkClaims.O.ID,
+				Role:           clerkClaims.O.Role,
+			}, nil
+		}
 	}
 
-	if claims, ok := token.Claims.(*JWTClaims); ok {
-		return claims, nil
+	// Try parsing as OSS token (flat structure with org_id)
+	ossToken, _, err := jwt.NewParser().ParseUnverified(tokenString, &OSSJWTClaims{})
+	if err == nil {
+		if ossClaims, ok := ossToken.Claims.(*OSSJWTClaims); ok && ossClaims.OrgID != "" {
+			// Found valid OSS token with org_id
+			return &JWTClaims{
+				OrganizationID: ossClaims.OrgID,
+			}, nil
+		}
 	}
 
-	return nil, fmt.Errorf("invalid token claims")
+	return nil, fmt.Errorf("invalid token format: unable to extract organization ID from token")
 }

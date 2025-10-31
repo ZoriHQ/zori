@@ -84,6 +84,11 @@ func (a *AnalyticsData) GetVisitorsByDevice(ctx context.Context, projectID strin
 		return nil, fmt.Errorf("error iterating rows: %w", err)
 	}
 
+	// Return empty array if no data (newly created projects)
+	if dataPoints == nil {
+		dataPoints = []types.VisitorDataPoint{}
+	}
+
 	return dataPoints, nil
 }
 
@@ -102,6 +107,10 @@ func (a *AnalyticsData) GetUniqueVisitorsByOrigin(ctx context.Context, projectID
 				AND client_timestamp_utc >= ?
 				AND client_timestamp_utc <= now()
 		),
+		total_count AS (
+			SELECT COUNT(DISTINCT visitor_id) as total
+			FROM visitors_in_period
+		),
 		visitor_origins AS (
 			SELECT
 				ft.visitor_id,
@@ -117,7 +126,11 @@ func (a *AnalyticsData) GetUniqueVisitorsByOrigin(ctx context.Context, projectID
 		SELECT
 			vo.origin,
 			uniq(vo.visitor_id) as unique_visitors,
-			uniq(vo.visitor_id) * 100.0 / (SELECT COUNT(DISTINCT visitor_id) FROM visitors_in_period) as percentage
+			CASE
+				WHEN (SELECT total FROM total_count) > 0
+				THEN uniq(vo.visitor_id) * 100.0 / (SELECT total FROM total_count)
+				ELSE 0
+			END as percentage
 		FROM visitor_origins vo
 		GROUP BY vo.origin
 		ORDER BY unique_visitors DESC
@@ -150,6 +163,11 @@ func (a *AnalyticsData) GetUniqueVisitorsByOrigin(ctx context.Context, projectID
 		return nil, fmt.Errorf("error iterating rows: %w", err)
 	}
 
+	// Return empty array if no data (newly created projects)
+	if dataPoints == nil {
+		dataPoints = []types.OriginDataPoint{}
+	}
+
 	return dataPoints, nil
 }
 
@@ -174,7 +192,11 @@ func (a *AnalyticsData) GetUniqueVisitorsByCountry(ctx context.Context, projectI
 				ELSE location_country_iso
 			END as country_code,
 			uniq(visitor_id) as unique_visitors,
-			(uniq(visitor_id) * 100.0 / (SELECT total_visitors FROM totals)) as percentage
+			CASE
+				WHEN (SELECT total_visitors FROM totals) > 0
+				THEN uniq(visitor_id) * 100.0 / (SELECT total_visitors FROM totals)
+				ELSE 0
+			END as percentage
 		FROM events
 		WHERE project_id = ?
 			AND client_timestamp_utc >= ?
@@ -201,6 +223,11 @@ func (a *AnalyticsData) GetUniqueVisitorsByCountry(ctx context.Context, projectI
 
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("error iterating rows: %w", err)
+	}
+
+	// Return empty array if no data (newly created projects)
+	if dataPoints == nil {
+		dataPoints = []types.CountryDataPoint{}
 	}
 
 	return dataPoints, nil
@@ -437,6 +464,14 @@ func (a *AnalyticsData) GetEventFilterOptions(ctx context.Context, projectID str
 		return nil, fmt.Errorf("error iterating pages: %w", err)
 	}
 
+	// Ensure empty arrays instead of nil
+	if origins == nil {
+		origins = []string{}
+	}
+	if pages == nil {
+		pages = []string{}
+	}
+
 	return &types.EventFilterOptionsResponse{
 		TrafficOrigins: origins,
 		Pages:          pages,
@@ -498,6 +533,11 @@ func (a *AnalyticsData) GetTopVisitors(ctx context.Context, projectID string, ti
 
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("error iterating rows: %w", err)
+	}
+
+	// Return empty array if no data (newly created projects)
+	if visitors == nil {
+		visitors = []types.TopVisitor{}
 	}
 
 	return visitors, nil
@@ -716,6 +756,11 @@ func (a *AnalyticsData) GetUniqueVisitorsTimeline(ctx context.Context, projectID
 		return nil, fmt.Errorf("error iterating rows: %w", err)
 	}
 
+	// Return empty array if no data (newly created projects)
+	if dataPoints == nil {
+		dataPoints = []types.UniqueVisitorsDataPoint{}
+	}
+
 	return dataPoints, nil
 }
 
@@ -809,6 +854,11 @@ func (a *AnalyticsData) GetBounceRate(ctx context.Context, projectID string, tim
 
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("error iterating bounce rate rows: %w", err)
+	}
+
+	// Ensure empty array instead of nil
+	if byPageMetrics == nil {
+		byPageMetrics = []types.BounceRateByPageMetric{}
 	}
 
 	return &types.BounceRateResponse{
@@ -1023,6 +1073,11 @@ func (a *AnalyticsData) GetCohortAnalysis(ctx context.Context, projectID string,
 
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("error iterating cohort rows: %w", err)
+	}
+
+	// Ensure empty array instead of nil
+	if cohorts == nil {
+		cohorts = []types.CohortData{}
 	}
 
 	return &types.CohortAnalysisResponse{
