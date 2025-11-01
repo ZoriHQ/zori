@@ -8,6 +8,8 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"time"
+	"zori/internal/metrics"
 	"zori/internal/natsstream"
 	"zori/internal/storage/clickhouse"
 	"zori/services/ingestion/types"
@@ -30,18 +32,20 @@ type IdentifyProcessor struct {
 	cancelConsumer context.CancelFunc
 	ctx            context.Context
 
-	clickDb *clickhouse.ClickhouseDB
+	clickDb     *clickhouse.ClickhouseDB
+	natsMetrics *metrics.NatsMetrics
 }
 
-func NewIdentifyProcessor(natsStream *natsstream.Stream, clickDb *clickhouse.ClickhouseDB) *IdentifyProcessor {
+func NewIdentifyProcessor(natsStream *natsstream.Stream, clickDb *clickhouse.ClickhouseDB, natsMetrics *metrics.NatsMetrics) *IdentifyProcessor {
 	err := natsStream.UpsertJetStream(identifyEventsStream, identifyEventsSubject)
 	if err != nil {
 		panic(err)
 	}
 
 	p := &IdentifyProcessor{
-		natsStream: natsStream,
-		clickDb:    clickDb,
+		natsStream:  natsStream,
+		clickDb:     clickDb,
+		natsMetrics: natsMetrics,
 	}
 
 	p.ctx, p.cancelConsumer = context.WithCancel(context.Background())
@@ -72,9 +76,13 @@ func NewIdentifyProcessor(natsStream *natsstream.Stream, clickDb *clickhouse.Cli
 
 func (p *IdentifyProcessor) Start() error {
 	_, err := p.consumer.Consume(func(msg jetstream.Msg) {
+		startTime := time.Now()
+
 		var identifyFrame types.IdentifyEventFrameV1
 		if err := json.Unmarshal(msg.Data(), &identifyFrame); err != nil {
 			log.Printf("Failed to unmarshal identify event: %v", err)
+			p.natsMetrics.RecordMessageProcessed(identifyEventsStream, "identify-processor", "unmarshal_error", time.Since(startTime))
+			p.natsMetrics.RecordMessageAck(identifyEventsStream, "identify-processor", "nak")
 			msg.Nak()
 			return
 		}
@@ -82,10 +90,14 @@ func (p *IdentifyProcessor) Start() error {
 		// Update all events for this visitor with identity information
 		if err := p.updateVisitorEvents(&identifyFrame); err != nil {
 			log.Printf("Failed to update visitor events: %v", err)
+			p.natsMetrics.RecordMessageProcessed(identifyEventsStream, "identify-processor", "update_error", time.Since(startTime))
+			p.natsMetrics.RecordMessageAck(identifyEventsStream, "identify-processor", "nak")
 			msg.Nak()
 			return
 		}
 
+		p.natsMetrics.RecordMessageProcessed(identifyEventsStream, "identify-processor", "success", time.Since(startTime))
+		p.natsMetrics.RecordMessageAck(identifyEventsStream, "identify-processor", "ack")
 		msg.Ack()
 	})
 

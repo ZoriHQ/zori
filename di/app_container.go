@@ -9,6 +9,7 @@ import (
 	"zori/internal/cache"
 	"zori/internal/config"
 	ossInit "zori/internal/init"
+	"zori/internal/metrics"
 	"zori/internal/natsstream"
 	"zori/internal/server"
 	"zori/internal/server/middlewares"
@@ -52,13 +53,18 @@ func NewApplication() *fx.App {
 		fx.Provide(natsstream.NewStream),
 		fx.Provide(cache.NewCacheService),
 		fx.Provide(ossInit.NewOSSInitializer),
+
+		fx.Provide(metrics.NewMetricsCollector),
+		fx.Provide(metrics.NewIngestMetrics),
+		fx.Provide(metrics.NewNatsMetrics),
+		fx.Provide(metrics.NewMetricsServer),
+
 		organizations.BuildOrganizationDIContainer(),
 		projects.BuildProjectsDIContainer(),
 		analytics.BuildAnalyticsDIContainer(),
 		revenue.BuildRevenueDIContainer(),
 		payments.BuildPaymentsDIContainer(),
 
-		// Conditional auth middleware provider
 		fx.Provide(
 			fx.Annotate(
 				provideAuthMiddleware,
@@ -83,6 +89,17 @@ func NewApplication() *fx.App {
 		payments.BuildPaymentsProcessorDIContainer(),
 		payments.BuildPaymentsWebhookDIContainer(),
 
+		fx.Invoke(func(lc fx.Lifecycle, metricsServer *metrics.MetricsServer) {
+			lc.Append(fx.Hook{
+				OnStart: func(ctx context.Context) error {
+					return metricsServer.Start()
+				},
+				OnStop: func(ctx context.Context) error {
+					return metricsServer.Stop(ctx)
+				},
+			})
+		}),
+
 		fx.Invoke(func(lc fx.Lifecycle, srv *server.Server) {
 			lc.Append(fx.Hook{
 				OnStart: func(ctx context.Context) error {
@@ -105,7 +122,6 @@ func NewApplication() *fx.App {
 	)
 }
 
-// provideAuthMiddleware conditionally provides the correct auth middleware
 func provideAuthMiddleware(cfg *config.Config, db *postgres.PostgresDB, orgService *orgServices.OrganizationService) (middlewares.AuthMiddleware, error) {
 	if cfg.ZoriOSS {
 		return middlewares.NewOSSAuthMiddleware(cfg), nil
@@ -113,20 +129,17 @@ func provideAuthMiddleware(cfg *config.Config, db *postgres.PostgresDB, orgServi
 	return middlewares.NewClerkAuthMiddleware(cfg, orgService)
 }
 
-// registerDatabaseLifecycle registers database lifecycle hooks
 func registerDatabaseLifecycle(lc fx.Lifecycle, db *postgres.PostgresDB) {
 	lc.Append(fx.Hook{
 		OnStart: func(ctx context.Context) error {
 			return nil
 		},
 		OnStop: func(ctx context.Context) error {
-			fmt.Println("Closing database connection...")
 			return db.Close()
 		},
 	})
 }
 
-// registerOSSInitializer runs OSS initialization if enabled
 func registerOSSInitializer(lc fx.Lifecycle, initializer *ossInit.OSSInitializer, cfg *config.Config) {
 	lc.Append(fx.Hook{
 		OnStart: func(ctx context.Context) error {

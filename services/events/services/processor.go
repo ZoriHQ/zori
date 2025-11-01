@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"time"
+	"zori/internal/metrics"
 	"zori/internal/natsstream"
 	"zori/internal/storage/clickhouse"
 	"zori/services/ingestion/types"
@@ -30,10 +31,11 @@ type Processor struct {
 
 	clickDb *clickhouse.ClickhouseDB
 
-	stages []ProcessorStage
+	stages      []ProcessorStage
+	natsMetrics *metrics.NatsMetrics
 }
 
-func NewProcessor(natsStream *natsstream.Stream, clickDb *clickhouse.ClickhouseDB) *Processor {
+func NewProcessor(natsStream *natsstream.Stream, clickDb *clickhouse.ClickhouseDB, natsMetrics *metrics.NatsMetrics) *Processor {
 	err := natsStream.UpsertJetStream(rawEventsStream, rawEventsSubject)
 	if err != nil {
 		panic(err)
@@ -49,9 +51,10 @@ func NewProcessor(natsStream *natsstream.Stream, clickDb *clickhouse.ClickhouseD
 	}
 
 	p := &Processor{
-		natsStream: natsStream,
-		clickDb:    clickDb,
-		stages:     processingStages,
+		natsStream:  natsStream,
+		clickDb:     clickDb,
+		stages:      processingStages,
+		natsMetrics: natsMetrics,
 	}
 
 	p.ctx, p.cancelConsumer = context.WithCancel(context.Background())
@@ -82,14 +85,20 @@ func NewProcessor(natsStream *natsstream.Stream, clickDb *clickhouse.ClickhouseD
 
 func (p *Processor) Start() error {
 	_, err := p.consumer.Consume(func(msg jetstream.Msg) {
+		startTime := time.Now()
+
 		var eventFrame types.ClientEventFrameV1
 		if err := json.Unmarshal(msg.Data(), &eventFrame); err != nil {
+			p.natsMetrics.RecordMessageProcessed(rawEventsStream, "event-enricher", "unmarshal_error", time.Since(startTime))
+			p.natsMetrics.RecordMessageAck(rawEventsStream, "event-enricher", "nak")
 			msg.Nak()
 			return
 		}
 
 		if err := p.processEvent(&eventFrame); err != nil {
 			fmt.Println("Failed to process event", err)
+			p.natsMetrics.RecordMessageProcessed(rawEventsStream, "event-enricher", "process_error", time.Since(startTime))
+			p.natsMetrics.RecordMessageAck(rawEventsStream, "event-enricher", "nak")
 			msg.Nak()
 			return
 		}
@@ -146,6 +155,7 @@ func (p *Processor) Start() error {
 			log.Printf("Error pinging database: %v", err)
 		}
 
+		insertStart := time.Now()
 		if err := p.clickDb.Db().AsyncInsert(context.Background(),
 			`INSERT INTO events (
 				ip, visitor_id, session_id, browser_name, os_name, device_type, client_generated_event_id, event_name,
@@ -200,10 +210,16 @@ func (p *Processor) Start() error {
 			eventFrame.EmailHash,
 		); err != nil {
 			log.Printf("Error inserting event: %v", err)
+			p.natsMetrics.RecordClickHouseError("events", "insert_error")
+			p.natsMetrics.RecordMessageProcessed(rawEventsStream, "event-enricher", "clickhouse_error", time.Since(startTime))
+			p.natsMetrics.RecordMessageAck(rawEventsStream, "event-enricher", "nak")
 			msg.Nak()
 			return
 		}
+		p.natsMetrics.RecordClickHouseInsert("events", time.Since(insertStart))
 
+		p.natsMetrics.RecordMessageProcessed(rawEventsStream, "event-enricher", "success", time.Since(startTime))
+		p.natsMetrics.RecordMessageAck(rawEventsStream, "event-enricher", "ack")
 		msg.Ack()
 
 		marshalEventFrame, err := json.Marshal(eventFrame)
@@ -226,10 +242,25 @@ func (p *Processor) Stop() error {
 }
 
 func (p *Processor) processEvent(eventFrame *types.ClientEventFrameV1) error {
-	for _, stage := range p.stages {
+	stageNames := []string{
+		"location",
+		"page",
+		"user_agent",
+		"referrer",
+		"identity",
+		"click_classification",
+	}
+
+	for i, stage := range p.stages {
+		stageName := stageNames[i]
+		timer := p.natsMetrics.NewStageTimer(stageName)
+
 		if err := stage.ProcessFrame(eventFrame); err != nil {
+			timer.Error()
 			return err
 		}
+
+		timer.Done()
 	}
 
 	b, err := json.Marshal(eventFrame)
