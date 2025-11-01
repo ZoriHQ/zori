@@ -6,6 +6,7 @@ import (
 	_ "zori/docs" // Import generated swagger docs
 	"zori/internal/cache"
 	"zori/internal/config"
+	"zori/internal/metrics"
 	"zori/internal/natsstream"
 	"zori/internal/server"
 	"zori/internal/storage/postgres"
@@ -30,12 +31,28 @@ func NewIngestionApplication() *fx.App {
 		fx.Provide(natsstream.NewStream),
 		fx.Provide(cache.NewCacheService),
 
+		fx.Provide(metrics.NewMetricsCollector),
+		fx.Provide(metrics.NewIngestMetrics),
+		fx.Provide(metrics.NewNatsMetrics),
+		fx.Provide(metrics.NewMetricsServer),
+
 		organizations.BuildOrganizationDIContainer(),
 		projects.BuildProjectsDIContainer(),
 		payments.BuildPaymentsDIContainer(),
 
 		fx.Invoke(registerDatabaseLifecycle),
 		ingestion.BuildIngestionDiContainer(),
+
+		fx.Invoke(func(lc fx.Lifecycle, metricsServer *metrics.MetricsServer) {
+			lc.Append(fx.Hook{
+				OnStart: func(ctx context.Context) error {
+					return metricsServer.Start()
+				},
+				OnStop: func(ctx context.Context) error {
+					return metricsServer.Stop(ctx)
+				},
+			})
+		}),
 
 		fx.Invoke(func(lc fx.Lifecycle, ingestionServer *web.IngestionServer) {
 			lc.Append(fx.Hook{

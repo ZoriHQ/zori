@@ -38,6 +38,13 @@ type Config struct {
 	ZoriStripeConnectSecretKey     string `env:"ZORI_STRIPE_CONNECT_SECRET_KEY"`
 	ZoriStripeConnectClientID      string `env:"ZORI_STRIPE_CONNECT_CLIENT_ID"`
 	ZoriStripeConnectWebhookSecret string `env:"ZORI_STRIPE_CONNECT_WEBHOOK_SECRET"`
+
+	// Metrics Configuration (for Grafana Cloud)
+	MetricsEnabled         bool   `env:"METRICS_ENABLED" envDefault:"false"`
+	MetricsPort            string `env:"METRICS_PORT" envDefault:"9090"`
+	GrafanaCloudRemoteURL  string `env:"GRAFANA_CLOUD_REMOTE_WRITE_URL"`
+	GrafanaCloudUsername   string `env:"GRAFANA_CLOUD_USERNAME"`
+	GrafanaCloudAPIKey     string `env:"GRAFANA_CLOUD_API_KEY"`
 }
 
 func NewConfig() *Config {
