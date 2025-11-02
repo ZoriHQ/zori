@@ -12,7 +12,7 @@ COPY . .
 
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o zori .
 
-FROM alpine:latest as server
+FROM alpine:latest
 
 RUN apk --no-cache add ca-certificates tzdata
 
@@ -29,8 +29,6 @@ RUN chown -R appuser:appgroup /app
 USER appuser
 
 ENTRYPOINT ["./zori"]
-
-ARG START_CMD="server"
-CMD ${START_CMD}
+CMD ["server"]
 
 EXPOSE 1323
