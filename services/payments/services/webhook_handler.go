@@ -46,10 +46,7 @@ func NewWebhookHandler(
 	}
 }
 
-// HandleStripeConnectWebhook handles webhook for cloud version of Zori
-// For regular self-hosted versions this can be enabled, but generally not used, not recommended
-// As you'd need to have two separate Stripe accounts to make this work.
-func (wh *WebhookHandler) HandleStripeConnectWebhook(c echo.Context) error {
+func (wh *WebhookHandler) HandleStripeAppLifecycleWebhook(c echo.Context) error {
 	signature := c.Request().Header.Get("Stripe-Signature")
 	if signature == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "Missing Stripe-Signature header")
@@ -60,7 +57,61 @@ func (wh *WebhookHandler) HandleStripeConnectWebhook(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "Failed to read request body")
 	}
 
-	webhookSecret := wh.config.ZoriStripeConnectWebhookSecret
+	webhookSecret := wh.config.ZoriStripeAppWebhookSecret
+
+	event, err := webhook.ConstructEvent(payload, signature, webhookSecret)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("Webhook signature verification failed: %v", err))
+	}
+
+	switch event.Type {
+	case "account.application.deauthorized":
+		return wh.handleAppDeauthorization(c, &event)
+	case "account.application.authorized":
+		fmt.Printf("Stripe App authorized for account: %s\n", event.Account)
+		return c.String(http.StatusOK, "App authorization event received")
+	default:
+		return c.String(http.StatusOK, fmt.Sprintf("Event type %s acknowledged but not processed", event.Type))
+	}
+}
+
+func (wh *WebhookHandler) handleAppDeauthorization(c echo.Context, event *stripe.Event) error {
+	accountID := event.Account
+	if accountID == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "Missing account ID in event")
+	}
+
+	paymentProvider, err := wh.providerManager.GetProviderByAccountID(c.Request().Context(), accountID)
+	if err != nil {
+		fmt.Printf("Provider not found for account %s: %v\n", accountID, err)
+		return c.String(http.StatusOK, "Provider not found, possibly already deleted")
+	}
+
+	ctx := c.Request().Context()
+	if err := wh.providerManager.DeleteProviderByID(ctx, paymentProvider.ID, paymentProvider.OrganizationID); err != nil {
+		fmt.Printf("Failed to delete provider %s for account %s: %v\n", paymentProvider.ID, accountID, err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to delete provider")
+	}
+
+	fmt.Printf("Successfully deleted provider %s for account %s after app deauthorization\n", paymentProvider.ID, accountID)
+	return c.String(http.StatusOK, "Provider deleted successfully after app deauthorization")
+}
+
+// HandleStripeAppWebhook handles webhook for cloud version of Zori
+// For regular self-hosted versions this can be enabled, but generally not used, not recommended
+// As you'd need to have two separate Stripe accounts to make this work.
+func (wh *WebhookHandler) HandleStripeAppWebhook(c echo.Context) error {
+	signature := c.Request().Header.Get("Stripe-Signature")
+	if signature == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "Missing Stripe-Signature header")
+	}
+
+	payload, err := io.ReadAll(c.Request().Body)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Failed to read request body")
+	}
+
+	webhookSecret := wh.config.ZoriStripeAppWebhookSecret
 
 	event, err := webhook.ConstructEvent(payload, signature, webhookSecret)
 	if err != nil {
@@ -181,8 +232,8 @@ func extractSubscriptionMetadata(invoice *stripe.Invoice) map[string]string {
 func (wh *WebhookHandler) createStripeClient(provider *models.PaymentProvider) (*client.API, error) {
 	sc := &client.API{}
 
-	if wh.config.ZoriStripeConnect && !wh.config.ZoriOSS {
-		sc.Init(wh.config.ZoriStripeConnectSecretKey, &stripe.Backends{
+	if wh.config.ZoriStripeApp && !wh.config.ZoriOSS {
+		sc.Init(wh.config.ZoriStripeAppSecretKey, &stripe.Backends{
 			API: stripe.GetBackendWithConfig(stripe.APIBackend, &stripe.BackendConfig{
 				URL: stripe.String(stripe.APIURL),
 			}),
@@ -207,8 +258,8 @@ func (wh *WebhookHandler) fetchChargeWithInvoice(chargeID string, provider *mode
 	params := &stripe.ChargeParams{}
 	params.AddExpand("invoice")
 
-	if wh.config.ZoriStripeConnect && !wh.config.ZoriOSS {
-		// For Connect, specify the account
+	if wh.config.ZoriStripeApp && !wh.config.ZoriOSS {
+		// For Apps, specify the account
 		params.SetStripeAccount(provider.AccountID)
 	}
 
@@ -224,8 +275,8 @@ func (wh *WebhookHandler) fetchPaymentIntentWithInvoice(paymentIntentID string, 
 	params := &stripe.PaymentIntentParams{}
 	params.AddExpand("invoice")
 
-	if wh.config.ZoriStripeConnect && !wh.config.ZoriOSS {
-		// For Connect, specify the account
+	if wh.config.ZoriStripeApp && !wh.config.ZoriOSS {
+		// For Apps, specify the account
 		params.SetStripeAccount(provider.AccountID)
 	}
 

@@ -34,10 +34,10 @@ type Config struct {
 	ZoriOSS     bool   `env:"ZORI_IS_OSS"`
 	ZoriAPIHost string `env:"ZORI_API_HOST,required"`
 
-	ZoriStripeConnect              bool   `env:"ZORI_STRIPE_CONNECT"`
-	ZoriStripeConnectSecretKey     string `env:"ZORI_STRIPE_CONNECT_SECRET_KEY"`
-	ZoriStripeConnectClientID      string `env:"ZORI_STRIPE_CONNECT_CLIENT_ID"`
-	ZoriStripeConnectWebhookSecret string `env:"ZORI_STRIPE_CONNECT_WEBHOOK_SECRET"`
+	ZoriStripeApp              bool   `env:"ZORI_STRIPE_APP"`
+	ZoriStripeAppSecretKey     string `env:"ZORI_STRIPE_APP_SECRET_KEY"`
+	ZoriStripeAppInstallLink   string `env:"ZORI_STRIPE_APP_INSTALL_LINK"`
+	ZoriStripeAppWebhookSecret string `env:"ZORI_STRIPE_APP_WEBHOOK_SECRET"`
 
 	// Metrics Configuration (for Grafana Cloud)
 	MetricsEnabled         bool   `env:"METRICS_ENABLED" envDefault:"false"`

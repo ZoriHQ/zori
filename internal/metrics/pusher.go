@@ -20,7 +20,6 @@ type MetricsPusher struct {
 	doneCh    chan struct{}
 }
 
-// authRoundTripper adds basic authentication to HTTP requests
 type authRoundTripper struct {
 	username string
 	password string
@@ -37,7 +36,6 @@ func NewMetricsPusher(collector *MetricsCollector, cfg *config.Config) (*Metrics
 		return nil, fmt.Errorf("grafana cloud remote write URL is not configured")
 	}
 
-	// Create HTTP client with basic auth for Grafana Cloud
 	var httpClient *http.Client
 	if cfg.GrafanaCloudUsername != "" && cfg.GrafanaCloudAPIKey != "" {
 		httpClient = &http.Client{
@@ -54,7 +52,6 @@ func NewMetricsPusher(collector *MetricsCollector, cfg *config.Config) (*Metrics
 		}
 	}
 
-	// Create remote write client with Grafana Cloud credentials
 	clientCfg := promremote.NewConfig(
 		promremote.WriteURLOption(cfg.GrafanaCloudRemoteURL),
 		promremote.HTTPClientOption(httpClient),
@@ -76,14 +73,12 @@ func NewMetricsPusher(collector *MetricsCollector, cfg *config.Config) (*Metrics
 }
 
 func (p *MetricsPusher) Start(ctx context.Context) {
-	// Push metrics every 15 seconds
 	ticker := time.NewTicker(15 * time.Second)
 	defer ticker.Stop()
 	defer close(p.doneCh)
 
 	log.Println("Starting metrics pusher to Grafana Cloud")
 
-	// Push immediately on start
 	if err := p.pushMetrics(); err != nil {
 		log.Printf("Failed to push metrics: %v", err)
 	}
@@ -110,26 +105,21 @@ func (p *MetricsPusher) Stop() {
 }
 
 func (p *MetricsPusher) pushMetrics() error {
-	// Gather all metrics from the registry
 	metricFamilies, err := p.collector.Registry.Gather()
 	if err != nil {
 		return fmt.Errorf("failed to gather metrics: %w", err)
 	}
 
-	// Convert Prometheus metrics to remote write format
 	timeSeries := p.convertToTimeSeries(metricFamilies)
 	if len(timeSeries) == 0 {
-		log.Println("No metrics to push")
 		return nil
 	}
 
-	// Push to Grafana Cloud
 	_, err = p.client.WriteTimeSeries(context.Background(), timeSeries, promremote.WriteOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to write time series: %w", err)
 	}
 
-	log.Printf("Successfully pushed %d time series to Grafana Cloud", len(timeSeries))
 	return nil
 }
 
@@ -142,7 +132,6 @@ func (p *MetricsPusher) convertToTimeSeries(metricFamilies []*dto.MetricFamily) 
 		metricType := mf.GetType()
 
 		for _, m := range mf.GetMetric() {
-			// Base labels - add __name__ label
 			labels := []promremote.Label{
 				{
 					Name:  "__name__",
@@ -150,7 +139,6 @@ func (p *MetricsPusher) convertToTimeSeries(metricFamilies []*dto.MetricFamily) 
 				},
 			}
 
-			// Add metric labels
 			for _, l := range m.GetLabel() {
 				labels = append(labels, promremote.Label{
 					Name:  l.GetName(),
@@ -158,7 +146,6 @@ func (p *MetricsPusher) convertToTimeSeries(metricFamilies []*dto.MetricFamily) 
 				})
 			}
 
-			// Extract value based on metric type
 			var value float64
 			var hasValue bool
 
@@ -179,9 +166,7 @@ func (p *MetricsPusher) convertToTimeSeries(metricFamilies []*dto.MetricFamily) 
 					hasValue = true
 				}
 			case dto.MetricType_HISTOGRAM:
-				// For histograms, send count, sum, and buckets
 				if m.Histogram != nil {
-					// Send count
 					countLabels := append([]promremote.Label{}, labels...)
 					countLabels[0].Value = metricName + "_count"
 					timeSeries = append(timeSeries, promremote.TimeSeries{
@@ -192,7 +177,6 @@ func (p *MetricsPusher) convertToTimeSeries(metricFamilies []*dto.MetricFamily) 
 						},
 					})
 
-					// Send sum
 					sumLabels := append([]promremote.Label{}, labels...)
 					sumLabels[0].Value = metricName + "_sum"
 					timeSeries = append(timeSeries, promremote.TimeSeries{
@@ -203,7 +187,6 @@ func (p *MetricsPusher) convertToTimeSeries(metricFamilies []*dto.MetricFamily) 
 						},
 					})
 
-					// Send buckets
 					for _, bucket := range m.Histogram.GetBucket() {
 						bucketLabels := append([]promremote.Label{}, labels...)
 						bucketLabels[0].Value = metricName + "_bucket"
@@ -222,9 +205,7 @@ func (p *MetricsPusher) convertToTimeSeries(metricFamilies []*dto.MetricFamily) 
 				}
 				continue
 			case dto.MetricType_SUMMARY:
-				// For summaries, send count and sum
 				if m.Summary != nil {
-					// Send count
 					countLabels := append([]promremote.Label{}, labels...)
 					countLabels[0].Value = metricName + "_count"
 					timeSeries = append(timeSeries, promremote.TimeSeries{
@@ -235,7 +216,6 @@ func (p *MetricsPusher) convertToTimeSeries(metricFamilies []*dto.MetricFamily) 
 						},
 					})
 
-					// Send sum
 					sumLabels := append([]promremote.Label{}, labels...)
 					sumLabels[0].Value = metricName + "_sum"
 					timeSeries = append(timeSeries, promremote.TimeSeries{
@@ -246,7 +226,6 @@ func (p *MetricsPusher) convertToTimeSeries(metricFamilies []*dto.MetricFamily) 
 						},
 					})
 
-					// Send quantiles
 					for _, quantile := range m.Summary.GetQuantile() {
 						quantileLabels := append([]promremote.Label{}, labels...)
 						quantileLabels = append(quantileLabels, promremote.Label{
@@ -265,7 +244,6 @@ func (p *MetricsPusher) convertToTimeSeries(metricFamilies []*dto.MetricFamily) 
 				continue
 			}
 
-			// Add simple metric types (counter, gauge, untyped)
 			if hasValue {
 				timeSeries = append(timeSeries, promremote.TimeSeries{
 					Labels: labels,

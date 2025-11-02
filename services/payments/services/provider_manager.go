@@ -65,9 +65,8 @@ func (pm *ProviderManager) CreateProvider(c *ctx.Ctx) (*types.PaymentProviderRes
 		return nil, echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	// Prevent manual Stripe provider creation when Stripe Connect is enabled
-	if req.ProviderType == models.ProviderTypeStripe && pm.config.ZoriStripeConnect && !pm.config.ZoriOSS {
-		return nil, echo.NewHTTPError(http.StatusBadRequest, "Manual Stripe provider creation is not allowed. Please use Stripe Connect OAuth flow via /api/v1/payment-providers/instructions?provider_type=stripe")
+	if req.ProviderType == models.ProviderTypeStripe && pm.config.ZoriStripeApp && !pm.config.ZoriOSS {
+		return nil, echo.NewHTTPError(http.StatusBadRequest, "Manual Stripe provider creation is not allowed. Please use Stripe App OAuth flow via /api/v1/payment-providers/instructions?provider_type=stripe")
 	}
 
 	project, err := pm.projectData.GetProject(c.Echo.Request().Context(), req.ProjectID, c.OrgID())
@@ -309,4 +308,8 @@ func (pm *ProviderManager) GetProviderByProjectAndType(ctx context.Context, proj
 
 func (pm *ProviderManager) GetProviderByAccountID(ctx context.Context, accountID string) (*models.PaymentProvider, error) {
 	return pm.data.GetProviderByAccountID(ctx, accountID)
+}
+
+func (pm *ProviderManager) DeleteProviderByID(ctx context.Context, providerID string, orgID string) error {
+	return pm.data.DeleteProvider(ctx, providerID, orgID)
 }
