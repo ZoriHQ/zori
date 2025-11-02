@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/ZoriHQ/zori/compare/v0.2.0...v0.2.1) (2025-11-02)
+
+
+### Bug Fixes
+
+* **ci:** updated docker image artifact step ([e19fa60](https://github.com/ZoriHQ/zori/commit/e19fa6087f352380339bc38338dff61eaaa157cd))
+
 ## [0.2.0](https://github.com/ZoriHQ/zori/compare/v0.1.0...v0.2.0) (2025-11-02)
 
 
