@@ -104,7 +104,7 @@ func (p *PaymentProcessor) processPayment(frame *types.PaymentEventFrame) error 
 	}
 
 	if frame.Amount <= 0 {
-		return fmt.Errorf("invalid amount: %d", frame.Amount)
+		return nil
 	}
 
 	var status clickhouseModels.PaymentStatus
