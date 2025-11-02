@@ -631,7 +631,7 @@ func (r *RevenueData) GetTimeline(ctx context.Context, projectID string, timeRan
 	return dataPoints, nil
 }
 
-// GetTopCustomers returns the highest revenue customers
+// GetTopCustomers returns the highest revenue customers grouped by customer identity
 func (r *RevenueData) GetTopCustomers(ctx context.Context, projectID string, timeRange types.TimeRange, limit int) ([]types.TopCustomer, error) {
 	startTime, _, err := GetTimeRangeBounds(timeRange)
 	if err != nil {
@@ -655,28 +655,63 @@ func (r *RevenueData) GetTopCustomers(ctx context.Context, projectID string, tim
 				AND payment_timestamp_utc >= ?
 				AND payment_timestamp_utc <= now()
 				AND payment_status = 'succeeded'
+		),
+		visitor_identity_map AS (
+			SELECT
+				visitor_id,
+				any(user_id) as user_id,
+				any(external_id) as external_id
+			FROM events
+			WHERE project_id = ?
+			GROUP BY visitor_id
+		),
+		customer_groups AS (
+			SELECT
+				p.visitor_id,
+				-- Resolve customer_id: prefer user_id > external_id > visitor_id
+				COALESCE(
+					vim.user_id,
+					vim.external_id,
+					p.visitor_id
+				) as customer_id,
+				vim.user_id,
+				vim.external_id,
+				p.payment_id,
+				p.amount,
+				p.payment_timestamp_utc,
+				p.currency
+			FROM distinct_payments p
+			LEFT JOIN visitor_identity_map vim ON p.visitor_id = vim.visitor_id
 		)
 		SELECT
-			p.visitor_id,
-			COALESCE(SUM(p.amount), 0) as total_revenue,
-			COUNT(DISTINCT p.payment_id) as payment_count,
-			MIN(p.payment_timestamp_utc) as first_payment_date,
-			MAX(p.payment_timestamp_utc) as last_payment_date,
+			cg.customer_id,
+			any(cg.visitor_id) as representative_visitor_id,
+			groupArray(DISTINCT cg.visitor_id) as visitor_ids,
+			any(cg.user_id) as user_id,
+			any(cg.external_id) as external_id,
+			COALESCE(SUM(cg.amount), 0) as total_revenue,
+			COUNT(DISTINCT cg.payment_id) as payment_count,
+			MIN(cg.payment_timestamp_utc) as first_payment_date,
+			MAX(cg.payment_timestamp_utc) as last_payment_date,
 			CASE
-				WHEN COUNT(DISTINCT p.payment_id) > 0
-				THEN COALESCE(SUM(p.amount), 0) / COUNT(DISTINCT p.payment_id)
+				WHEN COUNT(DISTINCT cg.payment_id) > 0
+				THEN COALESCE(SUM(cg.amount), 0) / COUNT(DISTINCT cg.payment_id)
 				ELSE 0
 			END as avg_order_value,
-			any(p.currency) as currency,
+			any(cg.currency) as currency,
 			any(e.location_country_iso) as location_country_iso
-		FROM distinct_payments p
-		LEFT JOIN events e ON p.visitor_id = e.visitor_id AND e.project_id = ?
-		GROUP BY p.visitor_id
+		FROM customer_groups cg
+		LEFT JOIN events e ON cg.visitor_id = e.visitor_id AND e.project_id = ?
+		GROUP BY cg.customer_id
 		ORDER BY total_revenue DESC
 		LIMIT ?
 	`
 
-	rows, err := r.clickDb.Db().Query(ctx, query, projectID, startTime, projectID, limit)
+	rows, err := r.clickDb.Db().Query(ctx, query,
+		projectID, startTime, // distinct_payments
+		projectID,            // visitor_identity_map
+		projectID,            // LEFT JOIN events
+		limit)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query top customers: %w", err)
 	}
@@ -686,7 +721,11 @@ func (r *RevenueData) GetTopCustomers(ctx context.Context, projectID string, tim
 	for rows.Next() {
 		var customer types.TopCustomer
 		if err := rows.Scan(
+			&customer.CustomerID,
 			&customer.VisitorID,
+			&customer.VisitorIDs,
+			&customer.UserID,
+			&customer.ExternalID,
 			&customer.TotalRevenue,
 			&customer.PaymentCount,
 			&customer.FirstPaymentDate,
@@ -698,16 +737,22 @@ func (r *RevenueData) GetTopCustomers(ctx context.Context, projectID string, tim
 			return nil, fmt.Errorf("failed to scan row: %w", err)
 		}
 
-		// Fetch visitor identity from PostgreSQL
+		// Fetch visitor identity from PostgreSQL (for email and name)
+		// Try the representative visitor first
 		visitorIdentity, err := r.visitorRepository.GetVisitorByID(ctx, customer.VisitorID)
 		if err == nil && visitorIdentity != nil {
-			customer.UserID = visitorIdentity.UserID
-			customer.ExternalID = visitorIdentity.ExternalID
 			customer.Email = visitorIdentity.Email
 			customer.Name = visitorIdentity.Name
+			// Update user_id and external_id from postgres if available
+			if visitorIdentity.UserID != nil {
+				customer.UserID = visitorIdentity.UserID
+			}
+			if visitorIdentity.ExternalID != nil {
+				customer.ExternalID = visitorIdentity.ExternalID
+			}
 		}
 
-		// Get first traffic origin
+		// Get first traffic origin (use the representative visitor)
 		originQuery := `
 			SELECT argMinMerge(first_referrer_domain) as first_origin
 			FROM visitor_first_touch_attribution
@@ -1005,6 +1050,196 @@ func (r *RevenueData) GetConversionMetrics(ctx context.Context, projectID string
 	response.CustomerLifetimeValue = sanitizeFloat(response.CustomerLifetimeValue)
 	response.RepeatPurchaseRate = sanitizeFloat(response.RepeatPurchaseRate)
 	response.AvgPurchasesPerCustomer = sanitizeFloat(response.AvgPurchasesPerCustomer)
+
+	return &response, nil
+}
+
+// GetCohortRevenueMetrics returns revenue metrics for a specific cohort of visitors
+func (r *RevenueData) GetCohortRevenueMetrics(ctx context.Context, req types.CohortRevenueMetricsRequest) (*types.CohortRevenueMetricsResponse, error) {
+	// Build time filter if provided
+	var timeFilter string
+	var args []interface{}
+	args = append(args, req.ProjectID)
+
+	if req.TimeRange != "" {
+		startTime, _, err := GetTimeRangeBounds(req.TimeRange)
+		if err != nil {
+			return nil, err
+		}
+		timeFilter = "AND payment_timestamp_utc >= ?"
+		args = append(args, startTime)
+	}
+
+	// Build visitor_ids list for IN clause
+	visitorIDList := "["
+	for i, visitorID := range req.VisitorIDs {
+		if i > 0 {
+			visitorIDList += ", "
+		}
+		visitorIDList += "'" + visitorID + "'"
+	}
+	visitorIDList += "]"
+
+	query := fmt.Sprintf(`
+		WITH cohort_visitors AS (
+			SELECT arrayJoin(%s) as visitor_id
+		),
+		visitor_identity_map AS (
+			SELECT
+				e.visitor_id,
+				any(e.user_id) as user_id,
+				any(e.external_id) as external_id,
+				MIN(e.client_timestamp_utc) as first_visit
+			FROM events e
+			INNER JOIN cohort_visitors cv ON e.visitor_id = cv.visitor_id
+			WHERE e.project_id = ?
+			GROUP BY e.visitor_id
+		),
+		customer_resolution AS (
+			SELECT
+				visitor_id,
+				COALESCE(user_id, external_id, visitor_id) as customer_id,
+				user_id,
+				external_id,
+				first_visit
+			FROM visitor_identity_map
+		),
+		distinct_payments AS (
+			SELECT DISTINCT
+				pe.visitor_id,
+				pe.payment_id,
+				pe.amount,
+				pe.currency,
+				pe.payment_timestamp_utc
+			FROM payment_events pe
+			INNER JOIN cohort_visitors cv ON pe.visitor_id = cv.visitor_id
+			WHERE pe.project_id = ?
+				AND pe.payment_status = 'succeeded'
+				%s
+		),
+		customer_payments AS (
+			SELECT
+				cr.customer_id,
+				cr.user_id,
+				cr.external_id,
+				cr.first_visit,
+				dp.payment_id,
+				dp.amount,
+				dp.currency,
+				dp.payment_timestamp_utc
+			FROM customer_resolution cr
+			LEFT JOIN distinct_payments dp ON cr.visitor_id = dp.visitor_id
+		)
+		SELECT
+			-- Cohort size
+			uniq(customer_id) as total_customers,
+			uniqIf(customer_id, payment_id IS NOT NULL) as paying_customers,
+
+			-- Revenue metrics
+			COALESCE(SUM(amount), 0) as total_revenue,
+			any(currency) as currency,
+			CASE
+				WHEN uniqIf(customer_id, payment_id IS NOT NULL) > 0
+				THEN toFloat64(COALESCE(SUM(amount), 0)) / toFloat64(uniqIf(customer_id, payment_id IS NOT NULL))
+				ELSE 0.0
+			END as avg_revenue_per_customer,
+
+			-- Payment metrics
+			uniqIf(payment_id, payment_id IS NOT NULL) as total_payments,
+			CASE
+				WHEN uniqIf(payment_id, payment_id IS NOT NULL) > 0
+				THEN toFloat64(COALESCE(SUM(amount), 0)) / toFloat64(uniqIf(payment_id, payment_id IS NOT NULL))
+				ELSE 0.0
+			END as avg_order_value,
+			CASE
+				WHEN uniqIf(customer_id, payment_id IS NOT NULL) > 0
+				THEN toFloat64(uniqIf(payment_id, payment_id IS NOT NULL)) / toFloat64(uniqIf(customer_id, payment_id IS NOT NULL))
+				ELSE 0.0
+			END as avg_payments_per_customer,
+
+			-- Conversion rate
+			CASE
+				WHEN uniq(customer_id) > 0
+				THEN toFloat64(uniqIf(customer_id, payment_id IS NOT NULL)) * 100.0 / toFloat64(uniq(customer_id))
+				ELSE 0.0
+			END as conversion_rate,
+
+			-- Time to first purchase
+			COALESCE(
+				avgIf(
+					dateDiff('hour', first_visit, payment_timestamp_utc),
+					payment_id IS NOT NULL AND first_visit IS NOT NULL AND payment_timestamp_utc >= first_visit
+				),
+				0
+			) as avg_time_to_first_purchase,
+			COALESCE(
+				medianIf(
+					dateDiff('hour', first_visit, payment_timestamp_utc),
+					payment_id IS NOT NULL AND first_visit IS NOT NULL AND payment_timestamp_utc >= first_visit
+				),
+				0
+			) as median_time_to_first_purchase,
+
+			-- Identity counts
+			uniqIf(customer_id, user_id IS NOT NULL OR external_id IS NOT NULL) as identified_customers,
+			uniqIf(customer_id, user_id IS NULL AND external_id IS NULL) as anonymous_customers
+		FROM customer_payments
+	`, visitorIDList, timeFilter)
+
+	// Prepare final args list
+	finalArgs := make([]interface{}, 0)
+	finalArgs = append(finalArgs, args[0]) // project_id for events
+	finalArgs = append(finalArgs, args[0]) // project_id for payment_events
+	// Add time filter arg if present
+	if req.TimeRange != "" && len(args) > 1 {
+		finalArgs = append(finalArgs, args[1])
+	}
+
+	var response types.CohortRevenueMetricsResponse
+	response.TotalVisitors = uint64(len(req.VisitorIDs))
+
+	row := r.clickDb.Db().QueryRow(ctx, query, finalArgs...)
+	if err := row.Scan(
+		&response.TotalCustomers,
+		&response.PayingCustomers,
+		&response.TotalRevenue,
+		&response.Currency,
+		&response.AvgRevenuePerCustomer,
+		&response.TotalPayments,
+		&response.AvgOrderValue,
+		&response.AvgPaymentsPerCustomer,
+		&response.ConversionRate,
+		&response.AvgTimeToFirstPurchase,
+		&response.MedianTimeToFirstPurchase,
+		&response.IdentifiedCustomers,
+		&response.AnonymousCustomers,
+	); err != nil {
+		return nil, fmt.Errorf("failed to get cohort revenue metrics: %w", err)
+	}
+
+	if response.Currency == "" {
+		response.Currency = "USD"
+	}
+
+	// Calculate avg revenue per visitor
+	if response.TotalVisitors > 0 {
+		response.AvgRevenuePerVisitor = float64(response.TotalRevenue) / float64(response.TotalVisitors)
+	}
+
+	// Calculate visitor conversion rate
+	if response.TotalVisitors > 0 {
+		response.VisitorConversionRate = float64(response.PayingCustomers) * 100.0 / float64(response.TotalVisitors)
+	}
+
+	// Sanitize float values
+	response.AvgRevenuePerCustomer = sanitizeFloat(response.AvgRevenuePerCustomer)
+	response.AvgRevenuePerVisitor = sanitizeFloat(response.AvgRevenuePerVisitor)
+	response.AvgOrderValue = sanitizeFloat(response.AvgOrderValue)
+	response.AvgPaymentsPerCustomer = sanitizeFloat(response.AvgPaymentsPerCustomer)
+	response.ConversionRate = sanitizeFloat(response.ConversionRate)
+	response.VisitorConversionRate = sanitizeFloat(response.VisitorConversionRate)
+	response.AvgTimeToFirstPurchase = sanitizeFloat(response.AvgTimeToFirstPurchase)
+	response.MedianTimeToFirstPurchase = sanitizeFloat(response.MedianTimeToFirstPurchase)
 
 	return &response, nil
 }

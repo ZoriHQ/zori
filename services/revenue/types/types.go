@@ -115,7 +115,9 @@ type TopCustomersResponse struct {
 }
 
 type TopCustomer struct {
-	VisitorID          string    `json:"visitor_id"`
+	CustomerID         string    `json:"customer_id"` // Resolved customer identity (user_id > external_id > visitor_id)
+	VisitorID          string    `json:"visitor_id"`  // Representative visitor_id for this customer
+	VisitorIDs         []string  `json:"visitor_ids,omitempty"` // All visitor_ids for this customer
 	UserID             *string   `json:"user_id,omitempty"`
 	ExternalID         *string   `json:"external_id,omitempty"`
 	Email              *string   `json:"email,omitempty"`
@@ -200,4 +202,38 @@ type ConversionMetricsResponse struct {
 	// Repeat purchase metrics
 	RepeatPurchaseRate      float64 `json:"repeat_purchase_rate"` // % of customers who made 2+ purchases
 	AvgPurchasesPerCustomer float64 `json:"avg_purchases_per_customer"`
+}
+
+type CohortRevenueMetricsRequest struct {
+	ProjectID  string    `json:"project_id" validate:"required"`
+	VisitorIDs []string  `json:"visitor_ids" validate:"required,min=1"` // List of visitor IDs to analyze
+	TimeRange  TimeRange `json:"time_range,omitempty"`                  // Optional: filter by payment date
+}
+
+type CohortRevenueMetricsResponse struct {
+	// Cohort size
+	TotalVisitors   uint64 `json:"total_visitors"`   // Total unique visitors in cohort
+	TotalCustomers  uint64 `json:"total_customers"`  // Total unique customer identities in cohort
+	PayingCustomers uint64 `json:"paying_customers"` // Unique customer identities who made payments
+
+	// Revenue metrics
+	TotalRevenue          int64   `json:"total_revenue"` // Total revenue from cohort (in cents)
+	AvgRevenuePerCustomer float64 `json:"avg_revenue_per_customer"`
+	AvgRevenuePerVisitor  float64 `json:"avg_revenue_per_visitor"`
+	Currency              string  `json:"currency,omitempty"`
+
+	// Payment metrics
+	TotalPayments           uint64  `json:"total_payments"`
+	AvgPaymentsPerCustomer  float64 `json:"avg_payments_per_customer"`
+	AvgOrderValue           float64 `json:"avg_order_value"`
+	ConversionRate          float64 `json:"conversion_rate"` // paying_customers / total_customers * 100
+	VisitorConversionRate   float64 `json:"visitor_conversion_rate"` // paying_customers / total_visitors * 100
+
+	// Time metrics
+	AvgTimeToFirstPurchase    float64 `json:"avg_time_to_first_purchase_hours"`    // Hours from first visit to first payment
+	MedianTimeToFirstPurchase float64 `json:"median_time_to_first_purchase_hours"` // Median time to first payment
+
+	// Customer identity mapping
+	IdentifiedCustomers uint64 `json:"identified_customers"` // Customers with user_id or external_id
+	AnonymousCustomers  uint64 `json:"anonymous_customers"`  // Customers with only visitor_id
 }

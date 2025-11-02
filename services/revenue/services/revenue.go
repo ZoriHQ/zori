@@ -264,3 +264,39 @@ func (s *RevenueService) GetConversionMetrics(c *ctx.Ctx) (*types.ConversionMetr
 
 	return metrics, nil
 }
+
+// GetCohortRevenueMetrics returns revenue metrics for a specific cohort of visitors
+// @Summary Get cohort revenue metrics
+// @Description Analyze revenue metrics for a specific cohort of visitors, including total revenue, conversion rates, and time to first purchase
+// @Tags Revenue
+// @Accept json
+// @Produce json
+// @Security ApiKeyAuth
+// @Param request body types.CohortRevenueMetricsRequest true "Cohort analysis request with visitor IDs"
+// @Success 200 {object} types.CohortRevenueMetricsResponse "Cohort revenue metrics"
+// @Failure 400 {object} map[string]interface{} "Invalid request parameters"
+// @Failure 401 {object} map[string]interface{} "Unauthorized - Invalid or missing JWT token"
+// @Failure 500 {object} map[string]interface{} "Internal server error"
+// @Router /api/v1/revenue/cohort/metrics [post]
+func (s *RevenueService) GetCohortRevenueMetrics(c *ctx.Ctx) (*types.CohortRevenueMetricsResponse, error) {
+	var req types.CohortRevenueMetricsRequest
+	if err := c.Echo.Bind(&req); err != nil {
+		return nil, echo.NewHTTPError(400, "Invalid request parameters")
+	}
+
+	// Validate required fields
+	if req.ProjectID == "" {
+		return nil, echo.NewHTTPError(400, "project_id is required")
+	}
+
+	if len(req.VisitorIDs) == 0 {
+		return nil, echo.NewHTTPError(400, "visitor_ids is required and must not be empty")
+	}
+
+	metrics, err := s.data.GetCohortRevenueMetrics(c.Echo.Request().Context(), req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get cohort revenue metrics: %w", err)
+	}
+
+	return metrics, nil
+}

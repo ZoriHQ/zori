@@ -1442,9 +1442,9 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/payment-providers/stripe/connect/callback": {
+        "/api/v1/payment-providers/stripe/app/callback": {
             "get": {
-                "description": "Handle the OAuth redirect from Stripe Connect and create payment provider",
+                "description": "Handle the OAuth redirect from Stripe App installation and create payment provider",
                 "consumes": [
                     "application/json"
                 ],
@@ -1454,7 +1454,7 @@ const docTemplate = `{
                 "tags": [
                     "Payment Providers"
                 ],
-                "summary": "Handle Stripe Connect OAuth callback",
+                "summary": "Handle Stripe App OAuth callback",
                 "parameters": [
                     {
                         "type": "string",
@@ -2132,6 +2132,66 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/revenue/cohort/metrics": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Analyze revenue metrics for a specific cohort of visitors, including total revenue, conversion rates, and time to first purchase",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Revenue"
+                ],
+                "summary": "Get cohort revenue metrics",
+                "parameters": [
+                    {
+                        "description": "Cohort analysis request with visitor IDs",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/types.CohortRevenueMetricsRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Cohort revenue metrics",
+                        "schema": {
+                            "$ref": "#/definitions/types.CohortRevenueMetricsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request parameters",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - Invalid or missing JWT token",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/revenue/conversion/metrics": {
             "get": {
                 "security": [
@@ -2731,6 +2791,98 @@ const docTemplate = `{
                     "type": "number"
                 },
                 "week_4_retention": {
+                    "type": "number"
+                }
+            }
+        },
+        "types.CohortRevenueMetricsRequest": {
+            "type": "object",
+            "required": [
+                "project_id",
+                "visitor_ids"
+            ],
+            "properties": {
+                "project_id": {
+                    "type": "string"
+                },
+                "time_range": {
+                    "description": "Optional: filter by payment date",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/zori_services_revenue_types.TimeRange"
+                        }
+                    ]
+                },
+                "visitor_ids": {
+                    "description": "List of visitor IDs to analyze",
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "types.CohortRevenueMetricsResponse": {
+            "type": "object",
+            "properties": {
+                "anonymous_customers": {
+                    "description": "Customers with only visitor_id",
+                    "type": "integer"
+                },
+                "avg_order_value": {
+                    "type": "number"
+                },
+                "avg_payments_per_customer": {
+                    "type": "number"
+                },
+                "avg_revenue_per_customer": {
+                    "type": "number"
+                },
+                "avg_revenue_per_visitor": {
+                    "type": "number"
+                },
+                "avg_time_to_first_purchase_hours": {
+                    "description": "Time metrics",
+                    "type": "number"
+                },
+                "conversion_rate": {
+                    "description": "paying_customers / total_customers * 100",
+                    "type": "number"
+                },
+                "currency": {
+                    "type": "string"
+                },
+                "identified_customers": {
+                    "description": "Customer identity mapping",
+                    "type": "integer"
+                },
+                "median_time_to_first_purchase_hours": {
+                    "description": "Median time to first payment",
+                    "type": "number"
+                },
+                "paying_customers": {
+                    "description": "Unique customer identities who made payments",
+                    "type": "integer"
+                },
+                "total_customers": {
+                    "description": "Total unique customer identities in cohort",
+                    "type": "integer"
+                },
+                "total_payments": {
+                    "description": "Payment metrics",
+                    "type": "integer"
+                },
+                "total_revenue": {
+                    "description": "Revenue metrics",
+                    "type": "integer"
+                },
+                "total_visitors": {
+                    "description": "Cohort size",
+                    "type": "integer"
+                },
+                "visitor_conversion_rate": {
+                    "description": "paying_customers / total_visitors * 100",
                     "type": "number"
                 }
             }
@@ -3512,6 +3664,10 @@ const docTemplate = `{
                 "currency": {
                     "type": "string"
                 },
+                "customer_id": {
+                    "description": "Resolved customer identity (user_id \u003e external_id \u003e visitor_id)",
+                    "type": "string"
+                },
                 "email": {
                     "type": "string"
                 },
@@ -3544,7 +3700,15 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "visitor_id": {
+                    "description": "Representative visitor_id for this customer",
                     "type": "string"
+                },
+                "visitor_ids": {
+                    "description": "All visitor_ids for this customer",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 }
             }
         },
@@ -3892,6 +4056,23 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "zori_services_revenue_types.TimeRange": {
+            "type": "string",
+            "enum": [
+                "last_hour",
+                "today",
+                "last_7_days",
+                "last_30_days",
+                "last_90_days"
+            ],
+            "x-enum-varnames": [
+                "TimeRangeLastHour",
+                "TimeRangeToday",
+                "TimeRangeLast7Days",
+                "TimeRangeLast30Days",
+                "TimeRangeLast90Days"
+            ]
         }
     },
     "securityDefinitions": {
