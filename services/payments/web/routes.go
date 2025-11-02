@@ -25,6 +25,5 @@ func RegisterPaymentRoutes(
 	server.GroupPUT(paymentGroup, "/:id", providerManager.UpdateProvider)
 	server.GroupDELETE(paymentGroup, "/:id", providerManager.DeleteProvider)
 
-	// Stripe Connect OAuth callback (no auth required - uses state parameter)
-	s.Echo.GET("/api/v1/payment-providers/stripe/connect/callback", connectionService.HandleStripeConnectCallback)
+	s.Echo.GET("/api/v1/payment-providers/stripe/app/callback", connectionService.HandleStripeAppCallback)
 }
