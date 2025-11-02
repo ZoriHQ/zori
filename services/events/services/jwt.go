@@ -45,14 +45,9 @@ func NewJWTService() *JWTService {
 // ValidateAccessToken validates JWT tokens from both Clerk and OSS auth systems
 // This works with both token formats and normalizes them into JWTClaims
 func (j *JWTService) ValidateAccessToken(tokenString string) (*JWTClaims, error) {
-	// Parse without verification - tokens will be verified by their respective middleware
-	// This is just to extract claims for websocket routing
-
-	// Try parsing as Clerk token first (nested structure)
 	clerkToken, _, err := jwt.NewParser().ParseUnverified(tokenString, &ClerkJWTClaims{})
 	if err == nil {
 		if clerkClaims, ok := clerkToken.Claims.(*ClerkJWTClaims); ok && clerkClaims.O.ID != "" {
-			// Found valid Clerk token with organization info
 			return &JWTClaims{
 				OrganizationID: clerkClaims.O.ID,
 				Role:           clerkClaims.O.Role,
@@ -60,11 +55,9 @@ func (j *JWTService) ValidateAccessToken(tokenString string) (*JWTClaims, error)
 		}
 	}
 
-	// Try parsing as OSS token (flat structure with org_id)
 	ossToken, _, err := jwt.NewParser().ParseUnverified(tokenString, &OSSJWTClaims{})
 	if err == nil {
 		if ossClaims, ok := ossToken.Claims.(*OSSJWTClaims); ok && ossClaims.OrgID != "" {
-			// Found valid OSS token with org_id
 			return &JWTClaims{
 				OrganizationID: ossClaims.OrgID,
 			}, nil
