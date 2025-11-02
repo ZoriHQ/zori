@@ -400,14 +400,12 @@ func (r *RevenueData) GetAttributionByOrigin(ctx context.Context, projectID stri
 	return dataPoints, nil
 }
 
-// GetAttributionByUTM returns revenue attributed to UTM parameters using first-touch attribution
 func (r *RevenueData) GetAttributionByUTM(ctx context.Context, projectID string, timeRange types.TimeRange, utmType string) ([]types.UTMAttributionDataPoint, error) {
 	startTime, _, err := GetTimeRangeBounds(timeRange)
 	if err != nil {
 		return nil, err
 	}
 
-	// Determine which UTM field to use from the attribution table
 	utmField := "first_utm_source"
 	switch utmType {
 	case "medium":
@@ -511,7 +509,7 @@ func (r *RevenueData) GetAttributionByUTM(ctx context.Context, projectID string,
 		projectID, startTime, // payments_in_period
 		projectID,            // visitor_utm LEFT JOIN
 		projectID, startTime, // visitors_in_period
-		projectID,            // all_visitor_utm LEFT JOIN
+		projectID, // all_visitor_utm LEFT JOIN
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query attribution by UTM: %w", err)
@@ -544,7 +542,6 @@ func (r *RevenueData) GetAttributionByUTM(ctx context.Context, projectID string,
 	return dataPoints, nil
 }
 
-// GetTimeline returns revenue over time using materialized views
 func (r *RevenueData) GetTimeline(ctx context.Context, projectID string, timeRange types.TimeRange) ([]types.TimelineDataPoint, error) {
 	startTime, intervalFunc, err := GetTimeRangeBounds(timeRange)
 	if err != nil {
@@ -554,7 +551,6 @@ func (r *RevenueData) GetTimeline(ctx context.Context, projectID string, timeRan
 	var query string
 
 	if timeRange == types.TimeRangeLast30Days || timeRange == types.TimeRangeLast90Days {
-		// Use daily materialized view for longer ranges
 		query = `
 			SELECT
 				time_bucket,
@@ -569,7 +565,6 @@ func (r *RevenueData) GetTimeline(ctx context.Context, projectID string, timeRan
 			ORDER BY time_bucket ASC
 		`
 	} else if timeRange == types.TimeRangeToday || timeRange == types.TimeRangeLast7Days {
-		// Use hourly materialized view for shorter ranges
 		query = `
 			SELECT
 				time_bucket,
@@ -584,7 +579,6 @@ func (r *RevenueData) GetTimeline(ctx context.Context, projectID string, timeRan
 			ORDER BY time_bucket ASC
 		`
 	} else {
-		// Fall back to raw query for sub-hour granularity with proper deduplication
 		query = fmt.Sprintf(`
 			WITH distinct_payments AS (
 				SELECT DISTINCT
@@ -631,7 +625,6 @@ func (r *RevenueData) GetTimeline(ctx context.Context, projectID string, timeRan
 	return dataPoints, nil
 }
 
-// GetTopCustomers returns the highest revenue customers grouped by customer identity
 func (r *RevenueData) GetTopCustomers(ctx context.Context, projectID string, timeRange types.TimeRange, limit int) ([]types.TopCustomer, error) {
 	startTime, _, err := GetTimeRangeBounds(timeRange)
 	if err != nil {
@@ -709,8 +702,8 @@ func (r *RevenueData) GetTopCustomers(ctx context.Context, projectID string, tim
 
 	rows, err := r.clickDb.Db().Query(ctx, query,
 		projectID, startTime, // distinct_payments
-		projectID,            // visitor_identity_map
-		projectID,            // LEFT JOIN events
+		projectID, // visitor_identity_map
+		projectID, // LEFT JOIN events
 		limit)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query top customers: %w", err)
@@ -737,13 +730,10 @@ func (r *RevenueData) GetTopCustomers(ctx context.Context, projectID string, tim
 			return nil, fmt.Errorf("failed to scan row: %w", err)
 		}
 
-		// Fetch visitor identity from PostgreSQL (for email and name)
-		// Try the representative visitor first
 		visitorIdentity, err := r.visitorRepository.GetVisitorByID(ctx, customer.VisitorID)
 		if err == nil && visitorIdentity != nil {
 			customer.Email = visitorIdentity.Email
 			customer.Name = visitorIdentity.Name
-			// Update user_id and external_id from postgres if available
 			if visitorIdentity.UserID != nil {
 				customer.UserID = visitorIdentity.UserID
 			}
@@ -752,7 +742,6 @@ func (r *RevenueData) GetTopCustomers(ctx context.Context, projectID string, tim
 			}
 		}
 
-		// Get first traffic origin (use the representative visitor)
 		originQuery := `
 			SELECT argMinMerge(first_referrer_domain) as first_origin
 			FROM visitor_first_touch_attribution
@@ -774,12 +763,10 @@ func (r *RevenueData) GetTopCustomers(ctx context.Context, projectID string, tim
 	return customers, nil
 }
 
-// GetCustomerProfile returns detailed revenue profile for a specific customer
 func (r *RevenueData) GetCustomerProfile(ctx context.Context, projectID string, visitorID string) (*types.CustomerProfileResponse, error) {
 	var profile types.CustomerProfileResponse
 	profile.VisitorID = visitorID
 
-	// Get revenue summary
 	summaryQuery := `
 		WITH distinct_payments AS (
 			SELECT DISTINCT
@@ -815,7 +802,6 @@ func (r *RevenueData) GetCustomerProfile(ctx context.Context, projectID string, 
 		&profile.AvgOrderValue,
 		&profile.Currency,
 	); err != nil {
-		// Set defaults if no payments found
 		profile.TotalRevenue = 0
 		profile.PaymentCount = 0
 		profile.AvgOrderValue = 0
@@ -823,7 +809,6 @@ func (r *RevenueData) GetCustomerProfile(ctx context.Context, projectID string, 
 		profile.LastPaymentDate = nil
 	}
 
-	// Get attribution data
 	attributionQuery := `
 		SELECT
 			argMinMerge(first_referrer_domain) as first_origin,
@@ -842,14 +827,12 @@ func (r *RevenueData) GetCustomerProfile(ctx context.Context, projectID string, 
 		&profile.FirstUTMMedium,
 		&profile.FirstUTMCampaign,
 	); err != nil {
-		// It's okay if there's no attribution data
 		profile.FirstTrafficOrigin = nil
 		profile.FirstUTMSource = nil
 		profile.FirstUTMMedium = nil
 		profile.FirstUTMCampaign = nil
 	}
 
-	// Get payment history
 	paymentsQuery := `
 		SELECT
 			payment_id,
@@ -888,7 +871,6 @@ func (r *RevenueData) GetCustomerProfile(ctx context.Context, projectID string, 
 		profile.Payments = payments
 	}
 
-	// Get revenue over time (last 90 days)
 	now := time.Now().UTC()
 	revenueStartTime := now.AddDate(0, 0, -90)
 
@@ -921,7 +903,6 @@ func (r *RevenueData) GetCustomerProfile(ctx context.Context, projectID string, 
 		profile.RevenueOverTime = revenueOverTime
 	}
 
-	// Fetch visitor identity from PostgreSQL
 	visitorIdentity, err := r.visitorRepository.GetVisitorByID(ctx, visitorID)
 	if err == nil && visitorIdentity != nil {
 		profile.UserID = visitorIdentity.UserID
@@ -933,7 +914,6 @@ func (r *RevenueData) GetCustomerProfile(ctx context.Context, projectID string, 
 	return &profile, nil
 }
 
-// GetConversionMetrics returns conversion funnel and customer value metrics
 func (r *RevenueData) GetConversionMetrics(ctx context.Context, projectID string, timeRange types.TimeRange) (*types.ConversionMetricsResponse, error) {
 	startTime, _, err := GetTimeRangeBounds(timeRange)
 	if err != nil {
@@ -1043,7 +1023,6 @@ func (r *RevenueData) GetConversionMetrics(ctx context.Context, projectID string
 		return nil, fmt.Errorf("failed to get conversion metrics: %w", err)
 	}
 
-	// Replace NaN values with 0 for JSON compatibility
 	response.ConversionRate = sanitizeFloat(response.ConversionRate)
 	response.AvgTimeToFirstPurchase = sanitizeFloat(response.AvgTimeToFirstPurchase)
 	response.MedianTimeToFirstPurchase = sanitizeFloat(response.MedianTimeToFirstPurchase)
@@ -1054,9 +1033,7 @@ func (r *RevenueData) GetConversionMetrics(ctx context.Context, projectID string
 	return &response, nil
 }
 
-// GetCohortRevenueMetrics returns revenue metrics for a specific cohort of visitors
 func (r *RevenueData) GetCohortRevenueMetrics(ctx context.Context, req types.CohortRevenueMetricsRequest) (*types.CohortRevenueMetricsResponse, error) {
-	// Build time filter if provided
 	var timeFilter string
 	var args []interface{}
 	args = append(args, req.ProjectID)
@@ -1070,7 +1047,6 @@ func (r *RevenueData) GetCohortRevenueMetrics(ctx context.Context, req types.Coh
 		args = append(args, startTime)
 	}
 
-	// Build visitor_ids list for IN clause
 	visitorIDList := "["
 	for i, visitorID := range req.VisitorIDs {
 		if i > 0 {
@@ -1186,11 +1162,9 @@ func (r *RevenueData) GetCohortRevenueMetrics(ctx context.Context, req types.Coh
 		FROM customer_payments
 	`, visitorIDList, timeFilter)
 
-	// Prepare final args list
 	finalArgs := make([]interface{}, 0)
-	finalArgs = append(finalArgs, args[0]) // project_id for events
-	finalArgs = append(finalArgs, args[0]) // project_id for payment_events
-	// Add time filter arg if present
+	finalArgs = append(finalArgs, args[0])
+	finalArgs = append(finalArgs, args[0])
 	if req.TimeRange != "" && len(args) > 1 {
 		finalArgs = append(finalArgs, args[1])
 	}
@@ -1221,17 +1195,14 @@ func (r *RevenueData) GetCohortRevenueMetrics(ctx context.Context, req types.Coh
 		response.Currency = "USD"
 	}
 
-	// Calculate avg revenue per visitor
 	if response.TotalVisitors > 0 {
 		response.AvgRevenuePerVisitor = float64(response.TotalRevenue) / float64(response.TotalVisitors)
 	}
 
-	// Calculate visitor conversion rate
 	if response.TotalVisitors > 0 {
 		response.VisitorConversionRate = float64(response.PayingCustomers) * 100.0 / float64(response.TotalVisitors)
 	}
 
-	// Sanitize float values
 	response.AvgRevenuePerCustomer = sanitizeFloat(response.AvgRevenuePerCustomer)
 	response.AvgRevenuePerVisitor = sanitizeFloat(response.AvgRevenuePerVisitor)
 	response.AvgOrderValue = sanitizeFloat(response.AvgOrderValue)
@@ -1244,12 +1215,11 @@ func (r *RevenueData) GetCohortRevenueMetrics(ctx context.Context, req types.Coh
 	return &response, nil
 }
 
-// sanitizeFloat replaces NaN and Inf values with 0 for JSON compatibility
 func sanitizeFloat(f float64) float64 {
-	if f != f { // NaN check
+	if f != f {
 		return 0
 	}
-	if f > 1e308 || f < -1e308 { // Inf check
+	if f > 1e308 || f < -1e308 {
 		return 0
 	}
 	return f
