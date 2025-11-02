@@ -15,6 +15,9 @@ type MetricsServer struct {
 	collector *MetricsCollector
 	config    *config.Config
 	server    *http.Server
+	pusher    *MetricsPusher
+	pushCtx   context.Context
+	pushStop  context.CancelFunc
 }
 
 func NewMetricsServer(collector *MetricsCollector, cfg *config.Config) *MetricsServer {
@@ -55,10 +58,33 @@ func (s *MetricsServer) Start() error {
 		}
 	}()
 
+	// Start metrics pusher to Grafana Cloud if configured
+	if s.config.GrafanaCloudRemoteURL != "" {
+		pusher, err := NewMetricsPusher(s.collector, s.config)
+		if err != nil {
+			log.Printf("Failed to create metrics pusher: %v", err)
+			log.Println("Continuing without remote write to Grafana Cloud")
+		} else {
+			s.pusher = pusher
+			s.pushCtx, s.pushStop = context.WithCancel(context.Background())
+			go s.pusher.Start(s.pushCtx)
+		}
+	} else {
+		log.Println("Grafana Cloud remote write URL not configured, skipping metrics push")
+	}
+
 	return nil
 }
 
 func (s *MetricsServer) Stop(ctx context.Context) error {
+	// Stop metrics pusher first
+	if s.pusher != nil && s.pushStop != nil {
+		log.Println("Stopping metrics pusher...")
+		s.pushStop()
+		s.pusher.Stop()
+	}
+
+	// Stop HTTP server
 	if s.server == nil {
 		return nil
 	}
