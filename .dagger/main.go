@@ -43,6 +43,7 @@ func (m *Zori) Test(ctx context.Context, source *dagger.Directory) (string, erro
 		WithEnvVariable("TEST_SERVER_HOST", "localhost").
 		WithEnvVariable("REDIS_ADDRS", "redis:6379").
 		WithEnvVariable("REDIS_PASSWORD", "").
+		WithEnvVariable("ZORI_IS_OSS", "true").
 		WithEnvVariable("NATS_CREDENTIALS_CONTENT", "").
 		WithEnvVariable("NATS_STREAM_URL", "nats://localhost:4222").
 		WithEnvVariable("ENCRYPTION_KEY", "test-encryption-key-must-be-32-chars-long!").
@@ -101,6 +102,7 @@ func (m *Zori) TestWithCoverage(ctx context.Context, source *dagger.Directory) *
 		WithEnvVariable("CLICKHOUSE_USER", "default").
 		WithEnvVariable("CLICKHOUSE_PASSWORD", "default").
 		WithEnvVariable("CLICKHOUSE_DATABASE", "default").
+		WithEnvVariable("ZORI_IS_OSS", "true").
 		WithEnvVariable("STACK_AUTH_PROJECT_ID", "mock").
 		WithEnvVariable("STACK_AUTH_CLIENT_ID", "https://api.stack-auth.com/api/v1/projects/${project_mock_id}/.well-known/jwks.json").
 		WithEnvVariable("JWT_SECRET_KEY", "test-secret-key-for-testing-purposes-min-32-chars").

@@ -65,4 +65,7 @@ func RegisterRoutes(
 			TTL:       lowFrequencyTTL,
 			KeyPrefix: cachePrefix,
 		}))
+
+	// POST endpoint for cohort analysis (no caching due to dynamic visitor_ids)
+	server.GroupPOST(revenueRouteGroup, "/cohort/metrics", revenueService.GetCohortRevenueMetrics)
 }

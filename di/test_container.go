@@ -10,6 +10,7 @@ import (
 
 	"zori/internal/cache"
 	"zori/internal/config"
+	"zori/internal/metrics"
 	"zori/internal/natsstream"
 	"zori/internal/server"
 	"zori/internal/server/middlewares"
@@ -101,6 +102,11 @@ func NewTestContainer(t *testing.T) *TestContainer {
 
 		payments.BuildPaymentsDIContainer(),
 		revenue.BuildRevenueDIContainer(),
+
+		fx.Provide(metrics.NewMetricsCollector),
+		fx.Provide(metrics.NewIngestMetrics),
+		fx.Provide(metrics.NewNatsMetrics),
+		fx.Provide(metrics.NewMetricsServer),
 
 		fx.Provide(
 			fx.Annotate(
