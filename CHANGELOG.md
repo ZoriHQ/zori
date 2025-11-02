@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.2](https://github.com/ZoriHQ/zori/compare/v0.2.1...v0.2.2) (2025-11-02)
+
+
+### Bug Fixes
+
+* **ci:** removed redundant step ([57bebb9](https://github.com/ZoriHQ/zori/commit/57bebb9db0ab1c9fa9c30989e8d2a74403645b7f))
+
 ## [0.2.1](https://github.com/ZoriHQ/zori/compare/v0.2.0...v0.2.1) (2025-11-02)
 
 
