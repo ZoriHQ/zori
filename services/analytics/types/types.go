@@ -1,15 +1,8 @@
 package types
 
-import "time"
-
-type TimeRange string
-
-const (
-	TimeRangeLastHour   TimeRange = "last_hour"
-	TimeRangeToday      TimeRange = "today"
-	TimeRangeLast7Days  TimeRange = "last_7_days"
-	TimeRangeLast30Days TimeRange = "last_30_days"
-	TimeRangeLast90Days TimeRange = "last_90_days"
+import (
+	"time"
+	"zori/services/analytics/filters"
 )
 
 type AttributionFilterMode string
@@ -18,11 +11,6 @@ const (
 	FilterByPaymentDate     AttributionFilterMode = "payment_date"
 	FilterByAcquisitionDate AttributionFilterMode = "acquisition_date"
 )
-
-type VisitorsRequest struct {
-	ProjectID string    `query:"project_id" validate:"required"`
-	TimeRange TimeRange `query:"time_range" validate:"required"`
-}
 
 type VisitorsByDeviceResponse struct {
 	Data []VisitorDataPoint `json:"data"`
@@ -66,14 +54,11 @@ type CountryDataPoint struct {
 }
 
 type RecentEventsRequest struct {
-	ProjectID     string  `query:"project_id" validate:"required"`
-	Limit         int     `query:"limit"`
-	Offset        int     `query:"offset"`
-	VisitorID     *string `query:"visitor_id"`
-	UserID        *string `query:"user_id"`
-	ExternalID    *string `query:"external_id"`
-	TrafficOrigin *string `query:"traffic_origin"`
-	PagePath      *string `query:"page_path"`
+	filters.SectionFilter
+	UserID        *string `query:"user_id" example:"user_456"`
+	ExternalID    *string `query:"external_id" example:"ext_789"`
+	TrafficOrigin *string `query:"traffic_origin" example:"google.com"`
+	PagePath      *string `query:"page_path" example:"/pricing"`
 }
 
 type RecentEventsResponse struct {
@@ -114,12 +99,6 @@ type RecentEvent struct {
 	LinkDestination      *string `json:"link_destination,omitempty"`
 	IsExternalLink       *bool   `json:"is_external_link,omitempty"`
 	IsDownloadLink       *bool   `json:"is_download_link,omitempty"`
-}
-
-type TopVisitorsRequest struct {
-	ProjectID string    `query:"project_id" validate:"required"`
-	TimeRange TimeRange `query:"time_range" validate:"required"`
-	Limit     int       `query:"limit"`
 }
 
 type TopVisitorsResponse struct {
@@ -262,42 +241,6 @@ type DashboardMetricsResponse struct {
 	UniqueSessions uint64 `json:"unique_sessions"`
 }
 
-type SessionMetricsRequest struct {
-	ProjectID string    `query:"project_id" validate:"required"`
-	TimeRange TimeRange `query:"time_range" validate:"required"`
-}
-
-type BounceRateRequest struct {
-	ProjectID string    `query:"project_id" validate:"required"`
-	TimeRange TimeRange `query:"time_range" validate:"required"`
-	Limit     int       `query:"limit"`
-}
-
-type ReturnRateRequest struct {
-	ProjectID string    `query:"project_id" validate:"required"`
-	TimeRange TimeRange `query:"time_range" validate:"required"`
-}
-
-type ChurnRateRequest struct {
-	ProjectID          string    `query:"project_id" validate:"required"`
-	TimeRange          TimeRange `query:"time_range" validate:"required"`
-	ChurnThresholdDays int       `query:"churn_threshold_days"`
-}
-
-type CohortAnalysisRequest struct {
-	ProjectID string    `query:"project_id" validate:"required"`
-	TimeRange TimeRange `query:"time_range" validate:"required"`
-}
-
-type ActiveUsersRequest struct {
-	ProjectID string `query:"project_id" validate:"required"`
-}
-
-type DashboardMetricsRequest struct {
-	ProjectID string    `query:"project_id" validate:"required"`
-	TimeRange TimeRange `query:"time_range" validate:"required"`
-}
-
 type ManualIdentifyRequest struct {
 	ProjectID            string                 `json:"project_id" validate:"required"`
 	VisitorID            string                 `json:"visitor_id" validate:"required"`
@@ -313,11 +256,6 @@ type ManualIdentifyResponse struct {
 	Success   bool   `json:"success"`
 	Message   string `json:"message"`
 	VisitorID string `json:"visitor_id"`
-}
-
-type EventFilterOptionsRequest struct {
-	ProjectID string    `query:"project_id" validate:"required"`
-	TimeRange TimeRange `query:"time_range"`
 }
 
 type EventFilterOptionsResponse struct {

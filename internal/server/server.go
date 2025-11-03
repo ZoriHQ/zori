@@ -4,12 +4,14 @@ import (
 	"fmt"
 	"net/http"
 	"zori/internal/ctx"
+	"zori/internal/server/validators"
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 )
 
 type HandlerFunc[T any] func(*ctx.Ctx) (T, error)
+type HandlerFuncWithFilter[T any, F any] func(*ctx.Ctx, *F) (*T, error)
 
 type Server struct {
 	Echo *echo.Echo
@@ -20,7 +22,7 @@ func New() *Server {
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 	e.Use(middleware.CORS())
-
+	e.Validator = validators.NewFiltersValidator()
 	e.GET("/health", func(c echo.Context) error {
 		return c.String(http.StatusOK, "Zori - API Server")
 	})
@@ -54,6 +56,38 @@ func (s *Server) Group(prefix string) *Group {
 	return &Group{
 		echo:   s.Echo.Group(prefix),
 		server: s,
+	}
+}
+
+func wrapHandlerWithFilter[T any, F any](s *Server, handler HandlerFuncWithFilter[T, F]) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		appctx, ok := c.Get("ctx").(*ctx.Ctx)
+		if !ok {
+			appctx = ctx.NewCtx(c)
+			c.Set("ctx", appctx)
+		}
+
+		filter := new(F)
+		if err := c.Bind(filter); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		}
+
+		if err := c.Validate(filter); err != nil {
+			return err
+		}
+
+		result, err := handler(appctx, filter)
+
+		if err != nil {
+			return s.handleError(c, err)
+		}
+
+		statusCode := c.Response().Status
+		if statusCode == 0 {
+			statusCode = http.StatusOK
+		}
+
+		return c.JSON(statusCode, result)
 	}
 }
 
@@ -99,6 +133,16 @@ type Group struct {
 
 func GroupGET[T any](g *Group, path string, handler HandlerFunc[T], middleware ...echo.MiddlewareFunc) {
 	wrappedHandler := wrapHandler(g.server, handler)
+	if len(middleware) > 0 {
+		for i := len(middleware) - 1; i >= 0; i-- {
+			wrappedHandler = middleware[i](wrappedHandler)
+		}
+	}
+	g.echo.GET(path, wrappedHandler)
+}
+
+func GroupGetWithFilter[T any, F any](g *Group, path string, handler HandlerFuncWithFilter[T, F], middleware ...echo.MiddlewareFunc) {
+	wrappedHandler := wrapHandlerWithFilter(g.server, handler)
 	if len(middleware) > 0 {
 		for i := len(middleware) - 1; i >= 0; i-- {
 			wrappedHandler = middleware[i](wrappedHandler)

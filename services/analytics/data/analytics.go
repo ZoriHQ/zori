@@ -1,11 +1,12 @@
 package data
 
 import (
-	"context"
 	"database/sql"
 	"fmt"
 	"time"
+	"zori/internal/ctx"
 	"zori/internal/storage/clickhouse"
+	"zori/services/analytics/filters"
 	"zori/services/analytics/types"
 	ingestionData "zori/services/ingestion/data"
 
@@ -24,30 +25,7 @@ func NewAnalyticsData(clickDb *clickhouse.ClickhouseDB, visitorRepository *inges
 	}
 }
 
-func GetTimeRangeBounds(timeRange types.TimeRange) (time.Time, string, error) {
-	now := time.Now().UTC()
-
-	switch timeRange {
-	case types.TimeRangeLastHour:
-		return now.Add(-1 * time.Hour), "toStartOfMinute", nil
-	case types.TimeRangeToday:
-		return time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC), "toStartOfHour", nil
-	case types.TimeRangeLast7Days:
-		return now.AddDate(0, 0, -7), "toStartOfHour", nil
-	case types.TimeRangeLast30Days:
-		return now.AddDate(0, 0, -30), "toStartOfDay", nil
-	case types.TimeRangeLast90Days:
-		return now.AddDate(0, 0, -90), "toStartOfDay", nil
-	default:
-		return time.Time{}, "", fmt.Errorf("invalid time range: %s", timeRange)
-	}
-}
-
-func (a *AnalyticsData) GetVisitorsByDevice(ctx context.Context, projectID string, timeRange types.TimeRange) ([]types.VisitorDataPoint, error) {
-	startTime, intervalFunc, err := GetTimeRangeBounds(timeRange)
-	if err != nil {
-		return nil, err
-	}
+func (a *AnalyticsData) GetVisitorsByDevice(ctx *ctx.Ctx, filter *filters.SectionFilter) ([]types.VisitorDataPoint, error) {
 
 	query := fmt.Sprintf(`
 		SELECT
@@ -61,9 +39,9 @@ func (a *AnalyticsData) GetVisitorsByDevice(ctx context.Context, projectID strin
 			AND client_timestamp_utc <= now()
 		GROUP BY time_bucket
 		ORDER BY time_bucket ASC
-	`, intervalFunc)
+	`, filter.TimeRange.IntervalFunction)
 
-	rows, err := a.clickDb.Db().Query(ctx, query, projectID, startTime)
+	rows, err := a.clickDb.Db().Query(ctx, query, filter.ProjectID, filter.TimeRange.Start)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query visitors by device: %w", err)
 	}
@@ -89,12 +67,7 @@ func (a *AnalyticsData) GetVisitorsByDevice(ctx context.Context, projectID strin
 	return dataPoints, nil
 }
 
-func (a *AnalyticsData) GetUniqueVisitorsByOrigin(ctx context.Context, projectID string, timeRange types.TimeRange) ([]types.OriginDataPoint, error) {
-	startTime, _, err := GetTimeRangeBounds(timeRange)
-	if err != nil {
-		return nil, err
-	}
-
+func (a *AnalyticsData) GetUniqueVisitorsByOrigin(ctx *ctx.Ctx, filter *filters.SectionFilter) ([]types.OriginDataPoint, error) {
 	query := `
 		WITH visitors_in_period AS (
 			SELECT DISTINCT visitor_id
@@ -134,8 +107,8 @@ func (a *AnalyticsData) GetUniqueVisitorsByOrigin(ctx context.Context, projectID
 	`
 
 	rows, err := a.clickDb.Db().Query(ctx, query,
-		projectID, startTime,
-		projectID,
+		filter.ProjectID, filter.TimeRange.Start,
+		filter.ProjectID,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query visitors by origin: %w", err)
@@ -166,12 +139,7 @@ func (a *AnalyticsData) GetUniqueVisitorsByOrigin(ctx context.Context, projectID
 	return dataPoints, nil
 }
 
-func (a *AnalyticsData) GetUniqueVisitorsByCountry(ctx context.Context, projectID string, timeRange types.TimeRange) ([]types.CountryDataPoint, error) {
-	startTime, _, err := GetTimeRangeBounds(timeRange)
-	if err != nil {
-		return nil, err
-	}
-
+func (a *AnalyticsData) GetUniqueVisitorsByCountry(ctx *ctx.Ctx, filter *filters.SectionFilter) ([]types.CountryDataPoint, error) {
 	query := `
 		WITH totals AS (
 			SELECT uniq(visitor_id) as total_visitors
@@ -200,7 +168,7 @@ func (a *AnalyticsData) GetUniqueVisitorsByCountry(ctx context.Context, projectI
 		LIMIT 50
 	`
 
-	rows, err := a.clickDb.Db().Query(ctx, query, projectID, startTime, projectID, startTime)
+	rows, err := a.clickDb.Db().Query(ctx, query, filter.ProjectID, filter.TimeRange.Start, filter.ProjectID, filter.TimeRange.Start)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query visitors by country: %w", err)
 	}
@@ -226,14 +194,7 @@ func (a *AnalyticsData) GetUniqueVisitorsByCountry(ctx context.Context, projectI
 	return dataPoints, nil
 }
 
-func (a *AnalyticsData) GetRecentEvents(ctx context.Context, req types.RecentEventsRequest) ([]types.RecentEvent, uint64, error) {
-	if req.Limit <= 0 {
-		req.Limit = 15
-	}
-	if req.Offset < 0 {
-		req.Offset = 0
-	}
-
+func (a *AnalyticsData) GetRecentEvents(ctx *ctx.Ctx, req *types.RecentEventsRequest) ([]types.RecentEvent, uint64, error) {
 	now := time.Now().UTC()
 	defaultStartTime := now.AddDate(0, 0, -7)
 
@@ -376,16 +337,13 @@ func (a *AnalyticsData) GetRecentEvents(ctx context.Context, req types.RecentEve
 	return events, totalCount, nil
 }
 
-func (a *AnalyticsData) GetEventFilterOptions(ctx context.Context, projectID string, timeRange *types.TimeRange) (*types.EventFilterOptionsResponse, error) {
+func (a *AnalyticsData) GetEventFilterOptions(ctx *ctx.Ctx, filter *filters.SectionFilter) (*types.EventFilterOptionsResponse, error) {
 	whereClause := "WHERE project_id = ?"
-	args := []interface{}{projectID}
+	args := []interface{}{filter.ProjectID}
 
-	if timeRange != nil && *timeRange != "" {
-		startTime, _, err := GetTimeRangeBounds(*timeRange)
-		if err == nil {
-			whereClause += " AND client_timestamp_utc >= ? AND client_timestamp_utc <= now()"
-			args = append(args, startTime)
-		}
+	if filter.TimeRange != nil {
+		whereClause += " AND client_timestamp_utc >= ? AND client_timestamp_utc <= now()"
+		args = append(args, filter.TimeRange.Start)
 	}
 
 	originsQuery := fmt.Sprintf(`
@@ -459,16 +417,7 @@ func (a *AnalyticsData) GetEventFilterOptions(ctx context.Context, projectID str
 	}, nil
 }
 
-func (a *AnalyticsData) GetTopVisitors(ctx context.Context, projectID string, timeRange types.TimeRange, limit int) ([]types.TopVisitor, error) {
-	startTime, _, err := GetTimeRangeBounds(timeRange)
-	if err != nil {
-		return nil, err
-	}
-
-	if limit <= 0 {
-		limit = 50
-	}
-
+func (a *AnalyticsData) GetTopVisitors(ctx *ctx.Ctx, filter *filters.SectionFilter) ([]types.TopVisitor, error) {
 	query := `
 		SELECT
 			visitor_id,
@@ -488,7 +437,7 @@ func (a *AnalyticsData) GetTopVisitors(ctx context.Context, projectID string, ti
 		LIMIT ?
 	`
 
-	rows, err := a.clickDb.Db().Query(ctx, query, projectID, startTime, limit)
+	rows, err := a.clickDb.Db().Query(ctx, query, filter.ProjectID, filter.TimeRange.Start, filter.Limit)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query top visitors: %w", err)
 	}
@@ -523,7 +472,7 @@ func (a *AnalyticsData) GetTopVisitors(ctx context.Context, projectID string, ti
 	return visitors, nil
 }
 
-func (a *AnalyticsData) GetVisitorProfile(ctx context.Context, projectID string, visitorID string) (*types.VisitorProfileResponse, error) {
+func (a *AnalyticsData) GetVisitorProfile(ctx *ctx.Ctx, filter *filters.SectionFilter) (*types.VisitorProfileResponse, error) {
 	summaryQuery := `
 		SELECT
 			visitor_id,
@@ -539,7 +488,7 @@ func (a *AnalyticsData) GetVisitorProfile(ctx context.Context, projectID string,
 	`
 
 	var profile types.VisitorProfileResponse
-	row := a.clickDb.Db().QueryRow(ctx, summaryQuery, projectID, visitorID)
+	row := a.clickDb.Db().QueryRow(ctx, summaryQuery, filter.ProjectID, filter.VisitorID)
 	if err := row.Scan(
 		&profile.VisitorID,
 		&profile.FirstSeen,
@@ -562,7 +511,7 @@ func (a *AnalyticsData) GetVisitorProfile(ctx context.Context, projectID string,
 		LIMIT 1
 	`
 
-	firstEventRow := a.clickDb.Db().QueryRow(ctx, firstEventQuery, projectID, visitorID)
+	firstEventRow := a.clickDb.Db().QueryRow(ctx, firstEventQuery, filter.ProjectID, filter.VisitorID)
 	if err := firstEventRow.Scan(&profile.FirstTrafficOrigin, &profile.FirstReferrerURL); err != nil {
 		profile.FirstTrafficOrigin = nil
 		profile.FirstReferrerURL = nil
@@ -597,7 +546,7 @@ func (a *AnalyticsData) GetVisitorProfile(ctx context.Context, projectID string,
 		LIMIT 100
 	`
 
-	eventsRows, err := a.clickDb.Db().Query(ctx, eventsQuery, projectID, visitorID)
+	eventsRows, err := a.clickDb.Db().Query(ctx, eventsQuery, filter.ProjectID, filter.VisitorID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query visitor events: %w", err)
 	}
@@ -650,7 +599,7 @@ func (a *AnalyticsData) GetVisitorProfile(ctx context.Context, projectID string,
 		ORDER BY time_bucket ASC
 	`
 
-	timeRows, err := a.clickDb.Db().Query(ctx, eventsOverTimeQuery, projectID, visitorID, startTime)
+	timeRows, err := a.clickDb.Db().Query(ctx, eventsOverTimeQuery, filter.ProjectID, filter.VisitorID, startTime)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query events over time: %w", err)
 	}
@@ -666,7 +615,7 @@ func (a *AnalyticsData) GetVisitorProfile(ctx context.Context, projectID string,
 	}
 	profile.EventsOverTime = eventsOverTime
 
-	visitorIdentity, err := a.visitorRepository.GetVisitorByID(ctx, visitorID)
+	visitorIdentity, err := a.visitorRepository.GetVisitorByID(ctx, *filter.VisitorID)
 	if err != nil && err != sql.ErrNoRows {
 		fmt.Printf("Warning: failed to fetch visitor identity: %v\n", err)
 	}
@@ -688,12 +637,7 @@ func (a *AnalyticsData) GetVisitorProfile(ctx context.Context, projectID string,
 	return &profile, nil
 }
 
-func (a *AnalyticsData) GetUniqueVisitorsTimeline(ctx context.Context, projectID string, timeRange types.TimeRange) ([]types.UniqueVisitorsDataPoint, error) {
-	startTime, intervalFunc, err := GetTimeRangeBounds(timeRange)
-	if err != nil {
-		return nil, err
-	}
-
+func (a *AnalyticsData) GetUniqueVisitorsTimeline(ctx *ctx.Ctx, filter *filters.SectionFilter) ([]types.UniqueVisitorsDataPoint, error) {
 	query := fmt.Sprintf(`
 		SELECT
 			%s(client_timestamp_utc) as time_bucket,
@@ -705,9 +649,9 @@ func (a *AnalyticsData) GetUniqueVisitorsTimeline(ctx context.Context, projectID
 			AND client_timestamp_utc <= now()
 		GROUP BY time_bucket
 		ORDER BY time_bucket ASC
-	`, intervalFunc)
+	`, filter.TimeRange.IntervalFunction)
 
-	rows, err := a.clickDb.Db().Query(ctx, query, projectID, startTime)
+	rows, err := a.clickDb.Db().Query(ctx, query, filter.ProjectID, filter.TimeRange.Start)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query unique visitors timeline: %w", err)
 	}
@@ -733,12 +677,7 @@ func (a *AnalyticsData) GetUniqueVisitorsTimeline(ctx context.Context, projectID
 	return dataPoints, nil
 }
 
-func (a *AnalyticsData) GetSessionMetrics(ctx context.Context, projectID string, timeRange types.TimeRange) (*types.SessionMetricsResponse, error) {
-	startTime, _, err := GetTimeRangeBounds(timeRange)
-	if err != nil {
-		return nil, err
-	}
-
+func (a *AnalyticsData) GetSessionMetrics(ctx *ctx.Ctx, filter *filters.SectionFilter) (*types.SessionMetricsResponse, error) {
 	query := `
 		SELECT
 			COUNT(*) as total_sessions,
@@ -751,7 +690,7 @@ func (a *AnalyticsData) GetSessionMetrics(ctx context.Context, projectID string,
 	`
 
 	var response types.SessionMetricsResponse
-	row := a.clickDb.Db().QueryRow(ctx, query, projectID, startTime)
+	row := a.clickDb.Db().QueryRow(ctx, query, filter.ProjectID, filter.TimeRange.Start)
 	if err := row.Scan(
 		&response.TotalSessions,
 		&response.AverageSessionDuration,
@@ -763,16 +702,7 @@ func (a *AnalyticsData) GetSessionMetrics(ctx context.Context, projectID string,
 	return &response, nil
 }
 
-func (a *AnalyticsData) GetBounceRate(ctx context.Context, projectID string, timeRange types.TimeRange, limit int) (*types.BounceRateResponse, error) {
-	startTime, _, err := GetTimeRangeBounds(timeRange)
-	if err != nil {
-		return nil, err
-	}
-
-	if limit <= 0 {
-		limit = 20
-	}
-
+func (a *AnalyticsData) GetBounceRate(ctx *ctx.Ctx, filter *filters.SectionFilter) (*types.BounceRateResponse, error) {
 	overallQuery := `
 		SELECT
 			countIf(page_count <= 1) * 100.0 / COUNT(*) as bounce_rate
@@ -783,7 +713,7 @@ func (a *AnalyticsData) GetBounceRate(ctx context.Context, projectID string, tim
 	`
 
 	var overallBounceRate float64
-	row := a.clickDb.Db().QueryRow(ctx, overallQuery, projectID, startTime)
+	row := a.clickDb.Db().QueryRow(ctx, overallQuery, filter.ProjectID, filter.TimeRange.Start)
 	if err := row.Scan(&overallBounceRate); err != nil {
 		return nil, fmt.Errorf("failed to query overall bounce rate: %w", err)
 	}
@@ -802,7 +732,7 @@ func (a *AnalyticsData) GetBounceRate(ctx context.Context, projectID string, tim
 		LIMIT ?
 	`
 
-	rows, err := a.clickDb.Db().Query(ctx, byPageQuery, projectID, startTime, limit)
+	rows, err := a.clickDb.Db().Query(ctx, byPageQuery, filter.ProjectID, filter.TimeRange.Start, filter.Limit)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query bounce rate by page: %w", err)
 	}
@@ -831,7 +761,7 @@ func (a *AnalyticsData) GetBounceRate(ctx context.Context, projectID string, tim
 	}, nil
 }
 
-func (a *AnalyticsData) GetActiveUsers(ctx context.Context, projectID string) (*types.ActiveUsersResponse, error) {
+func (a *AnalyticsData) GetActiveUsers(ctx *ctx.Ctx, filter *filters.SectionFilter) (*types.ActiveUsersResponse, error) {
 	query := `
 		SELECT
 			countIf(last_seen >= now() - INTERVAL 1 DAY) as dau,
@@ -842,7 +772,7 @@ func (a *AnalyticsData) GetActiveUsers(ctx context.Context, projectID string) (*
 	`
 
 	var response types.ActiveUsersResponse
-	row := a.clickDb.Db().QueryRow(ctx, query, projectID)
+	row := a.clickDb.Db().QueryRow(ctx, query, filter.ProjectID)
 	if err := row.Scan(&response.DAU, &response.WAU, &response.MAU); err != nil {
 		return nil, fmt.Errorf("failed to query active users: %w", err)
 	}
@@ -850,12 +780,7 @@ func (a *AnalyticsData) GetActiveUsers(ctx context.Context, projectID string) (*
 	return &response, nil
 }
 
-func (a *AnalyticsData) GetReturnRate(ctx context.Context, projectID string, timeRange types.TimeRange) (*types.ReturnRateResponse, error) {
-	startTime, _, err := GetTimeRangeBounds(timeRange)
-	if err != nil {
-		return nil, err
-	}
-
+func (a *AnalyticsData) GetReturnRate(ctx *ctx.Ctx, filter *filters.SectionFilter) (*types.ReturnRateResponse, error) {
 	query := `
 		WITH user_stats AS (
 			SELECT
@@ -875,7 +800,7 @@ func (a *AnalyticsData) GetReturnRate(ctx context.Context, projectID string, tim
 	`
 
 	var response types.ReturnRateResponse
-	row := a.clickDb.Db().QueryRow(ctx, query, projectID, startTime)
+	row := a.clickDb.Db().QueryRow(ctx, query, filter.ProjectID, filter.TimeRange.Start)
 	if err := row.Scan(&response.TotalUsers, &response.ReturningUsers, &response.ReturnRatePercent); err != nil {
 		return nil, fmt.Errorf("failed to query return rate: %w", err)
 	}
@@ -904,7 +829,7 @@ func (a *AnalyticsData) GetReturnRate(ctx context.Context, projectID string, tim
 	`
 
 	var avgTimeBetween float64
-	avgRow := a.clickDb.Db().QueryRow(ctx, timeBetweenQuery, projectID, startTime)
+	avgRow := a.clickDb.Db().QueryRow(ctx, timeBetweenQuery, filter.ProjectID, filter.TimeRange.Start)
 	if err := avgRow.Scan(&avgTimeBetween); err == nil {
 		response.AvgTimeBetweenSessions = avgTimeBetween
 	}
@@ -912,12 +837,7 @@ func (a *AnalyticsData) GetReturnRate(ctx context.Context, projectID string, tim
 	return &response, nil
 }
 
-func (a *AnalyticsData) GetChurnRate(ctx context.Context, projectID string, timeRange types.TimeRange, churnThresholdDays int) (*types.ChurnRateResponse, error) {
-	startTime, _, err := GetTimeRangeBounds(timeRange)
-	if err != nil {
-		return nil, err
-	}
-
+func (a *AnalyticsData) GetChurnRate(ctx *ctx.Ctx, filter *filters.SectionFilter, churnThresholdDays int) (*types.ChurnRateResponse, error) {
 	if churnThresholdDays <= 0 {
 		churnThresholdDays = 30
 	}
@@ -948,7 +868,7 @@ func (a *AnalyticsData) GetChurnRate(ctx context.Context, projectID string, time
 	var response types.ChurnRateResponse
 	response.ChurnThresholdDays = churnThresholdDays
 
-	row := a.clickDb.Db().QueryRow(ctx, query, projectID, startTime)
+	row := a.clickDb.Db().QueryRow(ctx, query, filter.ProjectID, filter.TimeRange.Start)
 	if err := row.Scan(&response.TotalUsers, &response.ChurnedUsers, &response.ChurnRatePercent); err != nil {
 		return nil, fmt.Errorf("failed to query churn rate: %w", err)
 	}
@@ -956,12 +876,7 @@ func (a *AnalyticsData) GetChurnRate(ctx context.Context, projectID string, time
 	return &response, nil
 }
 
-func (a *AnalyticsData) GetCohortAnalysis(ctx context.Context, projectID string, timeRange types.TimeRange) (*types.CohortAnalysisResponse, error) {
-	startTime, _, err := GetTimeRangeBounds(timeRange)
-	if err != nil {
-		return nil, err
-	}
-
+func (a *AnalyticsData) GetCohortAnalysis(ctx *ctx.Ctx, filter *filters.SectionFilter) (*types.CohortAnalysisResponse, error) {
 	query := `
 		WITH user_cohorts AS (
 			SELECT
@@ -1006,7 +921,7 @@ func (a *AnalyticsData) GetCohortAnalysis(ctx context.Context, projectID string,
 		LIMIT 20
 	`
 
-	rows, err := a.clickDb.Db().Query(ctx, query, projectID, startTime)
+	rows, err := a.clickDb.Db().Query(ctx, query, filter.ProjectID, filter.TimeRange.Start)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query cohort analysis: %w", err)
 	}
@@ -1043,12 +958,7 @@ func (a *AnalyticsData) GetCohortAnalysis(ctx context.Context, projectID string,
 	}, nil
 }
 
-func (a *AnalyticsData) GetDashboardMetrics(ctx context.Context, projectID string, timeRange types.TimeRange) (*types.DashboardMetricsResponse, error) {
-	startTime, _, err := GetTimeRangeBounds(timeRange)
-	if err != nil {
-		return nil, err
-	}
-
+func (a *AnalyticsData) GetDashboardMetrics(ctx *ctx.Ctx, filter *filters.SectionFilter) (*types.DashboardMetricsResponse, error) {
 	type results struct {
 		activeUsers    *types.ActiveUsersResponse
 		sessionMetrics *types.SessionMetricsResponse
@@ -1064,7 +974,7 @@ func (a *AnalyticsData) GetDashboardMetrics(ctx context.Context, projectID strin
 	var g errgroup.Group
 
 	g.Go(func() error {
-		activeUsers, err := a.GetActiveUsers(ctx, projectID)
+		activeUsers, err := a.GetActiveUsers(ctx, filter)
 		if err != nil {
 			return fmt.Errorf("failed to get active users: %w", err)
 		}
@@ -1073,7 +983,7 @@ func (a *AnalyticsData) GetDashboardMetrics(ctx context.Context, projectID strin
 	})
 
 	g.Go(func() error {
-		sessionMetrics, err := a.GetSessionMetrics(ctx, projectID, timeRange)
+		sessionMetrics, err := a.GetSessionMetrics(ctx, filter)
 		if err != nil {
 			return fmt.Errorf("failed to get session metrics: %w", err)
 		}
@@ -1082,7 +992,7 @@ func (a *AnalyticsData) GetDashboardMetrics(ctx context.Context, projectID strin
 	})
 
 	g.Go(func() error {
-		bounceRate, err := a.GetBounceRate(ctx, projectID, timeRange, 0)
+		bounceRate, err := a.GetBounceRate(ctx, filter)
 		if err != nil {
 			return fmt.Errorf("failed to get bounce rate: %w", err)
 		}
@@ -1091,7 +1001,7 @@ func (a *AnalyticsData) GetDashboardMetrics(ctx context.Context, projectID strin
 	})
 
 	g.Go(func() error {
-		returnRate, err := a.GetReturnRate(ctx, projectID, timeRange)
+		returnRate, err := a.GetReturnRate(ctx, filter)
 		if err != nil {
 			return fmt.Errorf("failed to get return rate: %w", err)
 		}
@@ -1109,7 +1019,7 @@ func (a *AnalyticsData) GetDashboardMetrics(ctx context.Context, projectID strin
 			WHERE project_id = ?
 				AND started_at >= ?
 		`
-		row := a.clickDb.Db().QueryRow(ctx, query, projectID, todayStart)
+		row := a.clickDb.Db().QueryRow(ctx, query, filter.ProjectID, todayStart)
 		if err := row.Scan(&res.sessionsToday); err != nil {
 			return fmt.Errorf("failed to get sessions today: %w", err)
 		}
@@ -1127,7 +1037,7 @@ func (a *AnalyticsData) GetDashboardMetrics(ctx context.Context, projectID strin
 				AND client_timestamp_utc >= ?
 				AND client_timestamp_utc <= now()
 		`
-		row := a.clickDb.Db().QueryRow(ctx, query, projectID, startTime)
+		row := a.clickDb.Db().QueryRow(ctx, query, filter.ProjectID, filter.TimeRange.Start)
 		if err := row.Scan(&res.totalEvents, &res.uniqueVisitors, &res.uniqueSessions); err != nil {
 			return fmt.Errorf("failed to get totals: %w", err)
 		}
