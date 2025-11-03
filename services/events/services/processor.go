@@ -112,7 +112,6 @@ func (p *Processor) Start() error {
 			clickElementText     *string
 		)
 
-		// Handle new click position format
 		if eventFrame.ClickPosition != nil {
 			clickPositionX = &eventFrame.ClickPosition.X
 			clickPositionY = &eventFrame.ClickPosition.Y
@@ -120,7 +119,6 @@ func (p *Processor) Start() error {
 			clickScreenHeight = &eventFrame.ClickPosition.ScreenHeight
 		}
 
-		// Handle new click element format
 		if eventFrame.ClickElement != nil {
 			clickElementTag = &eventFrame.ClickElement.Tag
 			clickElementSelector = &eventFrame.ClickElement.Selector
@@ -202,8 +200,6 @@ func (p *Processor) Start() error {
 		if err != nil {
 			log.Printf("Error marshaling event frame: %v", err)
 		} else {
-			// publish enriched event to NATS stream
-			// so consumers on the frontend can receive it
 			p.natsStream.GetConnection().Publish(fmt.Sprintf("events:project:%s", eventFrame.ProjectID), marshalEventFrame)
 		}
 	})

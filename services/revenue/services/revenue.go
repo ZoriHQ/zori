@@ -110,7 +110,6 @@ func (s *RevenueService) GetAttributionByUTM(c *ctx.Ctx) (*types.AttributionByUT
 		req.TimeRange = types.TimeRangeLast7Days
 	}
 
-	// Default to source if not specified
 	if req.UTMType == "" {
 		req.UTMType = "source"
 	}
@@ -284,7 +283,6 @@ func (s *RevenueService) GetCohortRevenueMetrics(c *ctx.Ctx) (*types.CohortReven
 		return nil, echo.NewHTTPError(400, "Invalid request parameters")
 	}
 
-	// Validate required fields
 	if req.ProjectID == "" {
 		return nil, echo.NewHTTPError(400, "project_id is required")
 	}

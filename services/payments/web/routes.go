@@ -15,10 +15,8 @@ func RegisterPaymentRoutes(
 	paymentGroup := s.Group("/api/v1/payment-providers")
 	paymentGroup.Use(authMiddleware.Middleware())
 
-	// Provider connection instructions
 	server.GroupGET(paymentGroup, "/instructions", connectionService.GetProviderInstructions)
 
-	// CRUD operations
 	server.GroupPOST(paymentGroup, "", providerManager.CreateProvider)
 	server.GroupGET(paymentGroup, "", providerManager.ListProviders)
 	server.GroupGET(paymentGroup, "/:id", providerManager.GetProvider)

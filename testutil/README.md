@@ -39,24 +39,17 @@ import (
 )
 
 func TestMyFeature(t *testing.T) {
-    // Initialize test container with all dependencies
     tc := di.NewTestContainer(t)
     defer tc.Cleanup()
 
-    // Create account and project
     account, project := fixtures.SetupAccountAndProject(t, tc)
 
-    // Build an event
     event := fixtures.NewEventBuilder().
         WithPageURL("/products").
         WithUTMSource("google").
         WithUTMCampaign("summer-sale").
         Build()
 
-    // Send event (requires ingestion server)
-    // fixtures.SendEvent(t, "http://localhost:1324", project.ProjectToken, event)
-
-    // Query events from ClickHouse
     events, err := fixtures.WaitForEvents(t, tc, fixtures.QueryEventsOptions{
         ProjectID: &project.ID,
     }, 1, 5*time.Second)

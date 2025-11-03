@@ -232,12 +232,10 @@ func (s *AnalyticsService) GetTopVisitors(c *ctx.Ctx) (*types.TopVisitorsRespons
 		return nil, echo.NewHTTPError(400, "Invalid request parameters")
 	}
 
-	// Validate time range
 	if req.TimeRange == "" {
 		req.TimeRange = types.TimeRangeLast7Days
 	}
 
-	// Default limit
 	if req.Limit <= 0 {
 		req.Limit = 50
 	}
@@ -307,7 +305,6 @@ func (s *AnalyticsService) GetUniqueVisitorsTimeline(c *ctx.Ctx) (*types.UniqueV
 		return nil, echo.NewHTTPError(400, "Invalid request parameters")
 	}
 
-	// Validate time range
 	if req.TimeRange == "" {
 		req.TimeRange = types.TimeRangeLast7Days
 	}
@@ -562,7 +559,6 @@ func (s *AnalyticsService) IdentifyVisitor(c *ctx.Ctx) (*types.ManualIdentifyRes
 		return nil, echo.NewHTTPError(400, "Invalid request parameters")
 	}
 
-	// Validate required fields
 	if req.ProjectID == "" {
 		return nil, echo.NewHTTPError(400, "project_id is required")
 	}
@@ -570,12 +566,10 @@ func (s *AnalyticsService) IdentifyVisitor(c *ctx.Ctx) (*types.ManualIdentifyRes
 		return nil, echo.NewHTTPError(400, "visitor_id is required")
 	}
 
-	// At least one identity field should be provided
 	if req.UserID == nil && req.ExternalID == nil && req.Email == nil && req.Name == nil && req.Phone == nil && (req.AdditionalProperties == nil || len(req.AdditionalProperties) == 0) {
 		return nil, echo.NewHTTPError(400, "At least one identity field must be provided")
 	}
 
-	// Create visitor model for upsert
 	visitor := &models.Visitor{
 		VisitorID:    req.VisitorID,
 		ProjectID:    req.ProjectID,
@@ -587,19 +581,16 @@ func (s *AnalyticsService) IdentifyVisitor(c *ctx.Ctx) (*types.ManualIdentifyRes
 		CustomTraits: make(map[string]interface{}),
 	}
 
-	// Add additional properties to custom traits
 	if req.AdditionalProperties != nil && len(req.AdditionalProperties) > 0 {
 		visitor.CustomTraits = req.AdditionalProperties
 	}
 
-	// Get organization_id from the project
 	project, err := s.projectData.GetProjectByID(c.Echo.Request().Context(), req.ProjectID)
 	if err != nil {
 		return nil, echo.NewHTTPError(400, fmt.Sprintf("Failed to find project: %v", err))
 	}
 	visitor.OrganizationID = project.OrganizationID
 
-	// Upsert visitor identity
 	if err := s.visitorRepository.UpsertVisitor(c.Echo.Request().Context(), visitor); err != nil {
 		return nil, fmt.Errorf("failed to identify visitor: %w", err)
 	}

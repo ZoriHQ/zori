@@ -6,7 +6,6 @@ import (
 	"github.com/uptrace/bun"
 )
 
-// ProviderType represents the type of payment provider
 type ProviderType string
 
 const (
@@ -17,7 +16,6 @@ const (
 	ProviderTypeSquare       ProviderType = "square"
 )
 
-// PaymentProvider represents a payment provider integration for a project
 type PaymentProvider struct {
 	bun.BaseModel `json:"-" bun:"table:payment_providers,alias:pp"`
 

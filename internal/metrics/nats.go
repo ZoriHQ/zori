@@ -20,7 +20,6 @@ func (m *NatsMetrics) RecordMessageProcessed(stream, consumer, status string, du
 }
 
 func (m *NatsMetrics) RecordMessageAck(stream, consumer, ackType string) {
-	// ackType can be: "ack", "nak"
 	m.collector.NatsMessageAckTotal.WithLabelValues(stream, consumer, ackType).Inc()
 }
 

@@ -259,7 +259,6 @@ func (wh *WebhookHandler) fetchChargeWithInvoice(chargeID string, provider *mode
 	params.AddExpand("invoice")
 
 	if wh.config.ZoriStripeApp && !wh.config.ZoriOSS {
-		// For Apps, specify the account
 		params.SetStripeAccount(provider.AccountID)
 	}
 
@@ -276,7 +275,6 @@ func (wh *WebhookHandler) fetchPaymentIntentWithInvoice(paymentIntentID string, 
 	params.AddExpand("invoice")
 
 	if wh.config.ZoriStripeApp && !wh.config.ZoriOSS {
-		// For Apps, specify the account
 		params.SetStripeAccount(provider.AccountID)
 	}
 

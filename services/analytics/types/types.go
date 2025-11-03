@@ -2,7 +2,6 @@ package types
 
 import "time"
 
-// TimeRange represents the time period for analytics queries
 type TimeRange string
 
 const (
@@ -13,28 +12,22 @@ const (
 	TimeRangeLast90Days TimeRange = "last_90_days"
 )
 
-// AttributionFilterMode determines how to filter revenue attribution data
 type AttributionFilterMode string
 
 const (
-	// FilterByPaymentDate filters by when payments occurred (recommended for revenue reports)
-	FilterByPaymentDate AttributionFilterMode = "payment_date"
-	// FilterByAcquisitionDate filters by when visitors first arrived (recommended for cohort analysis)
+	FilterByPaymentDate     AttributionFilterMode = "payment_date"
 	FilterByAcquisitionDate AttributionFilterMode = "acquisition_date"
 )
 
-// VisitorsRequest represents a request for visitors analytics
 type VisitorsRequest struct {
 	ProjectID string    `query:"project_id" validate:"required"`
 	TimeRange TimeRange `query:"time_range" validate:"required"`
 }
 
-// VisitorsByDeviceResponse represents visitors grouped by device type
 type VisitorsByDeviceResponse struct {
 	Data []VisitorDataPoint `json:"data"`
 }
 
-// VisitorDataPoint represents a single data point in time series
 type VisitorDataPoint struct {
 	Timestamp time.Time `json:"timestamp"`
 	Mobile    uint64    `json:"mobile"`
@@ -42,43 +35,36 @@ type VisitorDataPoint struct {
 	Unknown   uint64    `json:"unknown,omitempty"`
 }
 
-// UniqueVisitorsTimelineResponse represents unique visitors over time split by device
 type UniqueVisitorsTimelineResponse struct {
 	Data []UniqueVisitorsDataPoint `json:"data"`
 }
 
-// UniqueVisitorsDataPoint represents unique visitors at a point in time, split by device
 type UniqueVisitorsDataPoint struct {
 	Timestamp time.Time `json:"timestamp"`
 	Mobile    uint64    `json:"mobile"`
 	Desktop   uint64    `json:"desktop"`
 }
 
-// VisitorsByOriginResponse represents unique visitors grouped by traffic origin
 type VisitorsByOriginResponse struct {
 	Data []OriginDataPoint `json:"data"`
 }
 
-// OriginDataPoint represents visitors from a specific origin
 type OriginDataPoint struct {
 	Origin         string  `json:"origin"`
 	UniqueVisitors uint64  `json:"unique_visitors"`
 	Percentage     float64 `json:"percentage"`
 }
 
-// VisitorsByCountryResponse represents unique visitors grouped by country
 type VisitorsByCountryResponse struct {
 	Data []CountryDataPoint `json:"data"`
 }
 
-// CountryDataPoint represents visitors from a specific country
 type CountryDataPoint struct {
 	CountryCode    string  `json:"country_code"`
 	UniqueVisitors uint64  `json:"unique_visitors"`
 	Percentage     float64 `json:"percentage"`
 }
 
-// RecentEventsRequest represents a request for recent events with filters
 type RecentEventsRequest struct {
 	ProjectID     string  `query:"project_id" validate:"required"`
 	Limit         int     `query:"limit"`
@@ -86,11 +72,10 @@ type RecentEventsRequest struct {
 	VisitorID     *string `query:"visitor_id"`
 	UserID        *string `query:"user_id"`
 	ExternalID    *string `query:"external_id"`
-	TrafficOrigin *string `query:"traffic_origin"` // Filter by referrer_domain
-	PagePath      *string `query:"page_path"`      // Filter by page_path
+	TrafficOrigin *string `query:"traffic_origin"`
+	PagePath      *string `query:"page_path"`
 }
 
-// RecentEventsResponse represents the most recent events
 type RecentEventsResponse struct {
 	Events []RecentEvent `json:"events"`
 	Total  uint64        `json:"total"`
@@ -98,7 +83,6 @@ type RecentEventsResponse struct {
 	Offset int           `json:"offset"`
 }
 
-// RecentEvent represents a single recent event
 type RecentEvent struct {
 	EventName          *string   `json:"event_name"`
 	VisitorID          string    `json:"visitor_id"`
@@ -116,7 +100,6 @@ type RecentEvent struct {
 	LocationLatitude   *float64  `json:"location_latitude,omitempty"`
 	LocationLongitude  *float64  `json:"location_longitude,omitempty"`
 
-	// Click element details
 	ClickElementTag      *string  `json:"click_element_tag,omitempty"`
 	ClickElementSelector *string  `json:"click_element_selector,omitempty"`
 	ClickElementText     *string  `json:"click_element_text,omitempty"`
@@ -125,7 +108,6 @@ type RecentEvent struct {
 	ClickScreenWidth     *uint16  `json:"click_screen_width,omitempty"`
 	ClickScreenHeight    *uint16  `json:"click_screen_height,omitempty"`
 
-	// Click element classification
 	ClickElementType     *string `json:"click_element_type,omitempty"`
 	ClickElementCategory *string `json:"click_element_category,omitempty"`
 	IsCTAClick           *bool   `json:"is_cta_click,omitempty"`
@@ -134,20 +116,17 @@ type RecentEvent struct {
 	IsDownloadLink       *bool   `json:"is_download_link,omitempty"`
 }
 
-// TopVisitorsRequest represents a request for top visitors
 type TopVisitorsRequest struct {
 	ProjectID string    `query:"project_id" validate:"required"`
 	TimeRange TimeRange `query:"time_range" validate:"required"`
 	Limit     int       `query:"limit"`
 }
 
-// TopVisitorsResponse represents the most active visitors
 type TopVisitorsResponse struct {
 	Visitors []TopVisitor `json:"visitors"`
 	Total    int          `json:"total"`
 }
 
-// TopVisitor represents a single active visitor
 type TopVisitor struct {
 	VisitorID          string    `json:"visitor_id"`
 	UserID             *string   `json:"user_id,omitempty"`
@@ -161,7 +140,6 @@ type TopVisitor struct {
 	BrowserName        *string   `json:"browser_name,omitempty"`
 }
 
-// VisitorProfileResponse represents a single visitor's profile
 type VisitorProfileResponse struct {
 	VisitorID          string                    `json:"visitor_id"`
 	UserID             *string                   `json:"user_id,omitempty"`
@@ -184,7 +162,6 @@ type VisitorProfileResponse struct {
 	EventsOverTime     []EventsOverTimeDataPoint `json:"events_over_time"`
 }
 
-// VisitorEvent represents a single event in a visitor's history
 type VisitorEvent struct {
 	EventName          *string   `json:"event_name"`
 	ClientTimestampUTC time.Time `json:"client_timestamp_utc"`
@@ -194,7 +171,6 @@ type VisitorEvent struct {
 	DeviceType         *string   `json:"device_type,omitempty"`
 	BrowserName        *string   `json:"browser_name,omitempty"`
 
-	// Click element details
 	ClickElementTag      *string  `json:"click_element_tag,omitempty"`
 	ClickElementSelector *string  `json:"click_element_selector,omitempty"`
 	ClickElementText     *string  `json:"click_element_text,omitempty"`
@@ -203,7 +179,6 @@ type VisitorEvent struct {
 	ClickScreenWidth     *uint16  `json:"click_screen_width,omitempty"`
 	ClickScreenHeight    *uint16  `json:"click_screen_height,omitempty"`
 
-	// Click element classification
 	ClickElementType     *string `json:"click_element_type,omitempty"`
 	ClickElementCategory *string `json:"click_element_category,omitempty"`
 	IsCTAClick           *bool   `json:"is_cta_click,omitempty"`
@@ -212,33 +187,28 @@ type VisitorEvent struct {
 	IsDownloadLink       *bool   `json:"is_download_link,omitempty"`
 }
 
-// EventsOverTimeDataPoint represents event count at a point in time
 type EventsOverTimeDataPoint struct {
 	Timestamp  time.Time `json:"timestamp"`
 	EventCount uint64    `json:"event_count"`
 }
 
-// SessionMetricsResponse represents session metrics for a time range
 type SessionMetricsResponse struct {
 	AverageSessionDuration float64 `json:"average_session_duration_seconds"`
 	AveragePagesPerSession float64 `json:"average_pages_per_session"`
 	TotalSessions          uint64  `json:"total_sessions"`
 }
 
-// BounceRateResponse represents bounce rate metrics
 type BounceRateResponse struct {
 	OverallBounceRate float64                  `json:"overall_bounce_rate"`
 	ByPage            []BounceRateByPageMetric `json:"by_page"`
 }
 
-// BounceRateByPageMetric represents bounce rate for a specific page
 type BounceRateByPageMetric struct {
 	Page       string  `json:"page"`
 	Sessions   uint64  `json:"sessions"`
 	BounceRate float64 `json:"bounce_rate"`
 }
 
-// ReturnRateResponse represents return rate metrics
 type ReturnRateResponse struct {
 	ReturnRatePercent      float64 `json:"return_rate_percent"`
 	TotalUsers             uint64  `json:"total_users"`
@@ -246,7 +216,6 @@ type ReturnRateResponse struct {
 	AvgTimeBetweenSessions float64 `json:"avg_time_between_sessions_hours,omitempty"`
 }
 
-// ChurnRateResponse represents churn rate metrics
 type ChurnRateResponse struct {
 	ChurnRatePercent   float64 `json:"churn_rate_percent"`
 	TotalUsers         uint64  `json:"total_users"`
@@ -254,12 +223,10 @@ type ChurnRateResponse struct {
 	ChurnThresholdDays int     `json:"churn_threshold_days"`
 }
 
-// CohortAnalysisResponse represents cohort retention analysis
 type CohortAnalysisResponse struct {
 	Cohorts []CohortData `json:"cohorts"`
 }
 
-// CohortData represents a single cohort's retention data
 type CohortData struct {
 	CohortPeriod    time.Time `json:"cohort_period"`
 	CohortSize      uint64    `json:"cohort_size"`
@@ -271,80 +238,66 @@ type CohortData struct {
 	Month3Retention float64   `json:"month_3_retention,omitempty"`
 }
 
-// ActiveUsersResponse represents DAU/WAU/MAU metrics
 type ActiveUsersResponse struct {
 	DAU uint64 `json:"dau"`
 	WAU uint64 `json:"wau"`
 	MAU uint64 `json:"mau"`
 }
 
-// DashboardMetricsResponse represents combined key metrics for a dashboard
 type DashboardMetricsResponse struct {
-	// Active users
 	DAU uint64 `json:"dau"`
 	WAU uint64 `json:"wau"`
 	MAU uint64 `json:"mau"`
 
-	// Sessions
 	SessionsToday         uint64  `json:"sessions_today"`
 	TotalSessionsInPeriod uint64  `json:"total_sessions_in_period"`
 	AvgSessionDuration    float64 `json:"avg_session_duration_seconds"`
 	AvgPagesPerSession    float64 `json:"avg_pages_per_session"`
 
-	// Engagement metrics
 	BounceRate float64 `json:"bounce_rate"`
 	ReturnRate float64 `json:"return_rate"`
 
-	// Total metrics
 	TotalEvents    uint64 `json:"total_events"`
 	UniqueVisitors uint64 `json:"unique_visitors"`
-	UniqueSessions uint64 `json:"unique_sessions"` // Total unique sessions in period
+	UniqueSessions uint64 `json:"unique_sessions"`
 }
 
-// SessionMetricsRequest represents a request for session metrics
 type SessionMetricsRequest struct {
 	ProjectID string    `query:"project_id" validate:"required"`
 	TimeRange TimeRange `query:"time_range" validate:"required"`
 }
 
-// BounceRateRequest represents a request for bounce rate
 type BounceRateRequest struct {
 	ProjectID string    `query:"project_id" validate:"required"`
 	TimeRange TimeRange `query:"time_range" validate:"required"`
-	Limit     int       `query:"limit"` // For by-page breakdown
+	Limit     int       `query:"limit"`
 }
 
-// ReturnRateRequest represents a request for return rate
 type ReturnRateRequest struct {
 	ProjectID string    `query:"project_id" validate:"required"`
 	TimeRange TimeRange `query:"time_range" validate:"required"`
 }
 
-// ChurnRateRequest represents a request for churn rate
 type ChurnRateRequest struct {
 	ProjectID          string    `query:"project_id" validate:"required"`
 	TimeRange          TimeRange `query:"time_range" validate:"required"`
-	ChurnThresholdDays int       `query:"churn_threshold_days"` // Default 30
+	ChurnThresholdDays int       `query:"churn_threshold_days"`
 }
 
-// CohortAnalysisRequest represents a request for cohort analysis
 type CohortAnalysisRequest struct {
 	ProjectID string    `query:"project_id" validate:"required"`
 	TimeRange TimeRange `query:"time_range" validate:"required"`
 }
 
-// ActiveUsersRequest represents a request for active users
 type ActiveUsersRequest struct {
 	ProjectID string `query:"project_id" validate:"required"`
 }
 
-// DashboardMetricsRequest represents a request for dashboard metrics
 type DashboardMetricsRequest struct {
 	ProjectID string    `query:"project_id" validate:"required"`
 	TimeRange TimeRange `query:"time_range" validate:"required"`
 }
 
-// ManualIdentifyRequest represents a manual identification request from the dashboard
 type ManualIdentifyRequest struct {
 	ProjectID            string                 `json:"project_id" validate:"required"`
 	VisitorID            string                 `json:"visitor_id" validate:"required"`
@@ -356,21 +309,18 @@ type ManualIdentifyRequest struct {
 	AdditionalProperties map[string]interface{} `json:"additional_properties,omitempty"`
 }
 
-// ManualIdentifyResponse represents the response after manual identification
 type ManualIdentifyResponse struct {
 	Success   bool   `json:"success"`
 	Message   string `json:"message"`
 	VisitorID string `json:"visitor_id"`
 }
 
-// EventFilterOptionsRequest represents a request for event filter options
 type EventFilterOptionsRequest struct {
 	ProjectID string    `query:"project_id" validate:"required"`
-	TimeRange TimeRange `query:"time_range"` // Optional time range to filter options
+	TimeRange TimeRange `query:"time_range"`
 }
 
-// EventFilterOptionsResponse represents available filter options for events
 type EventFilterOptionsResponse struct {
-	TrafficOrigins []string `json:"traffic_origins"` // Unique referrer domains
-	Pages          []string `json:"pages"`           // Unique page paths
+	TrafficOrigins []string `json:"traffic_origins"`
+	Pages          []string `json:"pages"`
 }

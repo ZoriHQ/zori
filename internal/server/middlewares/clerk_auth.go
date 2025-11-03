@@ -29,7 +29,6 @@ func NewClerkAuthMiddleware(
 		return nil, fmt.Errorf("CLERK_SECRET_KEY is required for Clerk authentication")
 	}
 
-	// Set the Clerk API key globally
 	clerk.SetKey(cfg.ClerkSecretKey)
 
 	return &ClerkAuthMiddleware{
@@ -67,7 +66,7 @@ func (m *ClerkAuthMiddleware) Middleware() echo.MiddlewareFunc {
 
 			reqCtx.SetUser(&models.Account{
 				ID:    userID,
-				Email: "", // Email not available in JWT claims
+				Email: "",
 			})
 
 			if claims.ActiveOrganizationID != "" {

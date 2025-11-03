@@ -24,7 +24,6 @@ func NewAnalyticsData(clickDb *clickhouse.ClickhouseDB, visitorRepository *inges
 	}
 }
 
-// GetTimeRangeBounds returns the start time and interval for a given time range
 func GetTimeRangeBounds(timeRange types.TimeRange) (time.Time, string, error) {
 	now := time.Now().UTC()
 
@@ -44,7 +43,6 @@ func GetTimeRangeBounds(timeRange types.TimeRange) (time.Time, string, error) {
 	}
 }
 
-// GetVisitorsByDevice returns visitor counts grouped by device type over time
 func (a *AnalyticsData) GetVisitorsByDevice(ctx context.Context, projectID string, timeRange types.TimeRange) ([]types.VisitorDataPoint, error) {
 	startTime, intervalFunc, err := GetTimeRangeBounds(timeRange)
 	if err != nil {
@@ -84,7 +82,6 @@ func (a *AnalyticsData) GetVisitorsByDevice(ctx context.Context, projectID strin
 		return nil, fmt.Errorf("error iterating rows: %w", err)
 	}
 
-	// Return empty array if no data (newly created projects)
 	if dataPoints == nil {
 		dataPoints = []types.VisitorDataPoint{}
 	}
@@ -92,7 +89,6 @@ func (a *AnalyticsData) GetVisitorsByDevice(ctx context.Context, projectID strin
 	return dataPoints, nil
 }
 
-// GetUniqueVisitorsByOrigin returns unique visitor counts grouped by traffic origin using first-touch attribution
 func (a *AnalyticsData) GetUniqueVisitorsByOrigin(ctx context.Context, projectID string, timeRange types.TimeRange) ([]types.OriginDataPoint, error) {
 	startTime, _, err := GetTimeRangeBounds(timeRange)
 	if err != nil {
@@ -138,8 +134,8 @@ func (a *AnalyticsData) GetUniqueVisitorsByOrigin(ctx context.Context, projectID
 	`
 
 	rows, err := a.clickDb.Db().Query(ctx, query,
-		projectID, startTime, // visitors_in_period CTE
-		projectID,            // visitor_origins CTE
+		projectID, startTime,
+		projectID,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query visitors by origin: %w", err)
@@ -163,7 +159,6 @@ func (a *AnalyticsData) GetUniqueVisitorsByOrigin(ctx context.Context, projectID
 		return nil, fmt.Errorf("error iterating rows: %w", err)
 	}
 
-	// Return empty array if no data (newly created projects)
 	if dataPoints == nil {
 		dataPoints = []types.OriginDataPoint{}
 	}
@@ -171,7 +166,6 @@ func (a *AnalyticsData) GetUniqueVisitorsByOrigin(ctx context.Context, projectID
 	return dataPoints, nil
 }
 
-// GetUniqueVisitorsByCountry returns unique visitor counts grouped by country
 func (a *AnalyticsData) GetUniqueVisitorsByCountry(ctx context.Context, projectID string, timeRange types.TimeRange) ([]types.CountryDataPoint, error) {
 	startTime, _, err := GetTimeRangeBounds(timeRange)
 	if err != nil {
@@ -225,7 +219,6 @@ func (a *AnalyticsData) GetUniqueVisitorsByCountry(ctx context.Context, projectI
 		return nil, fmt.Errorf("error iterating rows: %w", err)
 	}
 
-	// Return empty array if no data (newly created projects)
 	if dataPoints == nil {
 		dataPoints = []types.CountryDataPoint{}
 	}
@@ -233,7 +226,6 @@ func (a *AnalyticsData) GetUniqueVisitorsByCountry(ctx context.Context, projectI
 	return dataPoints, nil
 }
 
-// GetRecentEvents returns the most recent events for a project with optional filters
 func (a *AnalyticsData) GetRecentEvents(ctx context.Context, req types.RecentEventsRequest) ([]types.RecentEvent, uint64, error) {
 	if req.Limit <= 0 {
 		req.Limit = 15
@@ -242,10 +234,8 @@ func (a *AnalyticsData) GetRecentEvents(ctx context.Context, req types.RecentEve
 		req.Offset = 0
 	}
 
-	// Build WHERE clause dynamically based on filters
-	// Add default time range to prevent counting entire table (performance optimization)
 	now := time.Now().UTC()
-	defaultStartTime := now.AddDate(0, 0, -7) // Last 7 days by default
+	defaultStartTime := now.AddDate(0, 0, -7)
 
 	whereConditions := []string{"project_id = ?", "client_timestamp_utc >= ?"}
 	args := []interface{}{req.ProjectID, defaultStartTime}
@@ -283,8 +273,6 @@ func (a *AnalyticsData) GetRecentEvents(ctx context.Context, req types.RecentEve
 		}
 	}
 
-	// Get approximate total count for pagination using count() which is faster than COUNT(*)
-	// ClickHouse's count() is optimized and uses metadata when possible
 	countQuery := fmt.Sprintf(`
 		SELECT count()
 		FROM events
@@ -297,7 +285,6 @@ func (a *AnalyticsData) GetRecentEvents(ctx context.Context, req types.RecentEve
 		return nil, 0, fmt.Errorf("failed to get total count: %w", err)
 	}
 
-	// Build main query with all fields including lat/long and click data
 	query := fmt.Sprintf(`
 		SELECT
 			event_name,
@@ -334,7 +321,6 @@ func (a *AnalyticsData) GetRecentEvents(ctx context.Context, req types.RecentEve
 		LIMIT ? OFFSET ?
 	`, whereClause)
 
-	// Create a new slice with limit and offset appended (don't modify original args)
 	queryArgs := make([]interface{}, len(args), len(args)+2)
 	copy(queryArgs, args)
 	queryArgs = append(queryArgs, req.Limit, req.Offset)
@@ -390,9 +376,7 @@ func (a *AnalyticsData) GetRecentEvents(ctx context.Context, req types.RecentEve
 	return events, totalCount, nil
 }
 
-// GetEventFilterOptions returns unique traffic origins and page paths for filter dropdowns
 func (a *AnalyticsData) GetEventFilterOptions(ctx context.Context, projectID string, timeRange *types.TimeRange) (*types.EventFilterOptionsResponse, error) {
-	// Build WHERE clause based on optional time range
 	whereClause := "WHERE project_id = ?"
 	args := []interface{}{projectID}
 
@@ -404,7 +388,6 @@ func (a *AnalyticsData) GetEventFilterOptions(ctx context.Context, projectID str
 		}
 	}
 
-	// Query for unique traffic origins (referrer domains)
 	originsQuery := fmt.Sprintf(`
 		SELECT DISTINCT referrer_domain
 		FROM events
@@ -434,7 +417,6 @@ func (a *AnalyticsData) GetEventFilterOptions(ctx context.Context, projectID str
 		return nil, fmt.Errorf("error iterating origins: %w", err)
 	}
 
-	// Query for unique page paths
 	pagesQuery := fmt.Sprintf(`
 		SELECT DISTINCT page_path
 		FROM events
@@ -464,7 +446,6 @@ func (a *AnalyticsData) GetEventFilterOptions(ctx context.Context, projectID str
 		return nil, fmt.Errorf("error iterating pages: %w", err)
 	}
 
-	// Ensure empty arrays instead of nil
 	if origins == nil {
 		origins = []string{}
 	}
@@ -535,7 +516,6 @@ func (a *AnalyticsData) GetTopVisitors(ctx context.Context, projectID string, ti
 		return nil, fmt.Errorf("error iterating rows: %w", err)
 	}
 
-	// Return empty array if no data (newly created projects)
 	if visitors == nil {
 		visitors = []types.TopVisitor{}
 	}
@@ -543,9 +523,7 @@ func (a *AnalyticsData) GetTopVisitors(ctx context.Context, projectID string, ti
 	return visitors, nil
 }
 
-// GetVisitorProfile returns detailed profile for a single visitor
 func (a *AnalyticsData) GetVisitorProfile(ctx context.Context, projectID string, visitorID string) (*types.VisitorProfileResponse, error) {
-	// Get visitor summary stats
 	summaryQuery := `
 		SELECT
 			visitor_id,
@@ -573,7 +551,6 @@ func (a *AnalyticsData) GetVisitorProfile(ctx context.Context, projectID string,
 		return nil, fmt.Errorf("failed to get visitor summary: %w", err)
 	}
 
-	// Get first traffic origin (from the very first event)
 	firstEventQuery := `
 		SELECT
 			referrer_domain,
@@ -587,12 +564,10 @@ func (a *AnalyticsData) GetVisitorProfile(ctx context.Context, projectID string,
 
 	firstEventRow := a.clickDb.Db().QueryRow(ctx, firstEventQuery, projectID, visitorID)
 	if err := firstEventRow.Scan(&profile.FirstTrafficOrigin, &profile.FirstReferrerURL); err != nil {
-		// It's okay if there's no first event, just continue
 		profile.FirstTrafficOrigin = nil
 		profile.FirstReferrerURL = nil
 	}
 
-	// Get visitor events
 	eventsQuery := `
 		SELECT
 			event_name,
@@ -659,7 +634,6 @@ func (a *AnalyticsData) GetVisitorProfile(ctx context.Context, projectID string,
 	}
 	profile.Events = events
 
-	// Get events over time (last 30 days, grouped by day)
 	now := time.Now().UTC()
 	startTime := now.AddDate(0, 0, -30)
 
@@ -692,14 +666,11 @@ func (a *AnalyticsData) GetVisitorProfile(ctx context.Context, projectID string,
 	}
 	profile.EventsOverTime = eventsOverTime
 
-	// Fetch visitor identity data from PostgreSQL
 	visitorIdentity, err := a.visitorRepository.GetVisitorByID(ctx, visitorID)
 	if err != nil && err != sql.ErrNoRows {
-		// Log error but don't fail the request - visitor might not be identified yet
 		fmt.Printf("Warning: failed to fetch visitor identity: %v\n", err)
 	}
 
-	// Populate identity fields if visitor is identified
 	if visitorIdentity != nil {
 		profile.IsIdentified = true
 		profile.UserID = visitorIdentity.UserID
@@ -717,7 +688,6 @@ func (a *AnalyticsData) GetVisitorProfile(ctx context.Context, projectID string,
 	return &profile, nil
 }
 
-// GetUniqueVisitorsTimeline returns unique visitor counts over time split by device type
 func (a *AnalyticsData) GetUniqueVisitorsTimeline(ctx context.Context, projectID string, timeRange types.TimeRange) ([]types.UniqueVisitorsDataPoint, error) {
 	startTime, intervalFunc, err := GetTimeRangeBounds(timeRange)
 	if err != nil {
@@ -756,7 +726,6 @@ func (a *AnalyticsData) GetUniqueVisitorsTimeline(ctx context.Context, projectID
 		return nil, fmt.Errorf("error iterating rows: %w", err)
 	}
 
-	// Return empty array if no data (newly created projects)
 	if dataPoints == nil {
 		dataPoints = []types.UniqueVisitorsDataPoint{}
 	}
@@ -764,7 +733,6 @@ func (a *AnalyticsData) GetUniqueVisitorsTimeline(ctx context.Context, projectID
 	return dataPoints, nil
 }
 
-// GetSessionMetrics returns session metrics (duration, pages per session) for a time range
 func (a *AnalyticsData) GetSessionMetrics(ctx context.Context, projectID string, timeRange types.TimeRange) (*types.SessionMetricsResponse, error) {
 	startTime, _, err := GetTimeRangeBounds(timeRange)
 	if err != nil {
@@ -795,7 +763,6 @@ func (a *AnalyticsData) GetSessionMetrics(ctx context.Context, projectID string,
 	return &response, nil
 }
 
-// GetBounceRate returns bounce rate metrics (overall and by page)
 func (a *AnalyticsData) GetBounceRate(ctx context.Context, projectID string, timeRange types.TimeRange, limit int) (*types.BounceRateResponse, error) {
 	startTime, _, err := GetTimeRangeBounds(timeRange)
 	if err != nil {
@@ -806,7 +773,6 @@ func (a *AnalyticsData) GetBounceRate(ctx context.Context, projectID string, tim
 		limit = 20
 	}
 
-	// Overall bounce rate
 	overallQuery := `
 		SELECT
 			countIf(page_count <= 1) * 100.0 / COUNT(*) as bounce_rate
@@ -822,7 +788,6 @@ func (a *AnalyticsData) GetBounceRate(ctx context.Context, projectID string, tim
 		return nil, fmt.Errorf("failed to query overall bounce rate: %w", err)
 	}
 
-	// Bounce rate by page
 	byPageQuery := `
 		SELECT
 			entry_page as page,
@@ -856,7 +821,6 @@ func (a *AnalyticsData) GetBounceRate(ctx context.Context, projectID string, tim
 		return nil, fmt.Errorf("error iterating bounce rate rows: %w", err)
 	}
 
-	// Ensure empty array instead of nil
 	if byPageMetrics == nil {
 		byPageMetrics = []types.BounceRateByPageMetric{}
 	}
@@ -867,7 +831,6 @@ func (a *AnalyticsData) GetBounceRate(ctx context.Context, projectID string, tim
 	}, nil
 }
 
-// GetActiveUsers returns DAU/WAU/MAU metrics
 func (a *AnalyticsData) GetActiveUsers(ctx context.Context, projectID string) (*types.ActiveUsersResponse, error) {
 	query := `
 		SELECT
@@ -887,7 +850,6 @@ func (a *AnalyticsData) GetActiveUsers(ctx context.Context, projectID string) (*
 	return &response, nil
 }
 
-// GetReturnRate returns return rate metrics for a time range
 func (a *AnalyticsData) GetReturnRate(ctx context.Context, projectID string, timeRange types.TimeRange) (*types.ReturnRateResponse, error) {
 	startTime, _, err := GetTimeRangeBounds(timeRange)
 	if err != nil {
@@ -918,7 +880,6 @@ func (a *AnalyticsData) GetReturnRate(ctx context.Context, projectID string, tim
 		return nil, fmt.Errorf("failed to query return rate: %w", err)
 	}
 
-	// Calculate average time between sessions for returning users
 	timeBetweenQuery := `
 		WITH session_times AS (
 			SELECT
@@ -951,7 +912,6 @@ func (a *AnalyticsData) GetReturnRate(ctx context.Context, projectID string, tim
 	return &response, nil
 }
 
-// GetChurnRate returns churn rate metrics
 func (a *AnalyticsData) GetChurnRate(ctx context.Context, projectID string, timeRange types.TimeRange, churnThresholdDays int) (*types.ChurnRateResponse, error) {
 	startTime, _, err := GetTimeRangeBounds(timeRange)
 	if err != nil {
@@ -996,7 +956,6 @@ func (a *AnalyticsData) GetChurnRate(ctx context.Context, projectID string, time
 	return &response, nil
 }
 
-// GetCohortAnalysis returns cohort retention analysis
 func (a *AnalyticsData) GetCohortAnalysis(ctx context.Context, projectID string, timeRange types.TimeRange) (*types.CohortAnalysisResponse, error) {
 	startTime, _, err := GetTimeRangeBounds(timeRange)
 	if err != nil {
@@ -1075,7 +1034,6 @@ func (a *AnalyticsData) GetCohortAnalysis(ctx context.Context, projectID string,
 		return nil, fmt.Errorf("error iterating cohort rows: %w", err)
 	}
 
-	// Ensure empty array instead of nil
 	if cohorts == nil {
 		cohorts = []types.CohortData{}
 	}
@@ -1085,14 +1043,12 @@ func (a *AnalyticsData) GetCohortAnalysis(ctx context.Context, projectID string,
 	}, nil
 }
 
-// GetDashboardMetrics returns combined key metrics for a dashboard using parallel queries
 func (a *AnalyticsData) GetDashboardMetrics(ctx context.Context, projectID string, timeRange types.TimeRange) (*types.DashboardMetricsResponse, error) {
 	startTime, _, err := GetTimeRangeBounds(timeRange)
 	if err != nil {
 		return nil, err
 	}
 
-	// Use errgroup to run all queries in parallel
 	type results struct {
 		activeUsers    *types.ActiveUsersResponse
 		sessionMetrics *types.SessionMetricsResponse
@@ -1107,7 +1063,6 @@ func (a *AnalyticsData) GetDashboardMetrics(ctx context.Context, projectID strin
 	var res results
 	var g errgroup.Group
 
-	// 1. Get active users
 	g.Go(func() error {
 		activeUsers, err := a.GetActiveUsers(ctx, projectID)
 		if err != nil {
@@ -1117,7 +1072,6 @@ func (a *AnalyticsData) GetDashboardMetrics(ctx context.Context, projectID strin
 		return nil
 	})
 
-	// 2. Get session metrics
 	g.Go(func() error {
 		sessionMetrics, err := a.GetSessionMetrics(ctx, projectID, timeRange)
 		if err != nil {
@@ -1127,7 +1081,6 @@ func (a *AnalyticsData) GetDashboardMetrics(ctx context.Context, projectID strin
 		return nil
 	})
 
-	// 3. Get bounce rate
 	g.Go(func() error {
 		bounceRate, err := a.GetBounceRate(ctx, projectID, timeRange, 0)
 		if err != nil {
@@ -1137,7 +1090,6 @@ func (a *AnalyticsData) GetDashboardMetrics(ctx context.Context, projectID strin
 		return nil
 	})
 
-	// 4. Get return rate
 	g.Go(func() error {
 		returnRate, err := a.GetReturnRate(ctx, projectID, timeRange)
 		if err != nil {
@@ -1147,7 +1099,6 @@ func (a *AnalyticsData) GetDashboardMetrics(ctx context.Context, projectID strin
 		return nil
 	})
 
-	// 5. Get sessions today
 	g.Go(func() error {
 		now := time.Now().UTC()
 		todayStart := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
@@ -1165,7 +1116,6 @@ func (a *AnalyticsData) GetDashboardMetrics(ctx context.Context, projectID strin
 		return nil
 	})
 
-	// 6. Get total events, unique visitors, and unique sessions
 	g.Go(func() error {
 		query := `
 			SELECT
@@ -1184,28 +1134,23 @@ func (a *AnalyticsData) GetDashboardMetrics(ctx context.Context, projectID strin
 		return nil
 	})
 
-	// Wait for all queries to complete
 	if err := g.Wait(); err != nil {
 		return nil, err
 	}
 
 	return &types.DashboardMetricsResponse{
-		// Active users
 		DAU: res.activeUsers.DAU,
 		WAU: res.activeUsers.WAU,
 		MAU: res.activeUsers.MAU,
 
-		// Sessions
 		SessionsToday:         res.sessionsToday,
 		TotalSessionsInPeriod: res.sessionMetrics.TotalSessions,
 		AvgSessionDuration:    res.sessionMetrics.AverageSessionDuration,
 		AvgPagesPerSession:    res.sessionMetrics.AveragePagesPerSession,
 
-		// Engagement metrics
 		BounceRate: res.bounceRate.OverallBounceRate,
 		ReturnRate: res.returnRate.ReturnRatePercent,
 
-		// Total metrics
 		TotalEvents:    res.totalEvents,
 		UniqueVisitors: res.uniqueVisitors,
 		UniqueSessions: res.uniqueSessions,

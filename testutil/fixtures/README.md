@@ -27,7 +27,6 @@ events, err := fixtures.QueryEvents(t, tc, fixtures.QueryEventsOptions{
     VisitorID: &visitorID,
 })
 
-// Or wait for events to appear
 events, err := fixtures.WaitForEvents(t, tc, opts, 5, 10*time.Second)
 ```
 
@@ -39,7 +38,7 @@ Build and send payment events to the NATS stream for processing.
 ```go
 payment := fixtures.NewPaymentBuilder(projectID, organizationID).
     WithVisitorID("visitor-123").
-    WithAmount(9900). // $99.00 in cents
+    WithAmount(9900).
     WithProductName("Premium Plan").
     Build()
 
@@ -53,7 +52,6 @@ payments, err := fixtures.QueryPaymentEvents(t, tc, fixtures.QueryPaymentEventsO
     VisitorID: &visitorID,
 })
 
-// Or wait for payments to be processed
 payments, err := fixtures.WaitForPayments(t, tc, opts, 3, 10*time.Second)
 ```
 
@@ -65,7 +63,6 @@ Create test accounts and projects.
 ```go
 account, project := fixtures.SetupAccountAndProject(t, tc)
 
-// Now use project.ID, project.ProjectToken, etc.
 ```
 
 ## Test Container
@@ -76,7 +73,6 @@ The `TestContainer` (from `di` package) provides access to all dependencies:
 tc := di.NewTestContainer(t)
 defer tc.Cleanup()
 
-// Access services
 tc.ClickHouse   // ClickHouse database
 tc.DB           // PostgreSQL database
 tc.NATS         // NATS stream
@@ -113,9 +109,7 @@ require.NoError(t, err)
 Revenue attribution uses ClickHouse materialized views that update asynchronously:
 
 ```go
-// After sending events
 time.Sleep(2 * time.Second)
-// Now query revenue attribution data
 ```
 
 ### Use Unique IDs

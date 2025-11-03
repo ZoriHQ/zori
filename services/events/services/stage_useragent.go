@@ -17,7 +17,6 @@ func NewStageUserAgent() ProcessorStage {
 	}
 }
 
-// ProcessFrame for StageUserAgent parses the request user-agent header and determines OS and browser information
 func (s StageUserAgent) ProcessFrame(event *types.ClientEventFrameV1) error {
 	if event.UserAgent == "" {
 		return nil

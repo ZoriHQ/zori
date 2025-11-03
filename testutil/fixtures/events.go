@@ -16,12 +16,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// EventBuilder provides a fluent API to build test events
 type EventBuilder struct {
 	event types.ClientEventV1
 }
 
-// NewEventBuilder creates a new EventBuilder with sensible defaults
 func NewEventBuilder() *EventBuilder {
 	visitorID := uuid.New().String()
 	sessionID := uuid.New().String()
@@ -42,67 +40,56 @@ func NewEventBuilder() *EventBuilder {
 	}
 }
 
-// WithEventName sets the event name
 func (b *EventBuilder) WithEventName(name string) *EventBuilder {
 	b.event.EventName = &name
 	return b
 }
 
-// WithVisitorID sets the visitor ID
 func (b *EventBuilder) WithVisitorID(visitorID string) *EventBuilder {
 	b.event.VisitorID = visitorID
 	return b
 }
 
-// WithSessionID sets the session ID
 func (b *EventBuilder) WithSessionID(sessionID string) *EventBuilder {
 	b.event.SessionID = sessionID
 	return b
 }
 
-// WithPageURL sets the page URL
 func (b *EventBuilder) WithPageURL(url string) *EventBuilder {
 	b.event.PageURL = url
 	return b
 }
 
-// WithHost sets the host
 func (b *EventBuilder) WithHost(host string) *EventBuilder {
 	b.event.Host = host
 	return b
 }
 
-// WithReferrer sets the referrer
 func (b *EventBuilder) WithReferrer(referrer string) *EventBuilder {
 	b.event.Referrer = &referrer
 	return b
 }
 
-// WithUTMSource sets the UTM source
 func (b *EventBuilder) WithUTMSource(source string) *EventBuilder {
 	b.event.UTMParameters["utm_source"] = source
 	return b
 }
 
-// WithUTMMedium sets the UTM medium
 func (b *EventBuilder) WithUTMMedium(medium string) *EventBuilder {
 	b.event.UTMParameters["utm_medium"] = medium
 	return b
 }
 
-// WithUTMCampaign sets the UTM campaign
 func (b *EventBuilder) WithUTMCampaign(campaign string) *EventBuilder {
 	b.event.UTMParameters["utm_campaign"] = campaign
 	return b
 }
 
-// WithCustomProperty adds a custom property
 func (b *EventBuilder) WithCustomProperty(key string, value any) *EventBuilder {
 	b.event.CustomProperties[key] = value
 	return b
 }
 
-// WithClickElement sets click element information
 func (b *EventBuilder) WithClickElement(tag, selector, text string) *EventBuilder {
 	b.event.ClickElement = &types.ClickElement{
 		Tag:      tag,
@@ -112,7 +99,6 @@ func (b *EventBuilder) WithClickElement(tag, selector, text string) *EventBuilde
 	return b
 }
 
-// WithClickPosition sets click position information
 func (b *EventBuilder) WithClickPosition(x, y float64, width, height uint16) *EventBuilder {
 	b.event.ClickPosition = &types.ClickPosition{
 		X:            x,
@@ -123,7 +109,6 @@ func (b *EventBuilder) WithClickPosition(x, y float64, width, height uint16) *Ev
 	return b
 }
 
-// WithIdentity sets identity information
 func (b *EventBuilder) WithIdentity(userID, externalID, email string) *EventBuilder {
 	if userID != "" {
 		b.event.UserID = &userID
@@ -137,12 +122,10 @@ func (b *EventBuilder) WithIdentity(userID, externalID, email string) *EventBuil
 	return b
 }
 
-// Build returns the built event
 func (b *EventBuilder) Build() types.ClientEventV1 {
 	return b.event
 }
 
-// SendEvent sends an event to the ingestion endpoint via HTTP
 func SendEvent(t *testing.T, ingestionURL string, projectToken string, event types.ClientEventV1) error {
 	t.Helper()
 
@@ -156,7 +139,6 @@ func SendEvent(t *testing.T, ingestionURL string, projectToken string, event typ
 	req.Header.Set("X-Zori-PT", projectToken)
 	req.Header.Set("User-Agent", event.UserAgent)
 
-	// Set visitor_id cookie
 	req.AddCookie(&http.Cookie{
 		Name:  "visitor_id",
 		Value: event.VisitorID,
@@ -177,13 +159,11 @@ func SendEvent(t *testing.T, ingestionURL string, projectToken string, event typ
 	return nil
 }
 
-// SendEventToTestServer sends an event using the test container's ingestion server
 func SendEventToTestServer(t *testing.T, tc *di.TestContainer, project *ProjectFixture, event types.ClientEventV1) error {
 	t.Helper()
 	return SendEvent(t, tc.IngestionServerURL, project.ProjectToken, event)
 }
 
-// SendEvents sends multiple events to the ingestion endpoint
 func SendEvents(t *testing.T, ingestionURL string, projectToken string, events []types.ClientEventV1) error {
 	t.Helper()
 
@@ -191,14 +171,12 @@ func SendEvents(t *testing.T, ingestionURL string, projectToken string, events [
 		if err := SendEvent(t, ingestionURL, projectToken, event); err != nil {
 			return fmt.Errorf("failed to send event %d: %w", i, err)
 		}
-		// Small delay between events to avoid overwhelming the system
 		time.Sleep(10 * time.Millisecond)
 	}
 
 	return nil
 }
 
-// SendEventsToTestServer sends multiple events using the test container's ingestion server
 func SendEventsToTestServer(t *testing.T, tc *di.TestContainer, project *ProjectFixture, events []types.ClientEventV1) error {
 	t.Helper()
 	return SendEvents(t, tc.IngestionServerURL, project.ProjectToken, events)

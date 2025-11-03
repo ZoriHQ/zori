@@ -13,7 +13,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// QueryEventsOptions holds options for querying events
 type QueryEventsOptions struct {
 	ProjectID      *string
 	OrganizationID *string
@@ -23,11 +22,9 @@ type QueryEventsOptions struct {
 	Limit          int
 }
 
-// QueryEvents retrieves events from ClickHouse based on the provided options
 func QueryEvents(t *testing.T, tc *di.TestContainer, opts QueryEventsOptions) ([]models.Event, error) {
 	t.Helper()
 
-	// Select explicit columns to avoid issues with materialized columns
 	query := `SELECT
 		event_name, client_generated_event_id, visitor_id, session_id,
 		user_id, external_id, email_hash,
@@ -83,8 +80,6 @@ func QueryEvents(t *testing.T, tc *di.TestContainer, opts QueryEventsOptions) ([
 	return events, nil
 }
 
-// WaitForEvents waits for events to appear in ClickHouse with the given options
-// Returns the events once they appear or times out after the specified duration
 func WaitForEvents(t *testing.T, tc *di.TestContainer, opts QueryEventsOptions, expectedCount int, timeout time.Duration) ([]models.Event, error) {
 	t.Helper()
 
@@ -108,7 +103,6 @@ func WaitForEvents(t *testing.T, tc *di.TestContainer, opts QueryEventsOptions, 
 	return events, nil
 }
 
-// CountEvents counts the number of events matching the given options
 func CountEvents(t *testing.T, tc *di.TestContainer, opts QueryEventsOptions) (int, error) {
 	t.Helper()
 
@@ -149,7 +143,6 @@ func CountEvents(t *testing.T, tc *di.TestContainer, opts QueryEventsOptions) (i
 	return int(count), nil
 }
 
-// AssertEventExists asserts that at least one event exists matching the options
 func AssertEventExists(t *testing.T, tc *di.TestContainer, opts QueryEventsOptions) {
 	t.Helper()
 
@@ -158,7 +151,6 @@ func AssertEventExists(t *testing.T, tc *di.TestContainer, opts QueryEventsOptio
 	require.NotEmpty(t, events, "Expected at least one event to exist")
 }
 
-// AssertEventCount asserts that the exact number of events exist matching the options
 func AssertEventCount(t *testing.T, tc *di.TestContainer, opts QueryEventsOptions, expectedCount int) {
 	t.Helper()
 

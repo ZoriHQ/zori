@@ -46,12 +46,10 @@ func (bs *BackfillService) BackfillStripePayments(
 
 	log.Printf("Starting backfill for provider %s from %s", provider.ID, startDate.Format(time.RFC3339))
 
-	// Backfill subscription payments via invoices
 	if err := bs.backfillInvoices(ctx, sc, provider, project, startDate); err != nil {
 		return fmt.Errorf("failed to backfill invoices: %w", err)
 	}
 
-	// Backfill one-off charges (those without invoices)
 	if err := bs.backfillCharges(ctx, sc, provider, project, startDate); err != nil {
 		return fmt.Errorf("failed to backfill charges: %w", err)
 	}
@@ -90,9 +88,6 @@ func (bs *BackfillService) backfillCharges(
 			continue
 		}
 
-		// Note: This backfills ALL charges including subscription ones
-		// Subscription charges will also be captured via invoice backfill
-		// Deduplication should happen at the analytics layer based on payment_id
 		metadata := charge.Metadata
 
 		paymentFrame := &types.PaymentEventFrame{
@@ -160,10 +155,8 @@ func (bs *BackfillService) backfillInvoices(
 
 		invoice := iter.Invoice()
 
-		// Start with invoice's own metadata
 		metadata := invoice.Metadata
 
-		// Extract and merge subscription metadata if available
 		subscriptionMetadata := extractSubscriptionMetadataFromInvoice(invoice)
 		if subscriptionMetadata != nil {
 			metadata = mergeMetadata(metadata, subscriptionMetadata)
@@ -222,25 +215,21 @@ func getInvoiceDescription(invoice *stripe.Invoice) string {
 	return "Subscription Payment"
 }
 
-// extractSubscriptionMetadataFromInvoice extracts metadata from an invoice's parent subscription if available
 func extractSubscriptionMetadataFromInvoice(invoice *stripe.Invoice) map[string]string {
 	if invoice != nil &&
-	   invoice.Parent != nil &&
-	   invoice.Parent.SubscriptionDetails != nil &&
-	   invoice.Parent.SubscriptionDetails.Metadata != nil {
+		invoice.Parent != nil &&
+		invoice.Parent.SubscriptionDetails != nil &&
+		invoice.Parent.SubscriptionDetails.Metadata != nil {
 		return invoice.Parent.SubscriptionDetails.Metadata
 	}
 	return nil
 }
 
-// mergeMetadata merges subscription metadata with existing metadata
-// Existing metadata keys take precedence (won't be overwritten)
 func mergeMetadata(existingMetadata, subscriptionMetadata map[string]string) map[string]string {
 	if existingMetadata == nil {
 		existingMetadata = make(map[string]string)
 	}
 
-	// Only add subscription metadata keys that don't already exist
 	for key, value := range subscriptionMetadata {
 		if _, exists := existingMetadata[key]; !exists && value != "" {
 			existingMetadata[key] = value

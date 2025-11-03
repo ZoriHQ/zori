@@ -30,22 +30,18 @@ func NewIngestionServer(ingestor *services.Ingestor, identifier *services.Identi
 	}
 }
 
-// HandleRequest is the main router for ingestion endpoints
 func (h *IngestionServer) HandleRequest(ctx *fasthttp.RequestCtx) {
-	// Set CORS headers for all requests
 	ctx.Response.Header.Set("Access-Control-Allow-Credentials", "true")
 	ctx.Response.Header.SetBytesV("Access-Control-Allow-Origin", []byte("*"))
 	ctx.Response.Header.SetBytesV("Access-Control-Allow-Methods", []byte("POST"))
 	ctx.Response.Header.SetBytesV("Access-Control-Allow-Headers", []byte("Content-Type, X-Zori-PT, x-zori-version"))
 	ctx.Response.Header.SetBytesV("Access-Control-Max-Age", []byte("86400"))
 
-	// Handle OPTIONS preflight
 	if ctx.IsOptions() {
 		ctx.Response.SetStatusCode(fasthttp.StatusNoContent)
 		return
 	}
 
-	// Route to appropriate handler
 	path := string(ctx.Path())
 	switch path {
 	case "/ingest":
@@ -75,7 +71,6 @@ func (h *IngestionServer) Injest(ctx *fasthttp.RequestCtx) {
 
 	visitorIDCookieBytes := ctx.Request.Header.Cookie("visitor_id")
 	if visitorIDCookieBytes == nil {
-		// if visitor id is not present in cookies, we assume this is the first time the user is visiting the site
 		firstTimeVisitorCookie := fasthttp.Cookie{}
 		firstTimeVisitorCookie.SetKey("visitor_id")
 		firstTimeVisitorCookie.SetValue(clientEvent.VisitorID)
@@ -132,7 +127,6 @@ func (h *IngestionServer) Injest(ctx *fasthttp.RequestCtx) {
 		}()
 	}
 
-	// checking for localhost events
 	requestHost := string(ctx.Request.Host())
 	if strings.Contains(requestHost, "localhost") && project.AllowLocalHost {
 		localhostParts := strings.Split(requestHost, ":")
@@ -155,7 +149,6 @@ func (h *IngestionServer) Injest(ctx *fasthttp.RequestCtx) {
 
 	clientEvent.UserAgent = string(ctx.UserAgent())
 
-	// trying to extract user IP
 	cloudFlareHeaderIP := ctx.Request.Header.Peek("cf-connecting-ip")
 	if cloudFlareHeaderIP != nil {
 		clientEvent.IP = string(cloudFlareHeaderIP)
@@ -182,7 +175,6 @@ func (h *IngestionServer) Identify(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	// Validate required fields
 	if identifyEvent.VisitorID == "" {
 		ctx.Error("visitor_id is required", fasthttp.StatusBadRequest)
 		return
@@ -190,7 +182,6 @@ func (h *IngestionServer) Identify(ctx *fasthttp.RequestCtx) {
 
 	visitorIDCookieBytes := ctx.Request.Header.Cookie("visitor_id")
 	if visitorIDCookieBytes == nil {
-		// Set visitor_id cookie if not present
 		firstTimeVisitorCookie := fasthttp.Cookie{}
 		firstTimeVisitorCookie.SetKey("visitor_id")
 		firstTimeVisitorCookie.SetValue(identifyEvent.VisitorID)
@@ -245,7 +236,6 @@ func (h *IngestionServer) Identify(ctx *fasthttp.RequestCtx) {
 
 	identifyEvent.UserAgent = string(ctx.UserAgent())
 
-	// Extract user IP
 	cloudFlareHeaderIP := ctx.Request.Header.Peek("cf-connecting-ip")
 	if cloudFlareHeaderIP != nil {
 		identifyEvent.IP = string(cloudFlareHeaderIP)
@@ -255,7 +245,6 @@ func (h *IngestionServer) Identify(ctx *fasthttp.RequestCtx) {
 		identifyEvent.IP = ctx.RemoteIP().String()
 	}
 
-	// Process identify event
 	go func() {
 		err := h.identifier.Identify(ctx, &project, &identifyEvent)
 		if err != nil {

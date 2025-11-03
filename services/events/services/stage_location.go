@@ -32,7 +32,6 @@ func NewStageLocation() StageLocation {
 	}
 }
 
-// ProcessFrame for StageLocation parses the IP with MaxMindDB and extracts approximate location information (city and country)
 func (s StageLocation) ProcessFrame(event *types.ClientEventFrameV1) error {
 	if event.IP == "" || s.maxMindDb == nil {
 		return nil

@@ -10,21 +10,17 @@ import (
 	"io"
 )
 
-// Encryptor handles encryption and decryption of sensitive data
 type Encryptor struct {
 	key []byte
 }
 
-// NewEncryptor creates a new encryptor with the provided key
 func NewEncryptor(key string) *Encryptor {
-	// Use SHA256 to generate a 32-byte key from the provided string
 	hash := sha256.Sum256([]byte(key))
 	return &Encryptor{
 		key: hash[:],
 	}
 }
 
-// Encrypt encrypts plaintext using AES-GCM
 func (e *Encryptor) Encrypt(plaintext string) (string, error) {
 	block, err := aes.NewCipher(e.key)
 	if err != nil {
@@ -45,7 +41,6 @@ func (e *Encryptor) Encrypt(plaintext string) (string, error) {
 	return base64.StdEncoding.EncodeToString(ciphertext), nil
 }
 
-// Decrypt decrypts ciphertext using AES-GCM
 func (e *Encryptor) Decrypt(ciphertext string) (string, error) {
 	data, err := base64.StdEncoding.DecodeString(ciphertext)
 	if err != nil {

@@ -10,7 +10,6 @@ import (
 )
 
 func TestValidateAccessToken_ClerkToken(t *testing.T) {
-	// Create a Clerk-style token with nested organization structure
 	clerkClaims := &ClerkJWTClaims{
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
@@ -26,7 +25,6 @@ func TestValidateAccessToken_ClerkToken(t *testing.T) {
 	tokenString, err := token.SignedString([]byte("test-secret"))
 	require.NoError(t, err)
 
-	// Test validation
 	jwtService := NewJWTService()
 	claims, err := jwtService.ValidateAccessToken(tokenString)
 
@@ -36,7 +34,6 @@ func TestValidateAccessToken_ClerkToken(t *testing.T) {
 }
 
 func TestValidateAccessToken_OSSToken(t *testing.T) {
-	// Create an OSS-style token with flat org_id structure
 	ossClaims := &OSSJWTClaims{
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
@@ -50,7 +47,6 @@ func TestValidateAccessToken_OSSToken(t *testing.T) {
 	tokenString, err := token.SignedString([]byte("test-secret"))
 	require.NoError(t, err)
 
-	// Test validation
 	jwtService := NewJWTService()
 	claims, err := jwtService.ValidateAccessToken(tokenString)
 
@@ -61,27 +57,24 @@ func TestValidateAccessToken_OSSToken(t *testing.T) {
 func TestValidateAccessToken_InvalidToken(t *testing.T) {
 	jwtService := NewJWTService()
 
-	// Test with invalid token string
 	_, err := jwtService.ValidateAccessToken("invalid-token")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid token format")
 }
 
 func TestValidateAccessToken_MissingOrgID(t *testing.T) {
-	// Create a token without organization ID
 	claims := &OSSJWTClaims{
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 		},
-		OrgID: "", // Empty org ID
+		OrgID: "",
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	tokenString, err := token.SignedString([]byte("test-secret"))
 	require.NoError(t, err)
 
-	// Test validation
 	jwtService := NewJWTService()
 	_, err = jwtService.ValidateAccessToken(tokenString)
 

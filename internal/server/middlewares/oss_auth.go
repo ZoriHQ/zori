@@ -65,7 +65,7 @@ func (m *OSSAuthMiddleware) Middleware() echo.MiddlewareFunc {
 			reqCtx := ctx.NewCtx(c)
 
 			reqCtx.SetUser(&models.Account{
-				ID:    "oss-admin", // OSS mode doesn't have user IDs, using a static identifier
+				ID:    "oss-admin",
 				Email: "admin@localhost",
 			})
 

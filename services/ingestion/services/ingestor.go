@@ -13,7 +13,6 @@ import (
 )
 
 const (
-	// EventDeduplicationWindow is the time window for deduplicating events based on client_generated_event_id
 	EventDeduplicationWindow = 5 * time.Second
 )
 
@@ -34,27 +33,20 @@ func NewIngestor(natsStream *natsstream.Stream, cacheService *cache.CacheService
 func (i *Ingestor) Ingest(project *models.Project, clientEvent *types.ClientEventV1) error {
 	startTime := time.Now()
 
-	// Deduplicate events based on client-generated event ID
-	// Use Redis SetNX to atomically check and set the deduplication key
 	dedupeKey := cache.EventDedupeCacheKey.FromValue(
 		fmt.Sprintf("%s:%s", project.ID, clientEvent.ClientGeneratedEventID),
 	)
 
-	// Try to set the key with the deduplication window as TTL
-	// If the key already exists, this event is a duplicate
 	isNew, err := i.cacheService.SetNX(
 		context.Background(),
 		dedupeKey,
-		true, // Just a marker value
+		true,
 		EventDeduplicationWindow,
 	)
 	if err != nil {
-		// Log error but don't fail the request - deduplication is best-effort
 		fmt.Printf("Warning: event deduplication check failed: %v\n", err)
 		i.ingestMetrics.RecordEventDedupe(project.ID, project.OrganizationID, "error")
-		// Continue with ingestion even if deduplication fails
 	} else if !isNew {
-		// Event is a duplicate, skip ingestion
 		i.ingestMetrics.RecordEventDedupe(project.ID, project.OrganizationID, "duplicate")
 		i.ingestMetrics.RecordIngestRequest(project.ID, project.OrganizationID, "duplicate", time.Since(startTime))
 		return fmt.Errorf("duplicate event detected: %s", clientEvent.ClientGeneratedEventID)
@@ -81,7 +73,6 @@ func (i *Ingestor) Ingest(project *models.Project, clientEvent *types.ClientEven
 		return err
 	}
 
-	// Determine event type based on event name
 	eventType := "track"
 	eventName := ""
 	if clientEvent.EventName != nil {

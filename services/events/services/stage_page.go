@@ -14,7 +14,6 @@ func NewStagePage() StagePage {
 	return StagePage{}
 }
 
-// ProcessFrame for StagePage parses the request and splits URL into path
 func (s StagePage) ProcessFrame(event *types.ClientEventFrameV1) error {
 	if event.PageURL == "" {
 		event.PagePath = nullable.FromString("/").Ptr()

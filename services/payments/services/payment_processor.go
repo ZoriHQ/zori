@@ -32,7 +32,6 @@ type PaymentProcessor struct {
 }
 
 func NewPaymentProcessor(natsStream *natsstream.Stream, clickDb *clickhouse.ClickhouseDB) *PaymentProcessor {
-	// Ensure NATS stream exists
 	err := natsStream.UpsertJetStream(paymentStream, paymentSubject)
 	if err != nil {
 		panic(err)
@@ -52,7 +51,6 @@ func NewPaymentProcessor(natsStream *natsstream.Stream, clickDb *clickhouse.Clic
 
 	p.consumerJsConn = jsConn
 
-	// Create or get consumer
 	if consumer, err := p.consumerJsConn.Consumer(p.ctx, paymentStream, "payment-processor"); err != nil {
 		if errors.Is(err, jetstream.ErrConsumerNotFound) {
 			if p.consumer, err = p.consumerJsConn.CreateConsumer(p.ctx, paymentStream, jetstream.ConsumerConfig{
@@ -121,7 +119,6 @@ func (p *PaymentProcessor) processPayment(frame *types.PaymentEventFrame) error 
 		status = clickhouseModels.PaymentStatusSucceeded
 	}
 
-	// Insert into ClickHouse
 	if err := p.clickDb.Ping(context.Background()); err != nil {
 		return fmt.Errorf("clickhouse ping failed: %w", err)
 	}

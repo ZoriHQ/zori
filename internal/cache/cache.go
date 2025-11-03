@@ -65,9 +65,6 @@ func (s *CacheService) Expire(key string, duration time.Duration) error {
 	return nil
 }
 
-// SetNX sets a key-value pair only if the key does not already exist (atomic operation).
-// Returns true if the key was set, false if it already existed.
-// This is useful for implementing distributed locks or deduplication.
 func (s *CacheService) SetNX(ctx context.Context, key string, value any, ttl time.Duration) (bool, error) {
 	jsonValue, err := json.Marshal(value)
 	if err != nil {

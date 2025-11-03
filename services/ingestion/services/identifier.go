@@ -21,9 +21,7 @@ func NewIdentifier(natsStream *natsstream.Stream, visitorRepository *data.Visito
 	}
 }
 
-// Identify processes an identify event and stores visitor identity in PostgreSQL
 func (i *Identifier) Identify(ctx context.Context, project *models.Project, identifyEvent *types.IdentifyEventV1) error {
-	// Create visitor model from identify event
 	visitor := &models.Visitor{
 		VisitorID:      identifyEvent.VisitorID,
 		ProjectID:      project.ID,
@@ -32,10 +30,9 @@ func (i *Identifier) Identify(ctx context.Context, project *models.Project, iden
 		Email:          identifyEvent.Email,
 		Name:           identifyEvent.Fullname,
 		Phone:          identifyEvent.Phone,
-		CustomTraits:   make(map[string]interface{}), // Initialize as empty map
+		CustomTraits:   make(map[string]interface{}),
 	}
 
-	// Add additional properties to custom traits if provided
 	if identifyEvent.AdditionalProperties != nil && len(identifyEvent.AdditionalProperties) > 0 {
 		visitor.CustomTraits = identifyEvent.AdditionalProperties
 	}

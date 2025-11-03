@@ -27,7 +27,6 @@ func (c *Ctx) SetUser(user *models.Account) {
 	c.User = user
 }
 
-// SetOrgID sets the organization ID from the external auth provider (Stack Auth)
 func (c *Ctx) SetOrgID(orgID string) {
 	c.orgID = orgID
 }

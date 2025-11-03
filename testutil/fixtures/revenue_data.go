@@ -12,40 +12,35 @@ import (
 	"github.com/google/uuid"
 )
 
-// VisitorPaymentScenario represents a visitor with their attribution and payment behavior
 type VisitorPaymentScenario struct {
-	VisitorID       string
-	SessionID       string
-	FirstVisitTime  time.Time
-	ReferrerDomain  string
-	UTMSource       string
-	UTMMedium       string
-	UTMCampaign     string
-	Payments        []PaymentScenario
-	WillPurchase    bool
+	VisitorID      string
+	SessionID      string
+	FirstVisitTime time.Time
+	ReferrerDomain string
+	UTMSource      string
+	UTMMedium      string
+	UTMCampaign    string
+	Payments       []PaymentScenario
+	WillPurchase   bool
 }
 
-// PaymentScenario represents a single payment
 type PaymentScenario struct {
 	Amount    int64
 	Timestamp time.Time
-	Status    string // succeeded, failed, refunded
+	Status    string
 	Currency  string
 }
 
-// RevenueTestDataBuilder helps build complex revenue test scenarios
 type RevenueTestDataBuilder struct {
 	scenarios []VisitorPaymentScenario
 }
 
-// NewRevenueTestDataBuilder creates a new builder
 func NewRevenueTestDataBuilder() *RevenueTestDataBuilder {
 	return &RevenueTestDataBuilder{
 		scenarios: make([]VisitorPaymentScenario, 0),
 	}
 }
 
-// AddVisitor adds a visitor scenario
 func (b *RevenueTestDataBuilder) AddVisitor(scenario VisitorPaymentScenario) *RevenueTestDataBuilder {
 	if scenario.VisitorID == "" {
 		scenario.VisitorID = uuid.New().String()
@@ -60,7 +55,6 @@ func (b *RevenueTestDataBuilder) AddVisitor(scenario VisitorPaymentScenario) *Re
 	return b
 }
 
-// AddSimpleConvertingVisitor adds a visitor who makes a single purchase
 func (b *RevenueTestDataBuilder) AddSimpleConvertingVisitor(amount int64, utmSource string) *RevenueTestDataBuilder {
 	return b.AddVisitor(VisitorPaymentScenario{
 		VisitorID:      uuid.New().String(),
@@ -82,7 +76,6 @@ func (b *RevenueTestDataBuilder) AddSimpleConvertingVisitor(amount int64, utmSou
 	})
 }
 
-// AddRepeatCustomer adds a visitor who makes multiple purchases
 func (b *RevenueTestDataBuilder) AddRepeatCustomer(amounts []int64, utmSource string) *RevenueTestDataBuilder {
 	payments := make([]PaymentScenario, len(amounts))
 	for i, amount := range amounts {
@@ -107,7 +100,6 @@ func (b *RevenueTestDataBuilder) AddRepeatCustomer(amounts []int64, utmSource st
 	})
 }
 
-// AddNonConvertingVisitor adds a visitor who doesn't make any purchases
 func (b *RevenueTestDataBuilder) AddNonConvertingVisitor(utmSource string) *RevenueTestDataBuilder {
 	return b.AddVisitor(VisitorPaymentScenario{
 		VisitorID:      uuid.New().String(),
@@ -122,7 +114,6 @@ func (b *RevenueTestDataBuilder) AddNonConvertingVisitor(utmSource string) *Reve
 	})
 }
 
-// AddDirectTrafficVisitor adds a visitor with direct traffic (no attribution)
 func (b *RevenueTestDataBuilder) AddDirectTrafficVisitor(amount int64) *RevenueTestDataBuilder {
 	return b.AddVisitor(VisitorPaymentScenario{
 		VisitorID:      uuid.New().String(),
@@ -144,12 +135,10 @@ func (b *RevenueTestDataBuilder) AddDirectTrafficVisitor(amount int64) *RevenueT
 	})
 }
 
-// GetScenarios returns all scenarios
 func (b *RevenueTestDataBuilder) GetScenarios() []VisitorPaymentScenario {
 	return b.scenarios
 }
 
-// GetConversionStats returns expected conversion statistics
 func (b *RevenueTestDataBuilder) GetConversionStats() (totalVisitors, payingCustomers int, totalRevenue int64) {
 	totalVisitors = len(b.scenarios)
 	for _, s := range b.scenarios {
@@ -165,7 +154,6 @@ func (b *RevenueTestDataBuilder) GetConversionStats() (totalVisitors, payingCust
 	return totalVisitors, payingCustomers, totalRevenue
 }
 
-// GetRepeatPurchaseStats returns repeat purchase statistics
 func (b *RevenueTestDataBuilder) GetRepeatPurchaseStats() (payingCustomers, repeatCustomers int) {
 	for _, s := range b.scenarios {
 		successfulPayments := 0
@@ -184,11 +172,9 @@ func (b *RevenueTestDataBuilder) GetRepeatPurchaseStats() (payingCustomers, repe
 	return payingCustomers, repeatCustomers
 }
 
-// InsertTestData inserts all test data into the database
 func (b *RevenueTestDataBuilder) InsertTestData(t *testing.T, tc *di.TestContainer, project *ProjectFixture) error {
 	t.Helper()
 
-	// Step 1: Send visitor events
 	for _, scenario := range b.scenarios {
 		builder := NewEventBuilder().
 			WithVisitorID(scenario.VisitorID).
@@ -214,7 +200,6 @@ func (b *RevenueTestDataBuilder) InsertTestData(t *testing.T, tc *di.TestContain
 		}
 	}
 
-	// Wait for events to be processed
 	expectedEventCount := len(b.scenarios)
 	_, err := WaitForEvents(t, tc, QueryEventsOptions{
 		ProjectID: &project.ID,
@@ -223,10 +208,8 @@ func (b *RevenueTestDataBuilder) InsertTestData(t *testing.T, tc *di.TestContain
 		return fmt.Errorf("failed waiting for events: %w", err)
 	}
 
-	// Give attribution system time to process
 	time.Sleep(2 * time.Second)
 
-	// Step 2: Send payment events
 	totalPayments := 0
 	for _, scenario := range b.scenarios {
 		if !scenario.WillPurchase || len(scenario.Payments) == 0 {
@@ -247,11 +230,10 @@ func (b *RevenueTestDataBuilder) InsertTestData(t *testing.T, tc *di.TestContain
 				return fmt.Errorf("failed to send payment for %s: %w", scenario.VisitorID, err)
 			}
 			totalPayments++
-			time.Sleep(50 * time.Millisecond) // Small delay between payments
+			time.Sleep(50 * time.Millisecond)
 		}
 	}
 
-	// Wait for payments to be processed
 	if totalPayments > 0 {
 		succeededStatus := "succeeded"
 		_, err = WaitForPayments(t, tc, QueryPaymentEventsOptions{
@@ -262,14 +244,12 @@ func (b *RevenueTestDataBuilder) InsertTestData(t *testing.T, tc *di.TestContain
 			return fmt.Errorf("failed waiting for payments: %w", err)
 		}
 
-		// Give revenue aggregation system time to process
 		time.Sleep(3 * time.Second)
 	}
 
 	return nil
 }
 
-// InsertPaymentEventsDirect inserts payment events directly into ClickHouse (bypasses NATS)
 func InsertPaymentEventsDirect(t *testing.T, tc *di.TestContainer, project *ProjectFixture, payments []paymentTypes.PaymentEventFrame) error {
 	t.Helper()
 
@@ -301,13 +281,11 @@ func InsertPaymentEventsDirect(t *testing.T, tc *di.TestContainer, project *Proj
 	return nil
 }
 
-// InsertVisitorAttributionDirect inserts visitor attribution data directly into ClickHouse
 func InsertVisitorAttributionDirect(t *testing.T, tc *di.TestContainer, projectID, organizationID, visitorID, referrerDomain, utmSource, utmMedium, utmCampaign string, timestamp time.Time) error {
 	t.Helper()
 
 	ctx := context.Background()
 
-	// Insert into the aggregating table using argMinState
 	query := `INSERT INTO visitor_first_touch_attribution (
 		organization_id, project_id, visitor_id,
 		first_referrer_domain, first_utm_source, first_utm_medium, first_utm_campaign
@@ -334,7 +312,6 @@ func InsertVisitorAttributionDirect(t *testing.T, tc *di.TestContainer, projectI
 	return nil
 }
 
-// CreateTimeDistributedPayments creates payments distributed over a time range
 func CreateTimeDistributedPayments(startTime time.Time, endTime time.Time, count int, baseAmount int64) []PaymentScenario {
 	payments := make([]PaymentScenario, count)
 	duration := endTime.Sub(startTime)
@@ -342,7 +319,7 @@ func CreateTimeDistributedPayments(startTime time.Time, endTime time.Time, count
 
 	for i := 0; i < count; i++ {
 		payments[i] = PaymentScenario{
-			Amount:    baseAmount + int64(i*100), // Vary amounts slightly
+			Amount:    baseAmount + int64(i*100),
 			Timestamp: startTime.Add(interval * time.Duration(i)),
 			Status:    "succeeded",
 			Currency:  "USD",

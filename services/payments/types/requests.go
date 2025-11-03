@@ -16,7 +16,7 @@ type UpdatePaymentProviderRequest struct {
 }
 
 type SyncPaymentProviderRequest struct {
-	FullSync bool `json:"full_sync" example:"false"` // If true, sync all historical data
+	FullSync bool `json:"full_sync" example:"false"`
 }
 
 type GetProviderInstructionsRequest struct {

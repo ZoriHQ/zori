@@ -27,7 +27,6 @@ func NewPostgresDB(cfg *config.Config) *PostgresDB {
 
 	db := bun.NewDB(sqldb, pgdialect.New())
 
-	// Add query hook for debugging in development
 	db.AddQueryHook(bundebug.NewQueryHook(
 		bundebug.WithVerbose(true),
 		bundebug.FromEnv("BUNDEBUG"),

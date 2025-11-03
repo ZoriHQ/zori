@@ -22,7 +22,6 @@ const (
 	identifyEventsSubject = "events:identify"
 )
 
-// IdentifyProcessor handles identify events and updates ClickHouse events with identity information
 type IdentifyProcessor struct {
 	natsStream *natsstream.Stream
 
@@ -87,7 +86,6 @@ func (p *IdentifyProcessor) Start() error {
 			return
 		}
 
-		// Update all events for this visitor with identity information
 		if err := p.updateVisitorEvents(&identifyFrame); err != nil {
 			log.Printf("Failed to update visitor events: %v", err)
 			p.natsMetrics.RecordMessageProcessed(identifyEventsStream, "identify-processor", "update_error", time.Since(startTime))
@@ -110,7 +108,6 @@ func (p *IdentifyProcessor) Stop() error {
 	return nil
 }
 
-// updateVisitorEvents updates all events for a visitor with their identity information
 func (p *IdentifyProcessor) updateVisitorEvents(identifyFrame *types.IdentifyEventFrameV1) error {
 	var (
 		userID     *string
@@ -118,18 +115,13 @@ func (p *IdentifyProcessor) updateVisitorEvents(identifyFrame *types.IdentifyEve
 		emailHash  *string
 	)
 
-	// Set identity fields
 	userID = identifyFrame.AppID
 
-	// Hash email if provided
 	if identifyFrame.Email != nil && *identifyFrame.Email != "" {
 		hash := hashEmailSHA256(*identifyFrame.Email)
 		emailHash = &hash
 	}
 
-	// Update all past events for this visitor
-	// Note: ClickHouse doesn't support UPDATE efficiently, so we use ALTER TABLE UPDATE
-	// This is an asynchronous operation in ClickHouse
 	query := `
 		ALTER TABLE events
 		UPDATE
@@ -161,7 +153,6 @@ func (p *IdentifyProcessor) updateVisitorEvents(identifyFrame *types.IdentifyEve
 	return nil
 }
 
-// hashEmailSHA256 creates a SHA256 hash of the email
 func hashEmailSHA256(email string) string {
 	hasher := sha256.New()
 	hasher.Write([]byte(email))
