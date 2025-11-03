@@ -96,7 +96,6 @@ func (p *Processor) Start() error {
 		}
 
 		if err := p.processEvent(&eventFrame); err != nil {
-			fmt.Println("Failed to process event", err)
 			p.natsMetrics.RecordMessageProcessed(rawEventsStream, "event-enricher", "process_error", time.Since(startTime))
 			p.natsMetrics.RecordMessageAck(rawEventsStream, "event-enricher", "nak")
 			msg.Nak()
@@ -127,28 +126,6 @@ func (p *Processor) Start() error {
 			clickElementSelector = &eventFrame.ClickElement.Selector
 			clickElementText = &eventFrame.ClickElement.Text
 		}
-
-		// eventModelClick := models.Event{
-		// 	IP:                     eventFrame.IP,
-		// 	VisitorID:              eventFrame.VisitorID,
-		// 	ClientGeneratedEventID: eventFrame.ClientGeneratedEventID,
-		// 	EventName:              eventFrame.EventName,
-		// 	LocationCountryISO:     eventFrame.LocationCountryISO,
-		// 	LocationCity:           eventFrame.LocationCity,
-
-		// 	ClientTimestampUTC: eventFrame.ClientTimeStampUTC,
-		// 	ServerTimestampUTC: time.Now().UTC(),
-
-		// 	UserAgent:     eventFrame.UserAgent,
-		// 	Referrer:      eventFrame.Referrer,
-		// 	UTMParameters: eventFrame.UTMParameters,
-
-		// 	ClickOn:        eventFrame.ClickOn,
-		// 	ClickPositionX: clickPositionX,
-		// 	ClickPositionY: clickPositionY,
-		// 	ProjectID:      eventFrame.ProjectID,
-		// 	OrganizationID: eventFrame.OrganizationID,
-		// }
 
 		if err := p.clickDb.Ping(context.Background()); err != nil {
 			fmt.Println(err)
@@ -209,7 +186,6 @@ func (p *Processor) Start() error {
 			eventFrame.ExternalID,
 			eventFrame.EmailHash,
 		); err != nil {
-			log.Printf("Error inserting event: %v", err)
 			p.natsMetrics.RecordClickHouseError("events", "insert_error")
 			p.natsMetrics.RecordMessageProcessed(rawEventsStream, "event-enricher", "clickhouse_error", time.Since(startTime))
 			p.natsMetrics.RecordMessageAck(rawEventsStream, "event-enricher", "nak")
@@ -262,13 +238,6 @@ func (p *Processor) processEvent(eventFrame *types.ClientEventFrameV1) error {
 
 		timer.Done()
 	}
-
-	b, err := json.Marshal(eventFrame)
-	if err != nil {
-		return err
-	}
-
-	fmt.Println(string(b))
 
 	return nil
 }
