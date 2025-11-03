@@ -24,7 +24,7 @@ tasks:
     desc: Run all pending database migrations
     cmds:
       - goose -dir internal/storage/postgres/migrations postgres "$POSTGRES_URL" up
-      - GOOSE_DRIVER=clickhouse GOOSE_DBSTRING=$CLICKHOUSE_URL goose -dir internal/storage/clickhouse/migrations up
+      - GOOSE_DRIVER=clickhouse GOOSE_DBSTRING="clickhouse://$CLICKHOUSE_USERNAME:$CLICKHOUSE_PASSWORD@$CLICKHOUSE_URL" goose -dir internal/storage/clickhouse/migrations up
 
   migrate:down:
     desc: Rollback the last database migration
