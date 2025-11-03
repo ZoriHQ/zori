@@ -13,13 +13,11 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-// ListProjectsResponse represents the response for listing projects
 type ListProjectsResponse struct {
 	Projects []*models.Project `json:"projects"`
 	Total    int               `json:"total" example:"10"`
 }
 
-// ProjectResponse represents a single project response
 type ProjectResponse struct {
 	*models.Project
 }
@@ -95,7 +93,6 @@ func (s *ProjectService) CreateProject(c *ctx.Ctx) (*ProjectResponse, error) {
 		return nil, fmt.Errorf("failed to create project: %w", err)
 	}
 
-	// Set status code to 201 for successful creation
 	c.Echo.Response().Status = http.StatusCreated
 
 	return &ProjectResponse{Project: project}, nil
@@ -130,7 +127,6 @@ func (s *ProjectService) UpdateProject(c *ctx.Ctx) (*ProjectResponse, error) {
 		return nil, echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	// Check if project exists
 	exists, err := s.data.ProjectExists(c.Echo.Request().Context(), projectID, c.OrgID())
 	if err != nil {
 		return nil, fmt.Errorf("failed to check project existence: %w", err)

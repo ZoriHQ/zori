@@ -16,12 +16,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// PaymentBuilder provides a fluent API to build test payment events
 type PaymentBuilder struct {
 	payment types.PaymentEventFrame
 }
 
-// NewPaymentBuilder creates a new PaymentBuilder with sensible defaults
 func NewPaymentBuilder(projectID, organizationID string) *PaymentBuilder {
 	return &PaymentBuilder{
 		payment: types.PaymentEventFrame{
@@ -29,7 +27,7 @@ func NewPaymentBuilder(projectID, organizationID string) *PaymentBuilder {
 			ProviderType:     "stripe",
 			PaymentStatus:    "succeeded",
 			ProductName:      "Test Product",
-			Amount:           9900, // $99.00 in cents
+			Amount:           9900,
 			Currency:         "USD",
 			PaymentTimestamp: time.Now().UTC(),
 			ProjectID:        projectID,
@@ -39,55 +37,46 @@ func NewPaymentBuilder(projectID, organizationID string) *PaymentBuilder {
 	}
 }
 
-// WithPaymentID sets the payment ID
 func (b *PaymentBuilder) WithPaymentID(paymentID string) *PaymentBuilder {
 	b.payment.PaymentID = paymentID
 	return b
 }
 
-// WithVisitorID sets the visitor ID
 func (b *PaymentBuilder) WithVisitorID(visitorID string) *PaymentBuilder {
 	b.payment.VisitorID = &visitorID
 	return b
 }
 
-// WithProviderType sets the payment provider type
 func (b *PaymentBuilder) WithProviderType(providerType string) *PaymentBuilder {
 	b.payment.ProviderType = providerType
 	return b
 }
 
-// WithPaymentStatus sets the payment status
 func (b *PaymentBuilder) WithPaymentStatus(status string) *PaymentBuilder {
 	b.payment.PaymentStatus = status
 	return b
 }
 
-// WithProductName sets the product name
 func (b *PaymentBuilder) WithProductName(productName string) *PaymentBuilder {
 	b.payment.ProductName = productName
 	return b
 }
 
-// WithAmount sets the payment amount (in cents)
 func (b *PaymentBuilder) WithAmount(amount int64) *PaymentBuilder {
 	b.payment.Amount = amount
 	return b
 }
 
-// WithCurrency sets the currency code
 func (b *PaymentBuilder) WithCurrency(currency string) *PaymentBuilder {
 	b.payment.Currency = currency
 	return b
 }
 
-// WithPaymentTimestamp sets the payment timestamp
 func (b *PaymentBuilder) WithPaymentTimestamp(timestamp time.Time) *PaymentBuilder {
 	b.payment.PaymentTimestamp = timestamp
 	return b
 }
 
-// WithMetadata adds metadata to the payment
 func (b *PaymentBuilder) WithMetadata(key, value string) *PaymentBuilder {
 	if b.payment.Metadata == nil {
 		b.payment.Metadata = make(map[string]string)
@@ -96,12 +85,10 @@ func (b *PaymentBuilder) WithMetadata(key, value string) *PaymentBuilder {
 	return b
 }
 
-// Build returns the built payment event
 func (b *PaymentBuilder) Build() types.PaymentEventFrame {
 	return b.payment
 }
 
-// SendPaymentToNATS sends a payment event to the NATS stream for processing
 func SendPaymentToNATS(t *testing.T, tc *di.TestContainer, payment types.PaymentEventFrame) error {
 	t.Helper()
 
@@ -116,7 +103,6 @@ func SendPaymentToNATS(t *testing.T, tc *di.TestContainer, payment types.Payment
 	return nil
 }
 
-// SendPaymentsToNATS sends multiple payment events to the NATS stream
 func SendPaymentsToNATS(t *testing.T, tc *di.TestContainer, payments []types.PaymentEventFrame) error {
 	t.Helper()
 
@@ -124,14 +110,12 @@ func SendPaymentsToNATS(t *testing.T, tc *di.TestContainer, payments []types.Pay
 		if err := SendPaymentToNATS(t, tc, payment); err != nil {
 			return fmt.Errorf("failed to send payment %d: %w", i, err)
 		}
-		// Small delay between payments to avoid overwhelming the system
 		time.Sleep(10 * time.Millisecond)
 	}
 
 	return nil
 }
 
-// QueryPaymentEventsOptions holds options for querying payment events
 type QueryPaymentEventsOptions struct {
 	ProjectID      *string
 	OrganizationID *string
@@ -141,7 +125,6 @@ type QueryPaymentEventsOptions struct {
 	Limit          int
 }
 
-// QueryPaymentEvents retrieves payment events from ClickHouse based on the provided options
 func QueryPaymentEvents(t *testing.T, tc *di.TestContainer, opts QueryPaymentEventsOptions) ([]models.PaymentEvent, error) {
 	t.Helper()
 
@@ -192,8 +175,6 @@ func QueryPaymentEvents(t *testing.T, tc *di.TestContainer, opts QueryPaymentEve
 	return payments, nil
 }
 
-// WaitForPayments waits for payment events to appear in ClickHouse with the given options
-// Returns the payments once they appear or times out after the specified duration
 func WaitForPayments(t *testing.T, tc *di.TestContainer, opts QueryPaymentEventsOptions, expectedCount int, timeout time.Duration) ([]models.PaymentEvent, error) {
 	t.Helper()
 
@@ -217,7 +198,6 @@ func WaitForPayments(t *testing.T, tc *di.TestContainer, opts QueryPaymentEvents
 	return payments, nil
 }
 
-// CountPaymentEvents counts the number of payment events matching the given options
 func CountPaymentEvents(t *testing.T, tc *di.TestContainer, opts QueryPaymentEventsOptions) (int, error) {
 	t.Helper()
 

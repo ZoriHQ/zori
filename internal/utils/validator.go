@@ -13,7 +13,6 @@ var validate *validator.Validate
 func init() {
 	validate = validator.New()
 
-	// Register custom tag name function to use json tags for field names
 	validate.RegisterTagNameFunc(func(fld reflect.StructField) string {
 		name := strings.SplitN(fld.Tag.Get("json"), ",", 2)[0]
 		if name == "-" {
@@ -23,7 +22,6 @@ func init() {
 	})
 }
 
-// ValidateStruct validates a struct using the validator tags
 func ValidateStruct(s interface{}) error {
 	if err := validate.Struct(s); err != nil {
 		if validationErrors, ok := err.(validator.ValidationErrors); ok {
@@ -34,7 +32,6 @@ func ValidateStruct(s interface{}) error {
 	return nil
 }
 
-// ValidationError represents validation errors in a more user-friendly format
 type ValidationError struct {
 	Errors map[string]string `json:"errors"`
 }
@@ -47,7 +44,6 @@ func (e *ValidationError) Error() string {
 	return strings.Join(messages, "; ")
 }
 
-// NewValidationError creates a new ValidationError from validator.ValidationErrors
 func NewValidationError(validationErrors validator.ValidationErrors) *ValidationError {
 	errors := make(map[string]string)
 
@@ -75,7 +71,6 @@ func NewValidationError(validationErrors validator.ValidationErrors) *Validation
 	return &ValidationError{Errors: errors}
 }
 
-// IsValidationError checks if the error is a ValidationError
 func IsValidationError(err error) bool {
 	_, ok := err.(*ValidationError)
 	return ok

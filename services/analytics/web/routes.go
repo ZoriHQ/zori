@@ -53,7 +53,6 @@ func RegisterRoutes(
 
 	server.GroupGET(analyticsRouteGroup, "/visitors/profile", analyticsService.GetVisitorProfile)
 
-	// POST endpoint for manual visitor identification (no cache)
 	server.GroupPOST(analyticsRouteGroup, "/visitors/identify", analyticsService.IdentifyVisitor)
 
 	server.GroupGET(analyticsRouteGroup, "/visitors/timeline",

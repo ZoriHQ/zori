@@ -6,7 +6,6 @@ import (
 	"github.com/uptrace/go-clickhouse/ch"
 )
 
-// PaymentStatus represents the status of a payment
 type PaymentStatus string
 
 const (
@@ -16,7 +15,6 @@ const (
 	PaymentStatusRefunded  PaymentStatus = "refunded"
 )
 
-// PaymentEvent represents a payment event stored in ClickHouse
 type PaymentEvent struct {
 	ch.CHModel `ch:"payment_events,partition:toYYYYMM(payment_timestamp_utc),order:organization_id,order:project_id,order:payment_timestamp_utc,order:payment_id"`
 
@@ -25,9 +23,9 @@ type PaymentEvent struct {
 	VisitorID *string `ch:"visitor_id"` // Nullable for unattributed payments
 
 	// Payment details
-	ProviderType   string `ch:"provider_type"`    // LowCardinality
-	PaymentStatus  string `ch:"payment_status"`   // LowCardinality
-	ProductName    string `ch:"product_name"`
+	ProviderType  string `ch:"provider_type"`  // LowCardinality
+	PaymentStatus string `ch:"payment_status"` // LowCardinality
+	ProductName   string `ch:"product_name"`
 
 	// Amounts (stored in smallest currency unit, e.g., cents)
 	Amount   int64  `ch:"amount"`

@@ -72,7 +72,6 @@ func (o *OSSInitializer) Initialize(ctx context.Context) error {
 		return fmt.Errorf("failed to hash password: %w", err)
 	}
 
-	// Generate Clerk-compatible org ID (format: org_xxxxxxxxxxxxxxxxxxxxxxxxxx)
 	defaultOrgID := o.generateClerkCompatibleOrgID()
 
 	hashedPasswordStr := string(hashedPassword)
@@ -207,8 +206,6 @@ func (o *OSSInitializer) generateCredentials() (username, password string, err e
 	return username, password, nil
 }
 
-// generateClerkCompatibleOrgID generates an organization ID in Clerk's format
-// Format: org_xxxxxxxxxxxxxxxxxxxxxxxxxx (org_ prefix + 26 random alphanumeric characters)
 func (o *OSSInitializer) generateClerkCompatibleOrgID() string {
 	const charset = "abcdefghijklmnopqrstuvwxyz0123456789"
 	const idLength = 26
@@ -216,11 +213,9 @@ func (o *OSSInitializer) generateClerkCompatibleOrgID() string {
 	randomBytes := make([]byte, idLength)
 	_, err := rand.Read(randomBytes)
 	if err != nil {
-		// Fallback to UUID-based generation if random fails
 		return "org_" + strings.ReplaceAll(uuid.New().String(), "-", "")[:idLength]
 	}
 
-	// Convert random bytes to alphanumeric characters
 	id := make([]byte, idLength)
 	for i := 0; i < idLength; i++ {
 		id[i] = charset[randomBytes[i]%byte(len(charset))]

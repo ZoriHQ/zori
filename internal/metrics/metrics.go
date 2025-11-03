@@ -58,7 +58,7 @@ func NewMetricsCollector() *MetricsCollector {
 				Name: "zori_event_dedupe_total",
 				Help: "Total number of events processed by deduplication (new vs duplicate)",
 			},
-			[]string{"project_id", "organization_id", "result"}, // result: new, duplicate, error
+			[]string{"project_id", "organization_id", "result"},
 		),
 
 		EventsTotal: factory.NewCounterVec(
@@ -66,7 +66,7 @@ func NewMetricsCollector() *MetricsCollector {
 				Name: "zori_events_total",
 				Help: "Total number of events by type",
 			},
-			[]string{"project_id", "organization_id", "event_name", "event_type"}, // event_type: track, identify, etc.
+			[]string{"project_id", "organization_id", "event_name", "event_type"},
 		),
 
 		NatsMessageProcessed: factory.NewCounterVec(
@@ -74,7 +74,7 @@ func NewMetricsCollector() *MetricsCollector {
 				Name: "zori_nats_messages_processed_total",
 				Help: "Total number of NATS messages processed",
 			},
-			[]string{"stream", "consumer", "status"}, // status: success, error
+			[]string{"stream", "consumer", "status"},
 		),
 		NatsMessageDuration: factory.NewHistogramVec(
 			prometheus.HistogramOpts{
@@ -89,7 +89,7 @@ func NewMetricsCollector() *MetricsCollector {
 				Name: "zori_nats_message_ack_total",
 				Help: "Total number of NATS message acknowledgments",
 			},
-			[]string{"stream", "consumer", "ack_type"}, // ack_type: ack, nak
+			[]string{"stream", "consumer", "ack_type"},
 		),
 		NatsConsumerLagTotal: factory.NewGaugeVec(
 			prometheus.GaugeOpts{

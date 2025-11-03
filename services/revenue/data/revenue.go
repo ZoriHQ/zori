@@ -21,7 +21,6 @@ func NewRevenueData(clickDb *clickhouse.ClickhouseDB, visitorRepository *ingesti
 	}
 }
 
-// CheckPaymentDataQuality checks for duplicate payment_ids and other data quality issues
 func (r *RevenueData) CheckPaymentDataQuality(ctx context.Context, projectID string) (*PaymentDataQualityReport, error) {
 	query := `
 		WITH payment_duplicates AS (
@@ -56,7 +55,6 @@ func (r *RevenueData) CheckPaymentDataQuality(ctx context.Context, projectID str
 		return nil, fmt.Errorf("failed to check payment data quality: %w", err)
 	}
 
-	// Get sample of duplicates for debugging
 	sampleQuery := `
 		SELECT
 			payment_id,
@@ -74,7 +72,6 @@ func (r *RevenueData) CheckPaymentDataQuality(ctx context.Context, projectID str
 
 	rows, err := r.clickDb.Db().Query(ctx, sampleQuery, projectID)
 	if err != nil {
-		// Non-fatal - return report without samples
 		return &report, nil
 	}
 	defer rows.Close()
@@ -97,7 +94,6 @@ func (r *RevenueData) CheckPaymentDataQuality(ctx context.Context, projectID str
 	return &report, nil
 }
 
-// PaymentDataQualityReport contains metrics about payment data quality
 type PaymentDataQualityReport struct {
 	DuplicatePaymentCount           uint64                   `json:"duplicate_payment_count"`
 	TotalDuplicateRows              uint64                   `json:"total_duplicate_rows"`
@@ -106,7 +102,6 @@ type PaymentDataQualityReport struct {
 	Samples                         []DuplicatePaymentSample `json:"samples,omitempty"`
 }
 
-// DuplicatePaymentSample shows an example of a duplicate payment
 type DuplicatePaymentSample struct {
 	PaymentID  string   `json:"payment_id"`
 	RowCount   uint64   `json:"row_count"`
@@ -115,7 +110,6 @@ type DuplicatePaymentSample struct {
 	Statuses   []string `json:"statuses"`
 }
 
-// GetTimeRangeBounds returns the start time and interval for a given time range
 func GetTimeRangeBounds(timeRange types.TimeRange) (time.Time, string, error) {
 	now := time.Now().UTC()
 
@@ -135,14 +129,12 @@ func GetTimeRangeBounds(timeRange types.TimeRange) (time.Time, string, error) {
 	}
 }
 
-// GetDashboardMetrics returns key revenue metrics for the dashboard
 func (r *RevenueData) GetDashboardMetrics(ctx context.Context, projectID string, timeRange types.TimeRange) (*types.DashboardResponse, error) {
 	startTime, _, err := GetTimeRangeBounds(timeRange)
 	if err != nil {
 		return nil, err
 	}
 
-	// Main dashboard query combining multiple metrics
 	query := `
 		WITH payment_data AS (
 			SELECT DISTINCT
@@ -224,9 +216,9 @@ func (r *RevenueData) GetDashboardMetrics(ctx context.Context, projectID string,
 
 	var response types.DashboardResponse
 	row := r.clickDb.Db().QueryRow(ctx, query,
-		projectID, startTime, // payment_data
-		projectID, startTime, // visitor_stats
-		projectID, startTime, // identified_visitors
+		projectID, startTime,
+		projectID, startTime,
+		projectID, startTime,
 	)
 
 	if err := row.Scan(
@@ -252,7 +244,6 @@ func (r *RevenueData) GetDashboardMetrics(ctx context.Context, projectID string,
 	return &response, nil
 }
 
-// GetAttributionByOrigin returns revenue attributed to traffic origins using first-touch attribution
 func (r *RevenueData) GetAttributionByOrigin(ctx context.Context, projectID string, timeRange types.TimeRange) ([]types.OriginAttributionDataPoint, error) {
 	startTime, _, err := GetTimeRangeBounds(timeRange)
 	if err != nil {
@@ -364,10 +355,10 @@ func (r *RevenueData) GetAttributionByOrigin(ctx context.Context, projectID stri
 	`
 
 	rows, err := r.clickDb.Db().Query(ctx, query,
-		projectID, startTime, // payments_in_period
-		projectID, startTime, // visitors_in_period
-		projectID, // payment_visitor_origins LEFT JOIN
-		projectID, // all_visitor_origins LEFT JOIN
+		projectID, startTime,
+		projectID, startTime,
+		projectID,
+		projectID,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query attribution by origin: %w", err)
@@ -506,10 +497,10 @@ func (r *RevenueData) GetAttributionByUTM(ctx context.Context, projectID string,
 	`, utmField, utmField, utmField, utmField, utmField, utmField)
 
 	rows, err := r.clickDb.Db().Query(ctx, query,
-		projectID, startTime, // payments_in_period
-		projectID,            // visitor_utm LEFT JOIN
-		projectID, startTime, // visitors_in_period
-		projectID, // all_visitor_utm LEFT JOIN
+		projectID, startTime,
+		projectID,
+		projectID, startTime,
+		projectID,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query attribution by UTM: %w", err)
@@ -701,9 +692,9 @@ func (r *RevenueData) GetTopCustomers(ctx context.Context, projectID string, tim
 	`
 
 	rows, err := r.clickDb.Db().Query(ctx, query,
-		projectID, startTime, // distinct_payments
-		projectID, // visitor_identity_map
-		projectID, // LEFT JOIN events
+		projectID, startTime,
+		projectID,
+		projectID,
 		limit)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query top customers: %w", err)

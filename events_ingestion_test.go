@@ -20,8 +20,6 @@ func TestEventIngestion_EndToEnd(t *testing.T) {
 
 	_, project := fixtures.SetupAccountAndProject(t, tc)
 
-	// Processor and ingestion server are already running via DI lifecycle hooks
-	// Give them a moment to fully initialize
 	time.Sleep(200 * time.Millisecond)
 
 	t.Run("should ingest and store visit events correctly", func(t *testing.T) {

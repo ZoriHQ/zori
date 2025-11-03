@@ -5,7 +5,6 @@ import (
 	"time"
 )
 
-// WaitForCondition polls a condition function until it returns true or timeout is reached
 func WaitForCondition(ctx context.Context, timeout time.Duration, interval time.Duration, condition func() (bool, error)) error {
 	deadline := time.Now().Add(timeout)
 	ticker := time.NewTicker(interval)

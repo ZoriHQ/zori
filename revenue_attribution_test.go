@@ -15,7 +15,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// Helper function to create string pointers
 func stringPtr(s string) *string {
 	return &s
 }
@@ -29,7 +28,6 @@ func TestRevenueAttribution_EndToEnd(t *testing.T) {
 	revenueDataService := tc.RevenueData
 	ctx := context.Background()
 
-	// Give processors and ingestion server time to initialize
 	time.Sleep(1 * time.Second)
 
 	t.Run("should attribute revenue to correct traffic sources", func(t *testing.T) {
@@ -40,7 +38,7 @@ func TestRevenueAttribution_EndToEnd(t *testing.T) {
 			utmMedium   string
 			utmCampaign string
 			referrer    string
-			revenue     int64 // in cents
+			revenue     int64
 		}{
 			{
 				visitorID:   "visitor-google-1",
@@ -49,7 +47,7 @@ func TestRevenueAttribution_EndToEnd(t *testing.T) {
 				utmMedium:   "cpc",
 				utmCampaign: "summer-sale",
 				referrer:    "https://google.com/search",
-				revenue:     9900, // $99.00
+				revenue:     9900,
 			},
 			{
 				visitorID:   "visitor-facebook-1",
@@ -58,7 +56,7 @@ func TestRevenueAttribution_EndToEnd(t *testing.T) {
 				utmMedium:   "social",
 				utmCampaign: "brand-awareness",
 				referrer:    "https://facebook.com",
-				revenue:     14900, // $149.00
+				revenue:     14900,
 			},
 			{
 				visitorID:   "visitor-direct-1",
@@ -67,7 +65,7 @@ func TestRevenueAttribution_EndToEnd(t *testing.T) {
 				utmMedium:   "",
 				utmCampaign: "",
 				referrer:    "",
-				revenue:     4900, // $49.00
+				revenue:     4900,
 			},
 		}
 
@@ -213,7 +211,6 @@ func TestRevenueAttribution_EndToEnd(t *testing.T) {
 			require.NoError(t, err, "Should get dashboard metrics")
 			require.NotNil(t, dashboard)
 
-			// Total revenue should be sum of all payments: $99 + $149 + $49 = $297
 			expectedTotalRevenue := int64(9900 + 14900 + 4900)
 			assert.Equal(t, expectedTotalRevenue, dashboard.TotalRevenue, "Total revenue should be $297")
 			assert.Equal(t, uint64(3), dashboard.TotalPayments, "Should have 3 payments")
@@ -247,8 +244,6 @@ func TestRevenueAttribution_EndToEnd(t *testing.T) {
 		err := fixtures.SendEventToTestServer(t, tc, project, firstVisit)
 		require.NoError(t, err)
 
-		// Sleep to ensure the second event has a different timestamp
-		// This is critical for argMin to correctly identify the first touch
 		time.Sleep(1 * time.Second)
 
 		secondVisit := fixtures.NewEventBuilder().
@@ -271,15 +266,12 @@ func TestRevenueAttribution_EndToEnd(t *testing.T) {
 		}, 2, 10*time.Second)
 		require.NoError(t, err)
 
-		// Wait for the first-touch attribution materialized view to be populated
-		// This is critical - we need to ensure the aggregation table is updated before sending payment
 		maxWait := 10 * time.Second
 		checkInterval := 500 * time.Millisecond
 		deadline := time.Now().Add(maxWait)
 		attributionFound := false
 
 		for time.Now().Before(deadline) {
-			// Check if first-touch attribution data exists for this visitor
 			query := `
 				SELECT argMinMerge(first_utm_source) as first_source
 				FROM visitor_first_touch_attribution
@@ -302,7 +294,6 @@ func TestRevenueAttribution_EndToEnd(t *testing.T) {
 		}
 
 		if !attributionFound {
-			// As a fallback, try to manually force the aggregation by querying events directly
 			t.Logf("⚠ First-touch attribution MV not updated, trying direct query...")
 			directQuery := `
 				SELECT argMin(utm_parameters['utm_source'], client_timestamp_utc) as first_source
@@ -320,7 +311,7 @@ func TestRevenueAttribution_EndToEnd(t *testing.T) {
 
 		payment := fixtures.NewPaymentBuilder(project.ID, project.OrganizationID).
 			WithVisitorID(visitorID).
-			WithAmount(19900). // $199
+			WithAmount(19900).
 			WithProductName("Premium Product").
 			Build()
 
@@ -384,13 +375,13 @@ func TestRevenueAttribution_EndToEnd(t *testing.T) {
 
 		payment1 := fixtures.NewPaymentBuilder(project.ID, project.OrganizationID).
 			WithVisitorID(visitorID).
-			WithAmount(5000). // $50
+			WithAmount(5000).
 			WithProductName("Product A").
 			Build()
 
 		payment2 := fixtures.NewPaymentBuilder(project.ID, project.OrganizationID).
 			WithVisitorID(visitorID).
-			WithAmount(7500). // $75
+			WithAmount(7500).
 			WithProductName("Product B").
 			Build()
 
@@ -410,8 +401,6 @@ func TestRevenueAttribution_EndToEnd(t *testing.T) {
 		}, 2, 10*time.Second)
 		require.NoError(t, err)
 
-		// Give revenue attribution system more time to process and aggregate the payments
-		// The system needs time to: process payments, update aggregations, and refresh materialized views
 		time.Sleep(6 * time.Second)
 
 		profile, err := revenueDataService.GetCustomerProfile(ctx, project.ID, visitorID)
@@ -447,11 +436,9 @@ func TestRevenueMetrics_ConversionRate(t *testing.T) {
 	t.Run("should NOT report 100% conversion when not all visitors purchased", func(t *testing.T) {
 		builder := fixtures.NewRevenueTestDataBuilder()
 
-		// Add 10 visitors, only 2 purchasing = 20% conversion
 		builder.AddSimpleConvertingVisitor(10000, "google")
 		builder.AddSimpleConvertingVisitor(10000, "facebook")
 
-		// Add 8 non-converting visitors
 		for i := 0; i < 8; i++ {
 			builder.AddNonConvertingVisitor(fmt.Sprintf("source-%d", i))
 		}
@@ -469,7 +456,6 @@ func TestRevenueMetrics_ConversionRate(t *testing.T) {
 		t.Logf("Actual: %d visitors, %d paying customers, %.2f%% conversion",
 			metrics.TotalVisitors, metrics.PayingCustomers, metrics.ConversionRate)
 
-		// Critical assertions to catch the bug
 		assert.GreaterOrEqual(t, metrics.TotalVisitors, uint64(expectedVisitors),
 			"Should count ALL visitors, not just paying ones")
 		assert.Equal(t, uint64(expectedCustomers), metrics.PayingCustomers,
@@ -479,21 +465,17 @@ func TestRevenueMetrics_ConversionRate(t *testing.T) {
 		assert.Greater(t, metrics.ConversionRate, 0.0,
 			"Conversion rate should be positive")
 
-		// Should be around 20% (2/10)
 		assert.InDelta(t, 20.0, metrics.ConversionRate, 5.0,
 			"Conversion rate should be approximately 20%")
 	})
 
 	t.Run("should calculate accurate conversion rate with known data", func(t *testing.T) {
-		// Create test data: 100 visitors, 20 paying customers = 20% conversion rate
 		builder := fixtures.NewRevenueTestDataBuilder()
 
-		// Add 20 paying customers with $100 each
 		for i := 0; i < 20; i++ {
 			builder.AddSimpleConvertingVisitor(10000, fmt.Sprintf("source-%d", i%5))
 		}
 
-		// Add 80 non-converting visitors
 		for i := 0; i < 80; i++ {
 			builder.AddNonConvertingVisitor(fmt.Sprintf("source-%d", i%5))
 		}
@@ -505,19 +487,16 @@ func TestRevenueMetrics_ConversionRate(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, metrics)
 
-		// Verify conversion rate
 		expectedVisitors, expectedCustomers, expectedRevenue := builder.GetConversionStats()
 		assert.GreaterOrEqual(t, metrics.TotalVisitors, uint64(expectedVisitors))
 		assert.GreaterOrEqual(t, metrics.PayingCustomers, uint64(expectedCustomers))
 
-		// Calculate expected conversion rate based on our test data
 		expectedConversionRate := float64(expectedCustomers) * 100.0 / float64(expectedVisitors)
 		t.Logf("Expected: %d visitors, %d customers, %.2f%% conversion, $%.2f revenue",
 			expectedVisitors, expectedCustomers, expectedConversionRate, float64(expectedRevenue)/100)
 		t.Logf("Actual: %d visitors, %d customers, %.2f%% conversion",
 			metrics.TotalVisitors, metrics.PayingCustomers, metrics.ConversionRate)
 
-		// Conversion rate should be within reasonable range
 		assert.Greater(t, metrics.ConversionRate, 0.0)
 		assert.LessOrEqual(t, metrics.ConversionRate, 100.0)
 	})
@@ -529,7 +508,6 @@ func TestRevenueMetrics_ConversionRate(t *testing.T) {
 		_, project2 := fixtures.SetupAccountAndProject(t, tc2)
 		time.Sleep(1 * time.Second)
 
-		// Create only non-converting visitors
 		builder := fixtures.NewRevenueTestDataBuilder()
 		for i := 0; i < 10; i++ {
 			builder.AddNonConvertingVisitor("test-source")
@@ -553,7 +531,6 @@ func TestRevenueMetrics_ConversionRate(t *testing.T) {
 		_, project3 := fixtures.SetupAccountAndProject(t, tc3)
 		time.Sleep(1 * time.Second)
 
-		// Create only converting visitors
 		builder := fixtures.NewRevenueTestDataBuilder()
 		for i := 0; i < 10; i++ {
 			builder.AddSimpleConvertingVisitor(5000, "test-source")
@@ -584,7 +561,6 @@ func TestRevenueMetrics_CustomerLTV(t *testing.T) {
 	t.Run("should calculate correct LTV for single-purchase customers", func(t *testing.T) {
 		builder := fixtures.NewRevenueTestDataBuilder()
 
-		// 5 customers, each spending $100 = $500 total, LTV = $100
 		for i := 0; i < 5; i++ {
 			builder.AddSimpleConvertingVisitor(10000, "test-source")
 		}
@@ -602,7 +578,6 @@ func TestRevenueMetrics_CustomerLTV(t *testing.T) {
 			expectedLTV/100, float64(expectedRevenue)/100, expectedCustomers)
 		t.Logf("Actual LTV: $%.2f", metrics.CustomerLifetimeValue/100)
 
-		// LTV should be close to $100 (10000 cents)
 		assert.GreaterOrEqual(t, metrics.CustomerLifetimeValue, 9000.0)
 		assert.LessOrEqual(t, metrics.CustomerLifetimeValue, 11000.0)
 	})
@@ -616,16 +591,12 @@ func TestRevenueMetrics_CustomerLTV(t *testing.T) {
 
 		builder := fixtures.NewRevenueTestDataBuilder()
 
-		// Customer 1: 3 purchases of $100, $150, $200 = $450
 		builder.AddRepeatCustomer([]int64{10000, 15000, 20000}, "google")
 
-		// Customer 2: 2 purchases of $100, $100 = $200
 		builder.AddRepeatCustomer([]int64{10000, 10000}, "facebook")
 
-		// Customer 3: 1 purchase of $50
 		builder.AddSimpleConvertingVisitor(5000, "twitter")
 
-		// Total: 3 customers, $700 revenue, LTV = $233.33
 		err := builder.InsertTestData(t, tc2, project2)
 		require.NoError(t, err)
 
@@ -652,14 +623,12 @@ func TestRevenueMetrics_CustomerLTV(t *testing.T) {
 
 		builder := fixtures.NewRevenueTestDataBuilder()
 
-		// Create customers with widely varying purchase amounts
-		builder.AddSimpleConvertingVisitor(1000, "source1")   // $10
-		builder.AddSimpleConvertingVisitor(5000, "source2")   // $50
-		builder.AddSimpleConvertingVisitor(10000, "source3")  // $100
-		builder.AddSimpleConvertingVisitor(50000, "source4")  // $500
-		builder.AddSimpleConvertingVisitor(100000, "source5") // $1000
+		builder.AddSimpleConvertingVisitor(1000, "source1")
+		builder.AddSimpleConvertingVisitor(5000, "source2")
+		builder.AddSimpleConvertingVisitor(10000, "source3")
+		builder.AddSimpleConvertingVisitor(50000, "source4")
+		builder.AddSimpleConvertingVisitor(100000, "source5")
 
-		// Total: 5 customers, $1660 revenue, LTV = $332
 		err := builder.InsertTestData(t, tc3, project3)
 		require.NoError(t, err)
 
@@ -691,16 +660,13 @@ func TestRevenueMetrics_RepeatPurchaseRate(t *testing.T) {
 	t.Run("should calculate correct repeat purchase rate", func(t *testing.T) {
 		builder := fixtures.NewRevenueTestDataBuilder()
 
-		// 3 repeat customers (2+ purchases each)
 		builder.AddRepeatCustomer([]int64{10000, 15000}, "google")
 		builder.AddRepeatCustomer([]int64{5000, 5000, 5000}, "facebook")
 		builder.AddRepeatCustomer([]int64{20000, 10000}, "twitter")
 
-		// 2 single-purchase customers
 		builder.AddSimpleConvertingVisitor(10000, "linkedin")
 		builder.AddSimpleConvertingVisitor(15000, "reddit")
 
-		// Total: 5 customers, 3 repeat = 60% repeat purchase rate
 		err := builder.InsertTestData(t, tc, project)
 		require.NoError(t, err)
 
@@ -730,7 +696,6 @@ func TestRevenueMetrics_RepeatPurchaseRate(t *testing.T) {
 
 		builder := fixtures.NewRevenueTestDataBuilder()
 
-		// All single-purchase customers
 		for i := 0; i < 5; i++ {
 			builder.AddSimpleConvertingVisitor(10000, fmt.Sprintf("source-%d", i))
 		}
@@ -758,7 +723,6 @@ func TestRevenueMetrics_RepeatPurchaseRate(t *testing.T) {
 
 		builder := fixtures.NewRevenueTestDataBuilder()
 
-		// All repeat customers
 		for i := 0; i < 5; i++ {
 			builder.AddRepeatCustomer([]int64{10000, 15000}, fmt.Sprintf("source-%d", i))
 		}
@@ -786,16 +750,12 @@ func TestRevenueMetrics_RepeatPurchaseRate(t *testing.T) {
 
 		builder := fixtures.NewRevenueTestDataBuilder()
 
-		// Customer with 1 purchase
 		builder.AddSimpleConvertingVisitor(10000, "source1")
 
-		// Customer with 2 purchases
 		builder.AddRepeatCustomer([]int64{10000, 10000}, "source2")
 
-		// Customer with 3 purchases
 		builder.AddRepeatCustomer([]int64{10000, 10000, 10000}, "source3")
 
-		// Average: (1 + 2 + 3) / 3 = 2.0 purchases per customer
 		err := builder.InsertTestData(t, tc4, project4)
 		require.NoError(t, err)
 
@@ -824,10 +784,8 @@ func TestRevenueMetrics_Timeline(t *testing.T) {
 		builder := fixtures.NewRevenueTestDataBuilder()
 		now := time.Now().UTC()
 
-		// Create payments distributed over 7 days
-		// Day 1: $100, Day 2: $200, Day 3: $300, etc.
 		for day := 0; day < 7; day++ {
-			amount := int64((day + 1) * 10000) // $100, $200, $300, etc.
+			amount := int64((day + 1) * 10000)
 			timestamp := now.Add(-time.Duration(6-day) * 24 * time.Hour)
 
 			builder.AddVisitor(fixtures.VisitorPaymentScenario{
@@ -853,12 +811,10 @@ func TestRevenueMetrics_Timeline(t *testing.T) {
 		err := builder.InsertTestData(t, tc, project)
 		require.NoError(t, err)
 
-		// Query timeline data
 		timeline, err := revenueDataService.GetTimeline(ctx, project.ID, revenueTypes.TimeRangeLast7Days)
 		require.NoError(t, err)
 		require.NotEmpty(t, timeline)
 
-		// Calculate total revenue from timeline
 		var timelineTotal int64
 		for _, dp := range timeline {
 			timelineTotal += dp.TotalRevenue
@@ -868,14 +824,12 @@ func TestRevenueMetrics_Timeline(t *testing.T) {
 				dp.PaymentCount)
 		}
 
-		// Expected total: $100 + $200 + ... + $700 = $2800
 		_, _, expectedRevenue := builder.GetConversionStats()
 
 		t.Logf("Expected total revenue: $%.2f", float64(expectedRevenue)/100)
 		t.Logf("Timeline total revenue: $%.2f", float64(timelineTotal)/100)
 
-		// Timeline total should match expected revenue
-		assert.GreaterOrEqual(t, timelineTotal, expectedRevenue-1000) // Allow small variance
+		assert.GreaterOrEqual(t, timelineTotal, expectedRevenue-1000)
 		assert.LessOrEqual(t, timelineTotal, expectedRevenue+1000)
 	})
 
@@ -889,7 +843,6 @@ func TestRevenueMetrics_Timeline(t *testing.T) {
 		builder := fixtures.NewRevenueTestDataBuilder()
 		now := time.Now().UTC()
 
-		// Create payments for each hour in the last 6 hours
 		for hour := 0; hour < 6; hour++ {
 			timestamp := now.Add(-time.Duration(5-hour) * time.Hour)
 			builder.AddVisitor(fixtures.VisitorPaymentScenario{
@@ -912,7 +865,6 @@ func TestRevenueMetrics_Timeline(t *testing.T) {
 		err := builder.InsertTestData(t, tc2, project2)
 		require.NoError(t, err)
 
-		// Query with "today" or "last_7_days" which should use hourly buckets
 		timeline, err := tc2.RevenueData.GetTimeline(ctx, project2.ID, revenueTypes.TimeRangeLast7Days)
 		require.NoError(t, err)
 		require.NotEmpty(t, timeline)
@@ -922,7 +874,6 @@ func TestRevenueMetrics_Timeline(t *testing.T) {
 			t.Logf("  %s: $%.2f", dp.Timestamp.Format("2006-01-02 15:04"), float64(dp.TotalRevenue)/100)
 		}
 
-		// Should have data points
 		assert.Greater(t, len(timeline), 0)
 	})
 
@@ -936,7 +887,6 @@ func TestRevenueMetrics_Timeline(t *testing.T) {
 		builder := fixtures.NewRevenueTestDataBuilder()
 		now := time.Now().UTC()
 
-		// Create payments for each day in the last 30 days
 		for day := 0; day < 30; day++ {
 			timestamp := now.Add(-time.Duration(29-day) * 24 * time.Hour)
 			builder.AddVisitor(fixtures.VisitorPaymentScenario{
@@ -965,9 +915,8 @@ func TestRevenueMetrics_Timeline(t *testing.T) {
 
 		t.Logf("Timeline has %d data points", len(timeline))
 
-		// Should use daily aggregation
 		assert.Greater(t, len(timeline), 0)
-		assert.LessOrEqual(t, len(timeline), 31) // Max 31 days
+		assert.LessOrEqual(t, len(timeline), 31)
 	})
 }
 
@@ -984,7 +933,6 @@ func TestRevenueMetrics_PaymentDataQuality(t *testing.T) {
 	t.Run("should detect no duplicates with clean data", func(t *testing.T) {
 		builder := fixtures.NewRevenueTestDataBuilder()
 
-		// Add 5 clean payments
 		for i := 0; i < 5; i++ {
 			builder.AddSimpleConvertingVisitor(10000, fmt.Sprintf("source-%d", i))
 		}
@@ -1012,7 +960,6 @@ func TestRevenueMetrics_PaymentDataQuality(t *testing.T) {
 		_, project2 := fixtures.SetupAccountAndProject(t, tc2)
 		time.Sleep(1 * time.Second)
 
-		// Insert the same payment_id twice with different amounts (simulating duplicate bug)
 		duplicatePaymentID := "payment-duplicate-123"
 		payments := []paymentTypes.PaymentEventFrame{
 			{
@@ -1034,7 +981,7 @@ func TestRevenueMetrics_PaymentDataQuality(t *testing.T) {
 				ProviderType:     "stripe",
 				PaymentStatus:    "succeeded",
 				ProductName:      "Product A",
-				Amount:           15000, // Different amount!
+				Amount:           15000,
 				Currency:         "USD",
 				PaymentTimestamp: time.Now().UTC(),
 				ProjectID:        project2.ID,
@@ -1074,12 +1021,11 @@ func TestRevenueMetrics_TopCustomers(t *testing.T) {
 	t.Run("should return top customers ranked by revenue", func(t *testing.T) {
 		builder := fixtures.NewRevenueTestDataBuilder()
 
-		// Create customers with varying revenue amounts
-		builder.AddRepeatCustomer([]int64{50000, 30000, 20000}, "google")    // $1000 total
-		builder.AddRepeatCustomer([]int64{40000, 35000}, "facebook")         // $750 total
-		builder.AddSimpleConvertingVisitor(60000, "twitter")                 // $600 total
-		builder.AddRepeatCustomer([]int64{25000, 20000, 5000}, "linkedin")   // $500 total
-		builder.AddSimpleConvertingVisitor(30000, "reddit")                  // $300 total
+		builder.AddRepeatCustomer([]int64{50000, 30000, 20000}, "google")
+		builder.AddRepeatCustomer([]int64{40000, 35000}, "facebook")
+		builder.AddSimpleConvertingVisitor(60000, "twitter")
+		builder.AddRepeatCustomer([]int64{25000, 20000, 5000}, "linkedin")
+		builder.AddSimpleConvertingVisitor(30000, "reddit")
 
 		err := builder.InsertTestData(t, tc, project)
 		require.NoError(t, err)
@@ -1088,10 +1034,8 @@ func TestRevenueMetrics_TopCustomers(t *testing.T) {
 		require.NoError(t, err)
 		require.NotEmpty(t, customers)
 
-		// Should be ranked by total revenue descending
 		assert.GreaterOrEqual(t, len(customers), 5)
 
-		// First customer should have highest revenue
 		assert.GreaterOrEqual(t, customers[0].TotalRevenue, customers[1].TotalRevenue)
 
 		for i, customer := range customers {
@@ -1115,7 +1059,6 @@ func TestRevenueMetrics_TopCustomers(t *testing.T) {
 
 		builder := fixtures.NewRevenueTestDataBuilder()
 
-		// Create 10 customers
 		for i := 0; i < 10; i++ {
 			builder.AddSimpleConvertingVisitor(int64((i+1)*1000), fmt.Sprintf("source-%d", i))
 		}
@@ -1123,7 +1066,6 @@ func TestRevenueMetrics_TopCustomers(t *testing.T) {
 		err := builder.InsertTestData(t, tc2, project2)
 		require.NoError(t, err)
 
-		// Request only top 3
 		customers, err := tc2.RevenueData.GetTopCustomers(ctx, project2.ID, revenueTypes.TimeRangeLast7Days, 3)
 		require.NoError(t, err)
 
@@ -1148,7 +1090,6 @@ func TestRevenueMetrics_TopCustomers(t *testing.T) {
 		require.NoError(t, err)
 		require.NotEmpty(t, customers)
 
-		// Check first customer has expected fields
 		customer := customers[0]
 		assert.NotEmpty(t, customer.VisitorID)
 		assert.Greater(t, customer.TotalRevenue, int64(0))
@@ -1172,11 +1113,9 @@ func TestRevenueMetrics_DashboardIdentifiedCustomers(t *testing.T) {
 	time.Sleep(1 * time.Second)
 
 	t.Run("should calculate metrics for identified customers", func(t *testing.T) {
-		// Create identified visitors (with email)
 		visitorID1 := "visitor-identified-1"
 		visitorID2 := "visitor-identified-2"
 
-		// Send events with identity
 		event1 := fixtures.NewEventBuilder().
 			WithVisitorID(visitorID1).
 			WithSessionID("session-1").
@@ -1195,7 +1134,6 @@ func TestRevenueMetrics_DashboardIdentifiedCustomers(t *testing.T) {
 			WithUTMSource("facebook").
 			Build()
 
-		// Send unidentified visitor event
 		event3 := fixtures.NewEventBuilder().
 			WithVisitorID("visitor-anonymous").
 			WithSessionID("session-3").
@@ -1217,7 +1155,6 @@ func TestRevenueMetrics_DashboardIdentifiedCustomers(t *testing.T) {
 
 		time.Sleep(2 * time.Second)
 
-		// Send payments for identified customers
 		payment1 := fixtures.NewPaymentBuilder(project.ID, project.OrganizationID).
 			WithVisitorID(visitorID1).
 			WithAmount(10000).
@@ -1228,7 +1165,6 @@ func TestRevenueMetrics_DashboardIdentifiedCustomers(t *testing.T) {
 			WithAmount(20000).
 			Build()
 
-		// Payment for anonymous visitor
 		payment3 := fixtures.NewPaymentBuilder(project.ID, project.OrganizationID).
 			WithVisitorID("visitor-anonymous").
 			WithAmount(5000).
@@ -1254,11 +1190,9 @@ func TestRevenueMetrics_DashboardIdentifiedCustomers(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, dashboard)
 
-		// Total metrics
 		assert.Equal(t, int64(35000), dashboard.TotalRevenue, "Total revenue should be $350")
 		assert.Equal(t, uint64(3), dashboard.PayingCustomers, "Should have 3 paying customers")
 
-		// Identified customer metrics
 		assert.Equal(t, uint64(2), dashboard.IdentifiedCustomers, "Should have 2 identified customers")
 		assert.Equal(t, int64(30000), dashboard.IdentifiedCustomerRevenue, "Identified revenue should be $300")
 		assert.InDelta(t, 15000.0, dashboard.AvgRevenuePerIdentifiedCustomer, 100.0, "Avg per identified customer should be ~$150")
@@ -1281,7 +1215,6 @@ func TestRevenueMetrics_AttributionEdgeCases(t *testing.T) {
 	time.Sleep(1 * time.Second)
 
 	t.Run("should handle empty results gracefully", func(t *testing.T) {
-		// Query empty project
 		dataPoints, err := revenueDataService.GetAttributionByOrigin(ctx, project.ID, revenueTypes.TimeRangeLast7Days)
 		require.NoError(t, err)
 		assert.Empty(t, dataPoints)
@@ -1302,7 +1235,6 @@ func TestRevenueMetrics_AttributionEdgeCases(t *testing.T) {
 
 		builder := fixtures.NewRevenueTestDataBuilder()
 
-		// Visitor with no UTM parameters
 		builder.AddDirectTrafficVisitor(10000)
 
 		err := builder.InsertTestData(t, tc2, project2)
@@ -1312,7 +1244,6 @@ func TestRevenueMetrics_AttributionEdgeCases(t *testing.T) {
 		require.NoError(t, err)
 		require.NotEmpty(t, dataPoints)
 
-		// Should have "(not set)" attribution
 		found := false
 		for _, dp := range dataPoints {
 			if dp.UTMValue == "(not set)" {
@@ -1339,17 +1270,14 @@ func TestRevenueMetrics_AttributionEdgeCases(t *testing.T) {
 		err := builder.InsertTestData(t, tc3, project3)
 		require.NoError(t, err)
 
-		// Test source
 		sourceData, err := tc3.RevenueData.GetAttributionByUTM(ctx, project3.ID, revenueTypes.TimeRangeLast7Days, "source")
 		require.NoError(t, err)
 		assert.NotEmpty(t, sourceData)
 
-		// Test medium
 		mediumData, err := tc3.RevenueData.GetAttributionByUTM(ctx, project3.ID, revenueTypes.TimeRangeLast7Days, "medium")
 		require.NoError(t, err)
 		assert.NotEmpty(t, mediumData)
 
-		// Test campaign
 		campaignData, err := tc3.RevenueData.GetAttributionByUTM(ctx, project3.ID, revenueTypes.TimeRangeLast7Days, "campaign")
 		require.NoError(t, err)
 		assert.NotEmpty(t, campaignData)
@@ -1368,64 +1296,58 @@ func TestConversionMetrics_EndToEnd(t *testing.T) {
 	revenueDataService := tc.RevenueData
 	ctx := context.Background()
 
-	// Give processors and ingestion server time to initialize
 	time.Sleep(1 * time.Second)
 
 	t.Run("should calculate conversion metrics correctly", func(t *testing.T) {
 		now := time.Now().UTC()
 
-		// Create test scenarios with different visitor behaviors
 		visitors := []struct {
-			visitorID       string
-			sessionID       string
-			firstVisitTime  time.Time
-			willPurchase    bool
-			purchaseTime    time.Time
-			purchaseAmount  int64
-			repeatPurchase  bool
-			repeat2Amount   int64
-			repeat2Time     time.Time
-			utmSource       string
+			visitorID      string
+			sessionID      string
+			firstVisitTime time.Time
+			willPurchase   bool
+			purchaseTime   time.Time
+			purchaseAmount int64
+			repeatPurchase bool
+			repeat2Amount  int64
+			repeat2Time    time.Time
+			utmSource      string
 		}{
 			{
-				// Visitor 1: Quick converter (purchases within 1 hour)
 				visitorID:      "visitor-quick-convert",
 				sessionID:      "session-quick-1",
 				firstVisitTime: now.Add(-2 * time.Hour),
 				willPurchase:   true,
 				purchaseTime:   now.Add(-1 * time.Hour),
-				purchaseAmount: 10000, // $100
+				purchaseAmount: 10000,
 				repeatPurchase: false,
 				utmSource:      "google",
 			},
 			{
-				// Visitor 2: Slow converter (purchases after 24 hours) with repeat purchase
 				visitorID:      "visitor-slow-convert",
 				sessionID:      "session-slow-1",
 				firstVisitTime: now.Add(-48 * time.Hour),
 				willPurchase:   true,
 				purchaseTime:   now.Add(-24 * time.Hour),
-				purchaseAmount: 15000, // $150
+				purchaseAmount: 15000,
 				repeatPurchase: true,
-				repeat2Amount:  8000, // $80
+				repeat2Amount:  8000,
 				repeat2Time:    now.Add(-12 * time.Hour),
 				utmSource:      "facebook",
 			},
 			{
-				// Visitor 3: Medium converter with repeat purchase
 				visitorID:      "visitor-medium-convert",
 				sessionID:      "session-medium-1",
 				firstVisitTime: now.Add(-12 * time.Hour),
 				willPurchase:   true,
 				purchaseTime:   now.Add(-6 * time.Hour),
-				purchaseAmount: 20000, // $200
+				purchaseAmount: 20000,
 				repeatPurchase: true,
-				repeat2Amount:  5000, // $50
+				repeat2Amount:  5000,
 				repeat2Time:    now.Add(-3 * time.Hour),
 				utmSource:      "twitter",
 			},
 			{
-				// Visitor 4: Non-converter (visited but never purchased)
 				visitorID:      "visitor-no-convert-1",
 				sessionID:      "session-no-1",
 				firstVisitTime: now.Add(-6 * time.Hour),
@@ -1433,7 +1355,6 @@ func TestConversionMetrics_EndToEnd(t *testing.T) {
 				utmSource:      "linkedin",
 			},
 			{
-				// Visitor 5: Another non-converter
 				visitorID:      "visitor-no-convert-2",
 				sessionID:      "session-no-2",
 				firstVisitTime: now.Add(-3 * time.Hour),
@@ -1442,7 +1363,6 @@ func TestConversionMetrics_EndToEnd(t *testing.T) {
 			},
 		}
 
-		// Send all visitor events with appropriate timestamps
 		for _, v := range visitors {
 			builder := fixtures.NewEventBuilder().
 				WithVisitorID(v.visitorID).
@@ -1454,13 +1374,10 @@ func TestConversionMetrics_EndToEnd(t *testing.T) {
 				WithUTMCampaign("conversion-test")
 
 			event := builder.Build()
-			// Note: In a real scenario, we'd set the timestamp, but fixtures may not support it
-			// The test will work with current timestamps but time-to-purchase metrics may vary
 			err := fixtures.SendEventToTestServer(t, tc, project, event)
 			require.NoError(t, err, "Failed to send visitor event for %s", v.visitorID)
 		}
 
-		// Wait for all events to be processed
 		_, err := fixtures.WaitForEvents(t, tc, fixtures.QueryEventsOptions{
 			ProjectID: &project.ID,
 		}, 5, 15*time.Second)
@@ -1468,10 +1385,8 @@ func TestConversionMetrics_EndToEnd(t *testing.T) {
 
 		time.Sleep(2 * time.Second)
 
-		// Send payments for visitors who will purchase
 		for _, v := range visitors {
 			if v.willPurchase {
-				// First payment
 				payment := fixtures.NewPaymentBuilder(project.ID, project.OrganizationID).
 					WithVisitorID(v.visitorID).
 					WithAmount(v.purchaseAmount).
@@ -1481,7 +1396,6 @@ func TestConversionMetrics_EndToEnd(t *testing.T) {
 				err := fixtures.SendPaymentToNATS(t, tc, payment)
 				require.NoError(t, err, "Failed to send first payment for %s", v.visitorID)
 
-				// Send repeat purchase if applicable
 				if v.repeatPurchase {
 					time.Sleep(200 * time.Millisecond)
 					payment2 := fixtures.NewPaymentBuilder(project.ID, project.OrganizationID).
@@ -1496,16 +1410,14 @@ func TestConversionMetrics_EndToEnd(t *testing.T) {
 			}
 		}
 
-		// Wait for payments to be processed
 		succeededStatus := "succeeded"
 		payments, err := fixtures.WaitForPayments(t, tc, fixtures.QueryPaymentEventsOptions{
 			ProjectID:     &project.ID,
 			PaymentStatus: &succeededStatus,
-		}, 5, 15*time.Second) // 3 paying customers, 2 with repeat purchases = 5 total payments
+		}, 5, 15*time.Second)
 		require.NoError(t, err, "Payments should appear in ClickHouse")
 		assert.Len(t, payments, 5, "Should have stored all 5 payments")
 
-		// Give the system time to process and aggregate
 		time.Sleep(3 * time.Second)
 
 		t.Run("conversion rate", func(t *testing.T) {
@@ -1513,10 +1425,6 @@ func TestConversionMetrics_EndToEnd(t *testing.T) {
 			require.NoError(t, err, "Should get conversion metrics")
 			require.NotNil(t, metrics)
 
-			// Due to potential test isolation issues, we verify that:
-			// 1. We have at least 5 visitors (our test visitors)
-			// 2. We have at least 3 paying customers (from our test)
-			// 3. Conversion rate is reasonable (not 0% or 100%)
 			assert.GreaterOrEqual(t, metrics.TotalVisitors, uint64(5), "Should have at least 5 total visitors")
 			assert.GreaterOrEqual(t, metrics.PayingCustomers, uint64(3), "Should have at least 3 paying customers")
 			assert.Greater(t, metrics.ConversionRate, 0.0, "Conversion rate should be positive")
@@ -1533,19 +1441,10 @@ func TestConversionMetrics_EndToEnd(t *testing.T) {
 			require.NoError(t, err, "Should get conversion metrics")
 			require.NotNil(t, metrics)
 
-			// The test uses current timestamps, so we can't assert exact values
-			// But we can verify that the metrics are reasonable
 			assert.GreaterOrEqual(t, metrics.AvgTimeToFirstPurchase, 0.0,
 				"Average time to first purchase should be non-negative")
 			assert.GreaterOrEqual(t, metrics.MedianTimeToFirstPurchase, 0.0,
 				"Median time to first purchase should be non-negative")
-
-			// In production with accurate timestamps:
-			// - visitor-quick-convert: 1 hour
-			// - visitor-slow-convert: 24 hours
-			// - visitor-medium-convert: 6 hours
-			// Average: (1 + 24 + 6) / 3 = 10.33 hours
-			// Median: 6 hours
 
 			t.Logf("✓ Avg Time to First Purchase: %.2f hours", metrics.AvgTimeToFirstPurchase)
 			t.Logf("✓ Median Time to First Purchase: %.2f hours", metrics.MedianTimeToFirstPurchase)
@@ -1556,19 +1455,9 @@ func TestConversionMetrics_EndToEnd(t *testing.T) {
 			require.NoError(t, err, "Should get conversion metrics")
 			require.NotNil(t, metrics)
 
-			// Total revenue from our test paying customers:
-			// visitor-quick-convert: $100
-			// visitor-slow-convert: $150 + $80 = $230
-			// visitor-medium-convert: $200 + $50 = $250
-			// Total: $580
-			// Expected minimum LTV = $580 / number_of_paying_customers
-
-			// LTV should be positive and reasonable
 			assert.Greater(t, metrics.CustomerLifetimeValue, 0.0, "Customer LTV should be positive")
 
-			// Our test generated $580 in total revenue across 3 paying customers
-			// So average LTV should be at least $100 (lowest individual customer revenue)
-			minExpectedLTV := float64(10000) // $100 in cents
+			minExpectedLTV := float64(10000)
 			assert.GreaterOrEqual(t, metrics.CustomerLifetimeValue, minExpectedLTV,
 				"Customer LTV should be at least $100")
 
@@ -1580,14 +1469,11 @@ func TestConversionMetrics_EndToEnd(t *testing.T) {
 			require.NoError(t, err, "Should get conversion metrics")
 			require.NotNil(t, metrics)
 
-			// Of our 3 paying customers, 2 made repeat purchases
-			// So repeat purchase rate should be positive and reasonable
 			assert.GreaterOrEqual(t, metrics.RepeatPurchaseRate, 0.0,
 				"Repeat purchase rate should be non-negative")
 			assert.LessOrEqual(t, metrics.RepeatPurchaseRate, 100.0,
 				"Repeat purchase rate should not exceed 100%")
 
-			// Average purchases per customer should be at least 1.0
 			assert.GreaterOrEqual(t, metrics.AvgPurchasesPerCustomer, 1.0,
 				"Average purchases per customer should be at least 1")
 
@@ -1600,7 +1486,6 @@ func TestConversionMetrics_EndToEnd(t *testing.T) {
 			require.NoError(t, err, "Should get conversion metrics")
 			require.NotNil(t, metrics)
 
-			// Verify all metrics together
 			t.Logf("\n=== Conversion Funnel Summary ===")
 			t.Logf("Total Visitors: %d", metrics.TotalVisitors)
 			t.Logf("Paying Customers: %d", metrics.PayingCustomers)
@@ -1611,7 +1496,6 @@ func TestConversionMetrics_EndToEnd(t *testing.T) {
 			t.Logf("Repeat Purchase Rate: %.2f%%", metrics.RepeatPurchaseRate)
 			t.Logf("Avg Purchases per Customer: %.2f", metrics.AvgPurchasesPerCustomer)
 
-			// Sanity checks
 			assert.Greater(t, metrics.TotalVisitors, uint64(0), "Should have visitors")
 			assert.Greater(t, metrics.PayingCustomers, uint64(0), "Should have paying customers")
 			assert.Greater(t, metrics.ConversionRate, 0.0, "Should have positive conversion rate")

@@ -10,7 +10,6 @@ import (
 	"github.com/google/uuid"
 )
 
-// AccountFixture holds the created account, organization, and auth tokens
 type AccountFixture struct {
 	Email        string
 	Password     string
@@ -21,9 +20,6 @@ type AccountFixture struct {
 	OrgName      string
 }
 
-// CreateAccount creates a mock account fixture for testing.
-// Note: Accounts are managed by Stack Auth (external auth provider).
-// This function only returns mock data - no database records are created.
 func CreateAccount(t *testing.T, tc *di.TestContainer) *AccountFixture {
 	t.Helper()
 

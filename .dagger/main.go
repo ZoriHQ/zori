@@ -1,8 +1,3 @@
-// Dagger CI module for Zori
-//
-// This module provides CI/CD pipelines for the Zori project.
-// It handles integration testing with PostgreSQL, ClickHouse, NATS, and Redis.
-
 package main
 
 import (
@@ -14,15 +9,12 @@ import (
 
 type Zori struct{}
 
-// Test runs the full integration test suite with all required services
 func (m *Zori) Test(ctx context.Context, source *dagger.Directory) (string, error) {
-	// Start required services
 	postgres := m.postgres()
 	clickhouse := m.clickhouse()
 	nats := m.nats()
 	redis := m.redis()
 
-	// Build the test container with all dependencies
 	container := m.testContainer(source).
 		WithServiceBinding("postgres", postgres).
 		WithServiceBinding("clickhouse", clickhouse).
@@ -58,7 +50,6 @@ func (m *Zori) Test(ctx context.Context, source *dagger.Directory) (string, erro
 		WithEnvVariable("FEATURE_PASSWORD_RECOVERY", "false").
 		WithEnvVariable("FEATURE_RATE_LIMITING", "false")
 
-	// Run PostgreSQL migrations
 	_, err := container.
 		WithExec([]string{"goose", "-dir", "internal/storage/postgres/migrations", "postgres", "postgres://postgres:postgres@postgres:5432/postgres?sslmode=disable", "up"}).
 		Sync(ctx)
@@ -66,7 +57,6 @@ func (m *Zori) Test(ctx context.Context, source *dagger.Directory) (string, erro
 		return "", fmt.Errorf("failed to run postgres migrations: %w", err)
 	}
 
-	// Run ClickHouse migrations
 	_, err = container.
 		WithEnvVariable("GOOSE_DRIVER", "clickhouse").
 		WithEnvVariable("GOOSE_DBSTRING", "clickhouse://default:default@clickhouse:9000").
@@ -76,21 +66,17 @@ func (m *Zori) Test(ctx context.Context, source *dagger.Directory) (string, erro
 		return "", fmt.Errorf("failed to run clickhouse migrations: %w", err)
 	}
 
-	// Run tests with coverage
 	return container.
 		WithExec([]string{"go", "test", "-v", "-race", "-coverprofile=coverage.out", "-covermode=atomic", "./..."}).
 		Stdout(ctx)
 }
 
-// TestWithCoverage runs tests and exports the coverage report
 func (m *Zori) TestWithCoverage(ctx context.Context, source *dagger.Directory) *dagger.File {
-	// Start required services
 	postgres := m.postgres()
 	clickhouse := m.clickhouse()
 	nats := m.nats()
 	redis := m.redis()
 
-	// Build the test container with all dependencies
 	container := m.testContainer(source).
 		WithServiceBinding("postgres", postgres).
 		WithServiceBinding("clickhouse", clickhouse).
@@ -128,23 +114,19 @@ func (m *Zori) TestWithCoverage(ctx context.Context, source *dagger.Directory) *
 		WithEnvVariable("FEATURE_PASSWORD_RECOVERY", "false").
 		WithEnvVariable("FEATURE_RATE_LIMITING", "false")
 
-	// Run PostgreSQL migrations
 	container = container.
 		WithExec([]string{"goose", "-dir", "internal/storage/postgres/migrations", "postgres", "postgres://postgres:postgres@postgres:5432/postgres?sslmode=disable", "up"})
 
-	// Run ClickHouse migrations
 	container = container.
 		WithEnvVariable("GOOSE_DRIVER", "clickhouse").
 		WithEnvVariable("GOOSE_DBSTRING", "clickhouse://default:default@clickhouse:9000").
 		WithExec([]string{"goose", "-dir", "internal/storage/clickhouse/migrations", "up"})
 
-	// Run tests with coverage
 	return container.
 		WithExec([]string{"go", "test", "-v", "-coverprofile=coverage.out", "-covermode=atomic", "./..."}).
 		File("coverage.out")
 }
 
-// testContainer creates a Go container with the source code and dependencies installed
 func (m *Zori) testContainer(source *dagger.Directory) *dagger.Container {
 	return dag.Container().
 		From("golang:1.24-alpine").
@@ -158,7 +140,6 @@ func (m *Zori) testContainer(source *dagger.Directory) *dagger.Container {
 		WithExec([]string{"go", "mod", "download"})
 }
 
-// postgres returns a PostgreSQL service container
 func (m *Zori) postgres() *dagger.Service {
 	return dag.Container().
 		From("postgres:latest").
@@ -168,7 +149,6 @@ func (m *Zori) postgres() *dagger.Service {
 		AsService()
 }
 
-// clickhouse returns a ClickHouse service container
 func (m *Zori) clickhouse() *dagger.Service {
 	return dag.Container().
 		From("clickhouse/clickhouse-server:latest").
@@ -179,7 +159,6 @@ func (m *Zori) clickhouse() *dagger.Service {
 		AsService()
 }
 
-// nats returns a NATS JetStream service container
 func (m *Zori) nats() *dagger.Service {
 	return dag.Container().
 		From("nats:latest").
@@ -188,7 +167,6 @@ func (m *Zori) nats() *dagger.Service {
 		AsService()
 }
 
-// redis returns a Redis service container
 func (m *Zori) redis() *dagger.Service {
 	return dag.Container().
 		From("redis:latest").
@@ -196,7 +174,6 @@ func (m *Zori) redis() *dagger.Service {
 		AsService()
 }
 
-// Build creates a production-ready binary
 func (m *Zori) Build(ctx context.Context, source *dagger.Directory) *dagger.File {
 	return dag.Container().
 		From("golang:1.24-alpine").

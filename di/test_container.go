@@ -37,7 +37,6 @@ import (
 	"go.uber.org/fx/fxtest"
 )
 
-// TestContainer holds all the dependencies needed for testing
 type TestContainer struct {
 	App                *fxtest.App
 	DB                 *postgres.PostgresDB
@@ -58,7 +57,6 @@ func NewTestPostgresDB(cfg *config.Config) (*postgres.PostgresDB, error) {
 	sqldb := sql.OpenDB(pgdriver.NewConnector(pgdriver.WithDSN(cfg.PostgresURL)))
 	db := bun.NewDB(sqldb, pgdialect.New())
 
-	// Test the connection
 	if err := db.PingContext(context.Background()); err != nil {
 		return nil, fmt.Errorf("failed to ping test database: %w", err)
 	}
@@ -119,8 +117,6 @@ func NewTestContainer(t *testing.T) *TestContainer {
 			lc.Append(fx.Hook{
 				OnStart: func(ctx context.Context) error {
 					go func() {
-						// Use port 0 to let the OS assign a free port automatically
-						// This prevents port conflicts when running tests in parallel
 						ln, err := net.Listen("tcp", "localhost:0")
 						if err != nil {
 							t.Logf("Failed to create listener: %v", err)

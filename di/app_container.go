@@ -143,7 +143,6 @@ func registerDatabaseLifecycle(lc fx.Lifecycle, db *postgres.PostgresDB) {
 func registerOSSInitializer(lc fx.Lifecycle, initializer *ossInit.OSSInitializer, cfg *config.Config) {
 	lc.Append(fx.Hook{
 		OnStart: func(ctx context.Context) error {
-			// Extract reset-auth flag from context
 			resetAuth := false
 			if val := ctx.Value(config.ResetAuthKey); val != nil {
 				if b, ok := val.(bool); ok {

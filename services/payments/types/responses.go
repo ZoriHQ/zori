@@ -40,7 +40,7 @@ type ProviderField struct {
 
 type ProviderInstructionsResponse struct {
 	ProviderType     models.ProviderType `json:"provider_type" example:"stripe"`
-	ConnectionMethod string              `json:"connection_method" example:"oauth"` // "oauth" or "manual"
+	ConnectionMethod string              `json:"connection_method" example:"oauth"`
 	OAuthURL         string              `json:"oauth_url,omitempty" example:"https://connect.stripe.com/oauth/authorize?..."`
 	Fields           []ProviderField     `json:"fields,omitempty"`
 	Instructions     string              `json:"instructions,omitempty" example:"Click the button below to connect your Stripe account"`

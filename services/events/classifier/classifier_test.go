@@ -184,7 +184,6 @@ func TestClassifier_ClassifyTextElement(t *testing.T) {
 func TestClassifier_CTASelectorPatterns(t *testing.T) {
 	c := NewClassifier("example.com")
 
-	// Test CTA detection by selector class names
 	result := c.Classify("button", ".btn-cta", "Click")
 
 	if !result.IsCTAClick {
@@ -195,7 +194,6 @@ func TestClassifier_CTASelectorPatterns(t *testing.T) {
 func TestClassifier_NoClickElement(t *testing.T) {
 	c := NewClassifier("example.com")
 
-	// Test with empty values
 	result := c.Classify("", "", "")
 
 	if result.ElementType != ElementTypeOther {

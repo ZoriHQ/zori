@@ -13,7 +13,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// ProjectFixture holds the created project details
 type ProjectFixture struct {
 	ID             string
 	Name           string
@@ -23,11 +22,9 @@ type ProjectFixture struct {
 	AllowLocalHost bool
 }
 
-// CreateProject creates a new project for the given account directly in the database
 func CreateProject(t *testing.T, tc *di.TestContainer, account *AccountFixture, name string, domain string, allowLocalhost bool) *ProjectFixture {
 	t.Helper()
 
-	// Directly insert to database - no need for HTTP requests or service layer
 	ctx := context.Background()
 	projectID := uuid.New().String()
 	projectToken := fmt.Sprintf("test_token_%d", time.Now().UnixNano())
@@ -56,7 +53,6 @@ func CreateProject(t *testing.T, tc *di.TestContainer, account *AccountFixture, 
 	}
 }
 
-// SetupAccountAndProject is a convenience function that creates both account and project
 func SetupAccountAndProject(t *testing.T, tc *di.TestContainer) (*AccountFixture, *ProjectFixture) {
 	t.Helper()
 
@@ -67,7 +63,7 @@ func SetupAccountAndProject(t *testing.T, tc *di.TestContainer) (*AccountFixture
 		account,
 		fmt.Sprintf("Test Project %d", time.Now().UnixNano()),
 		"https://example.com",
-		true, // Allow localhost for testing
+		true,
 	)
 
 	return account, project

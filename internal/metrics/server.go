@@ -58,7 +58,6 @@ func (s *MetricsServer) Start() error {
 		}
 	}()
 
-	// Start metrics pusher to Grafana Cloud if configured
 	if s.config.GrafanaCloudRemoteURL != "" {
 		pusher, err := NewMetricsPusher(s.collector, s.config)
 		if err != nil {
@@ -77,14 +76,12 @@ func (s *MetricsServer) Start() error {
 }
 
 func (s *MetricsServer) Stop(ctx context.Context) error {
-	// Stop metrics pusher first
 	if s.pusher != nil && s.pushStop != nil {
 		log.Println("Stopping metrics pusher...")
 		s.pushStop()
 		s.pusher.Stop()
 	}
 
-	// Stop HTTP server
 	if s.server == nil {
 		return nil
 	}

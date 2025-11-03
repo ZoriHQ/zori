@@ -14,7 +14,6 @@ func NewStageReferrer() StageReferrer {
 	return StageReferrer{}
 }
 
-// ProcessFrame for StageReferrer processed referrer information and extracts path and domain for better indexing
 func (s StageReferrer) ProcessFrame(event *types.ClientEventFrameV1) error {
 	if event.Referrer == nil || *event.Referrer == "" {
 		return nil

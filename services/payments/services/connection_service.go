@@ -63,7 +63,6 @@ func (cs *ConnectionService) GetProviderInstructions(c *ctx.Ctx) (*types.Provide
 		return nil, echo.NewHTTPError(http.StatusBadRequest, "provider_type query parameter is required")
 	}
 
-	// Validate provider type
 	validProviders := map[string]bool{
 		"stripe":        true,
 		"paddle":        true,

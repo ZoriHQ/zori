@@ -19,7 +19,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// createMockContext creates a mock context with user and org information
 func createMockContext(account *fixtures.AccountFixture) *ctx.Ctx {
 	e := echo.New()
 	req := httptest.NewRequest("POST", "/", nil)
@@ -42,7 +41,6 @@ func TestProjectService_CreateProject(t *testing.T) {
 
 	account := fixtures.CreateAccount(t, tc)
 
-	// Initialize data layer (we test the data layer directly, not the service)
 	projectData := data.NewProjectData(tc.DB)
 	mockCtx := createMockContext(account)
 
@@ -68,7 +66,6 @@ func TestProjectService_CreateProject(t *testing.T) {
 				assert.Equal(t, account.OrgID, response.OrganizationID)
 				assert.Nil(t, response.FirstEventReceivedAt)
 
-				// Verify in database
 				dbCtx := context.Background()
 				var project models.Project
 				err = tc.DB.DB.NewSelect().
@@ -102,8 +99,6 @@ func TestProjectService_CreateProject(t *testing.T) {
 				AllowLocalHost: false,
 			},
 			checkResponse: func(t *testing.T, response *models.Project, err error) {
-				// This would be validated at the service layer, but we're testing data layer
-				// So we expect this to create the project without validation
 				require.NoError(t, err)
 			},
 		},
@@ -114,8 +109,6 @@ func TestProjectService_CreateProject(t *testing.T) {
 				AllowLocalHost: false,
 			},
 			checkResponse: func(t *testing.T, response *models.Project, err error) {
-				// This would be validated at the service layer, but we're testing data layer
-				// So we expect this to create the project without validation
 				require.NoError(t, err)
 			},
 		},
@@ -135,11 +128,9 @@ func TestProjectService_ListProjects(t *testing.T) {
 
 	account := fixtures.CreateAccount(t, tc)
 
-	// Initialize service layer
 	projectData := data.NewProjectData(tc.DB)
 	projectService := services.NewProjectService(projectData)
 
-	// Create test projects directly via data layer
 	mockCtx := createMockContext(account)
 
 	project1, err := projectData.CreateProject(mockCtx, &types.CreateProjectRequest{
@@ -170,18 +161,16 @@ func TestProjectService_ListProjects(t *testing.T) {
 		assert.Contains(t, projectNames, "Project 1")
 		assert.Contains(t, projectNames, "Project 2")
 
-		// Verify correct org filtering
 		for _, project := range response.Projects {
 			assert.Equal(t, account.OrgID, project.OrganizationID)
 		}
 	})
 
 	t.Run("list projects for different org returns empty", func(t *testing.T) {
-		// Create context with different org ID
 		differentOrgAccount := &fixtures.AccountFixture{
 			AccountID: account.AccountID,
 			Email:     account.Email,
-			OrgID:     uuid.New().String(), // Different org
+			OrgID:     uuid.New().String(),
 		}
 		differentOrgCtx := createMockContext(differentOrgAccount)
 
@@ -192,7 +181,6 @@ func TestProjectService_ListProjects(t *testing.T) {
 		assert.Len(t, response.Projects, 0)
 	})
 
-	// Cleanup
 	_, _ = projectData.DeleteProject(mockCtx, project1.ID)
 	_, _ = projectData.DeleteProject(mockCtx, project2.ID)
 }
@@ -203,13 +191,11 @@ func TestProjectService_GetProject(t *testing.T) {
 
 	account := fixtures.CreateAccount(t, tc)
 
-	// Initialize service layer
 	projectData := data.NewProjectData(tc.DB)
 	projectService := services.NewProjectService(projectData)
 
 	mockCtx := createMockContext(account)
 
-	// Create test project
 	createdProject, err := projectData.CreateProject(mockCtx, &types.CreateProjectRequest{
 		Name:           "Get Test Project",
 		WebsiteURL:     "https://gettest.com",
@@ -243,7 +229,6 @@ func TestProjectService_GetProject(t *testing.T) {
 		assert.Nil(t, response)
 	})
 
-	// Cleanup
 	_, _ = projectData.DeleteProject(mockCtx, createdProject.ID)
 }
 
@@ -253,12 +238,10 @@ func TestProjectService_UpdateProject(t *testing.T) {
 
 	account := fixtures.CreateAccount(t, tc)
 
-	// Initialize service layer
 	projectData := data.NewProjectData(tc.DB)
 
 	mockCtx := createMockContext(account)
 
-	// Create test project
 	createdProject, err := projectData.CreateProject(mockCtx, &types.CreateProjectRequest{
 		Name:           "Update Test Project",
 		WebsiteURL:     "https://updatetest.com",
@@ -289,7 +272,6 @@ func TestProjectService_UpdateProject(t *testing.T) {
 				assert.Equal(t, "https://updated.com", response.Domain)
 				assert.True(t, response.AllowLocalHost)
 
-				// Verify in database
 				dbCtx := context.Background()
 				var project models.Project
 				err = tc.DB.DB.NewSelect().
@@ -328,7 +310,6 @@ func TestProjectService_UpdateProject(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Check if project exists
 			exists, err := projectData.ProjectExists(context.Background(), tt.projectID, tt.orgID)
 			if err != nil {
 				tt.checkResponse(t, nil, err)
@@ -349,7 +330,6 @@ func TestProjectService_UpdateProject(t *testing.T) {
 		})
 	}
 
-	// Cleanup
 	_, _ = projectData.DeleteProject(mockCtx, createdProject.ID)
 }
 
@@ -359,12 +339,10 @@ func TestProjectService_DeleteProject(t *testing.T) {
 
 	account := fixtures.CreateAccount(t, tc)
 
-	// Initialize service layer
 	projectData := data.NewProjectData(tc.DB)
 
 	mockCtx := createMockContext(account)
 
-	// Create test project
 	createdProject, err := projectData.CreateProject(mockCtx, &types.CreateProjectRequest{
 		Name:           "Delete Test Project",
 		WebsiteURL:     "https://deletetest.com",
@@ -378,14 +356,13 @@ func TestProjectService_DeleteProject(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, int64(1), rowsAffected)
 
-		// Verify deletion in database
 		dbCtx := context.Background()
 		var project models.Project
 		err = tc.DB.DB.NewSelect().
 			Model(&project).
 			Where("id = ?", createdProject.ID).
 			Scan(dbCtx)
-		assert.Error(t, err) // Should not find the project
+		assert.Error(t, err)
 	})
 
 	t.Run("delete non-existent project", func(t *testing.T) {
@@ -397,7 +374,6 @@ func TestProjectService_DeleteProject(t *testing.T) {
 	})
 
 	t.Run("delete project with wrong org ID", func(t *testing.T) {
-		// Create new project for this test
 		newProject, err := projectData.CreateProject(mockCtx, &types.CreateProjectRequest{
 			Name:           "Another Delete Test",
 			WebsiteURL:     "https://deletetest2.com",
@@ -405,7 +381,6 @@ func TestProjectService_DeleteProject(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		// Try to delete with wrong org ID
 		wrongOrgAccount := &fixtures.AccountFixture{
 			AccountID: account.AccountID,
 			Email:     account.Email,
@@ -416,14 +391,12 @@ func TestProjectService_DeleteProject(t *testing.T) {
 		rowsAffected, err := projectData.DeleteProject(wrongOrgCtx, newProject.ID)
 
 		require.NoError(t, err)
-		assert.Equal(t, int64(0), rowsAffected) // Should not delete
+		assert.Equal(t, int64(0), rowsAffected)
 
-		// Verify project still exists
 		exists, err := projectData.ProjectExists(context.Background(), newProject.ID, account.OrgID)
 		require.NoError(t, err)
 		assert.True(t, exists)
 
-		// Cleanup
 		_, _ = projectData.DeleteProject(mockCtx, newProject.ID)
 	})
 }

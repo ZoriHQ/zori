@@ -125,12 +125,9 @@ func (id *TypeID[T]) Scan(value interface{}) error {
 	return nil
 }
 
-// Value implements the driver.Valuer interface
 func (id TypeID[T]) Value() (driver.Value, error) {
 	return id.value, nil
 }
-
-// --- JSON marshaling ---
 
 func (id TypeID[T]) MarshalJSON() ([]byte, error) {
 	return []byte(`"` + id.String() + `"`), nil
@@ -151,9 +148,6 @@ type ProjectID struct{}
 func (ProjectID) Prefix() string { return "zpr" }
 func (ProjectID) Salt() string   { return "zori-project-salt-key" }
 
-// --- Helper functions ---
-
-// NewProjectID creates a new ProjectID TypeID
 func NewProjectID(value int) TypeID[ProjectID] {
 	return New[ProjectID](value)
 }
@@ -200,7 +194,6 @@ func NewBookmarkID(value int) TypeID[BookmarkID] {
 	return New[BookmarkID](value)
 }
 
-// ParseInt parses a string as an integer
 func ParseInt(s string) (int, error) {
 	value, err := strconv.Atoi(s)
 	if err != nil {

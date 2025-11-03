@@ -2,7 +2,6 @@ package types
 
 import "time"
 
-// TimeRange represents the time period for revenue queries
 type TimeRange string
 
 const (
@@ -13,54 +12,45 @@ const (
 	TimeRangeLast90Days TimeRange = "last_90_days"
 )
 
-// DashboardRequest represents a request for revenue dashboard metrics
 type DashboardRequest struct {
 	ProjectID string    `query:"project_id" validate:"required"`
 	TimeRange TimeRange `query:"time_range" validate:"required"`
 }
 
-// DashboardResponse represents key revenue metrics for a dashboard
 type DashboardResponse struct {
-	// Core revenue metrics
-	TotalRevenue  int64  `json:"total_revenue"`  // Total revenue in smallest currency unit (cents)
-	TotalPayments uint64 `json:"total_payments"` // Count of successful payments
+	TotalRevenue  int64  `json:"total_revenue"`
+	TotalPayments uint64 `json:"total_payments"`
 	Currency      string `json:"currency,omitempty"`
 
-	// Customer metrics
-	PayingCustomers uint64  `json:"paying_customers"` // Unique customers who paid
-	ConversionRate  float64 `json:"conversion_rate"`  // % of visitors who paid
+	PayingCustomers uint64  `json:"paying_customers"`
+	ConversionRate  float64 `json:"conversion_rate"`
 
-	// Average metrics
-	AvgOrderValue         float64 `json:"avg_order_value"`          // Average payment amount
-	AvgRevenuePerCustomer float64 `json:"avg_revenue_per_customer"` // Average revenue per paying customer
-	AvgRevenuePerSession  float64 `json:"avg_revenue_per_session"`  // Average revenue per session
+	AvgOrderValue         float64 `json:"avg_order_value"`
+	AvgRevenuePerCustomer float64 `json:"avg_revenue_per_customer"`
+	AvgRevenuePerSession  float64 `json:"avg_revenue_per_session"`
 
-	// Identified customers (have email/user_id)
 	IdentifiedCustomers             uint64  `json:"identified_customers"`
 	IdentifiedCustomerRevenue       int64   `json:"identified_customer_revenue"`
 	AvgRevenuePerIdentifiedCustomer float64 `json:"avg_revenue_per_identified_customer"`
 }
 
-// AttributionByOriginRequest represents a request for revenue attribution by traffic origin
 type AttributionByOriginRequest struct {
 	ProjectID string    `query:"project_id" validate:"required"`
 	TimeRange TimeRange `query:"time_range" validate:"required"`
 }
 
-// AttributionByOriginResponse represents revenue attributed to traffic origins
 type AttributionByOriginResponse struct {
 	Data []OriginAttributionDataPoint `json:"data"`
 }
 
-// OriginAttributionDataPoint represents revenue from a specific traffic origin
 type OriginAttributionDataPoint struct {
 	Origin                string  `json:"origin"`
-	TotalRevenue          int64   `json:"total_revenue"` // Revenue in smallest currency unit (cents)
+	TotalRevenue          int64   `json:"total_revenue"`
 	RevenuePercentage     float64 `json:"revenue_percentage"`
 	PayingCustomers       uint64  `json:"paying_customers"`
 	UniqueVisitors        uint64  `json:"unique_visitors"`
-	ConversionRate        float64 `json:"conversion_rate"`          // paying_customers / unique_visitors * 100
-	AvgRevenuePerCustomer float64 `json:"avg_revenue_per_customer"` // Average revenue per paying customer
+	ConversionRate        float64 `json:"conversion_rate"`
+	AvgRevenuePerCustomer float64 `json:"avg_revenue_per_customer"`
 	PaymentCount          uint64  `json:"payment_count"`
 	Currency              string  `json:"currency,omitempty"`
 }
@@ -68,7 +58,7 @@ type OriginAttributionDataPoint struct {
 type AttributionByUTMRequest struct {
 	ProjectID string    `query:"project_id" validate:"required"`
 	TimeRange TimeRange `query:"time_range" validate:"required"`
-	UTMType   string    `query:"utm_type"` // "source", "medium", or "campaign"
+	UTMType   string    `query:"utm_type"`
 }
 
 type AttributionByUTMResponse struct {
@@ -77,12 +67,12 @@ type AttributionByUTMResponse struct {
 
 type UTMAttributionDataPoint struct {
 	UTMValue              string  `json:"utm_value"`
-	TotalRevenue          int64   `json:"total_revenue"` // Revenue in smallest currency unit (cents)
+	TotalRevenue          int64   `json:"total_revenue"`
 	RevenuePercentage     float64 `json:"revenue_percentage"`
 	PayingCustomers       uint64  `json:"paying_customers"`
 	UniqueVisitors        uint64  `json:"unique_visitors"`
-	ConversionRate        float64 `json:"conversion_rate"`          // paying_customers / unique_visitors * 100
-	AvgRevenuePerCustomer float64 `json:"avg_revenue_per_customer"` // Average revenue per paying customer
+	ConversionRate        float64 `json:"conversion_rate"`
+	AvgRevenuePerCustomer float64 `json:"avg_revenue_per_customer"`
 	PaymentCount          uint64  `json:"payment_count"`
 	Currency              string  `json:"currency,omitempty"`
 }
@@ -98,7 +88,7 @@ type TimelineResponse struct {
 
 type TimelineDataPoint struct {
 	Timestamp    time.Time `json:"timestamp"`
-	TotalRevenue int64     `json:"total_revenue"` // Revenue in smallest currency unit (cents)
+	TotalRevenue int64     `json:"total_revenue"`
 	PaymentCount uint64    `json:"payment_count"`
 	Currency     string    `json:"currency,omitempty"`
 }
@@ -106,7 +96,7 @@ type TimelineDataPoint struct {
 type TopCustomersRequest struct {
 	ProjectID string    `query:"project_id" validate:"required"`
 	TimeRange TimeRange `query:"time_range" validate:"required"`
-	Limit     int       `query:"limit"` // Default 50
+	Limit     int       `query:"limit"`
 }
 
 type TopCustomersResponse struct {
@@ -115,14 +105,14 @@ type TopCustomersResponse struct {
 }
 
 type TopCustomer struct {
-	CustomerID         string    `json:"customer_id"` // Resolved customer identity (user_id > external_id > visitor_id)
-	VisitorID          string    `json:"visitor_id"`  // Representative visitor_id for this customer
-	VisitorIDs         []string  `json:"visitor_ids,omitempty"` // All visitor_ids for this customer
+	CustomerID         string    `json:"customer_id"`
+	VisitorID          string    `json:"visitor_id"`
+	VisitorIDs         []string  `json:"visitor_ids,omitempty"`
 	UserID             *string   `json:"user_id,omitempty"`
 	ExternalID         *string   `json:"external_id,omitempty"`
 	Email              *string   `json:"email,omitempty"`
 	Name               *string   `json:"name,omitempty"`
-	TotalRevenue       int64     `json:"total_revenue"` // Total revenue in smallest currency unit (cents)
+	TotalRevenue       int64     `json:"total_revenue"`
 	PaymentCount       uint64    `json:"payment_count"`
 	FirstPaymentDate   time.Time `json:"first_payment_date"`
 	LastPaymentDate    time.Time `json:"last_payment_date"`
@@ -138,31 +128,26 @@ type CustomerProfileRequest struct {
 }
 
 type CustomerProfileResponse struct {
-	// Identity
 	VisitorID  string  `json:"visitor_id"`
 	UserID     *string `json:"user_id,omitempty"`
 	ExternalID *string `json:"external_id,omitempty"`
 	Email      *string `json:"email,omitempty"`
 	Name       *string `json:"name,omitempty"`
 
-	// Revenue summary
-	TotalRevenue     int64      `json:"total_revenue"` // Total revenue in smallest currency unit (cents)
+	TotalRevenue     int64      `json:"total_revenue"`
 	PaymentCount     uint64     `json:"payment_count"`
 	FirstPaymentDate *time.Time `json:"first_payment_date,omitempty"`
 	LastPaymentDate  *time.Time `json:"last_payment_date,omitempty"`
 	AvgOrderValue    int64      `json:"avg_order_value"`
 	Currency         string     `json:"currency,omitempty"`
 
-	// Attribution
 	FirstTrafficOrigin *string `json:"first_traffic_origin,omitempty"`
 	FirstUTMSource     *string `json:"first_utm_source,omitempty"`
 	FirstUTMMedium     *string `json:"first_utm_medium,omitempty"`
 	FirstUTMCampaign   *string `json:"first_utm_campaign,omitempty"`
 
-	// Payment history
 	Payments []Payment `json:"payments"`
 
-	// Revenue over time (last 90 days)
 	RevenueOverTime []RevenueOverTimeDataPoint `json:"revenue_over_time"`
 }
 
@@ -190,50 +175,42 @@ type ConversionMetricsRequest struct {
 type ConversionMetricsResponse struct {
 	TotalVisitors   uint64  `json:"total_visitors"`
 	PayingCustomers uint64  `json:"paying_customers"`
-	ConversionRate  float64 `json:"conversion_rate"` // % of visitors who paid
+	ConversionRate  float64 `json:"conversion_rate"`
 
-	// Time to conversion
-	AvgTimeToFirstPurchase    float64 `json:"avg_time_to_first_purchase_hours"` // Hours from first visit to first purchase
+	AvgTimeToFirstPurchase    float64 `json:"avg_time_to_first_purchase_hours"`
 	MedianTimeToFirstPurchase float64 `json:"median_time_to_first_purchase_hours"`
 
-	// Customer value
-	CustomerLifetimeValue float64 `json:"customer_lifetime_value"` // Average total revenue per paying customer
+	CustomerLifetimeValue float64 `json:"customer_lifetime_value"`
 
-	// Repeat purchase metrics
-	RepeatPurchaseRate      float64 `json:"repeat_purchase_rate"` // % of customers who made 2+ purchases
+	RepeatPurchaseRate      float64 `json:"repeat_purchase_rate"`
 	AvgPurchasesPerCustomer float64 `json:"avg_purchases_per_customer"`
 }
 
 type CohortRevenueMetricsRequest struct {
 	ProjectID  string    `json:"project_id" validate:"required"`
-	VisitorIDs []string  `json:"visitor_ids" validate:"required,min=1"` // List of visitor IDs to analyze
-	TimeRange  TimeRange `json:"time_range,omitempty"`                  // Optional: filter by payment date
+	VisitorIDs []string  `json:"visitor_ids" validate:"required,min=1"`
+	TimeRange  TimeRange `json:"time_range,omitempty"`
 }
 
 type CohortRevenueMetricsResponse struct {
-	// Cohort size
-	TotalVisitors   uint64 `json:"total_visitors"`   // Total unique visitors in cohort
-	TotalCustomers  uint64 `json:"total_customers"`  // Total unique customer identities in cohort
-	PayingCustomers uint64 `json:"paying_customers"` // Unique customer identities who made payments
+	TotalVisitors   uint64 `json:"total_visitors"`
+	TotalCustomers  uint64 `json:"total_customers"`
+	PayingCustomers uint64 `json:"paying_customers"`
 
-	// Revenue metrics
-	TotalRevenue          int64   `json:"total_revenue"` // Total revenue from cohort (in cents)
+	TotalRevenue          int64   `json:"total_revenue"`
 	AvgRevenuePerCustomer float64 `json:"avg_revenue_per_customer"`
 	AvgRevenuePerVisitor  float64 `json:"avg_revenue_per_visitor"`
 	Currency              string  `json:"currency,omitempty"`
 
-	// Payment metrics
-	TotalPayments           uint64  `json:"total_payments"`
-	AvgPaymentsPerCustomer  float64 `json:"avg_payments_per_customer"`
-	AvgOrderValue           float64 `json:"avg_order_value"`
-	ConversionRate          float64 `json:"conversion_rate"` // paying_customers / total_customers * 100
-	VisitorConversionRate   float64 `json:"visitor_conversion_rate"` // paying_customers / total_visitors * 100
+	TotalPayments          uint64  `json:"total_payments"`
+	AvgPaymentsPerCustomer float64 `json:"avg_payments_per_customer"`
+	AvgOrderValue          float64 `json:"avg_order_value"`
+	ConversionRate         float64 `json:"conversion_rate"`
+	VisitorConversionRate  float64 `json:"visitor_conversion_rate"`
 
-	// Time metrics
-	AvgTimeToFirstPurchase    float64 `json:"avg_time_to_first_purchase_hours"`    // Hours from first visit to first payment
-	MedianTimeToFirstPurchase float64 `json:"median_time_to_first_purchase_hours"` // Median time to first payment
+	AvgTimeToFirstPurchase    float64 `json:"avg_time_to_first_purchase_hours"`
+	MedianTimeToFirstPurchase float64 `json:"median_time_to_first_purchase_hours"`
 
-	// Customer identity mapping
-	IdentifiedCustomers uint64 `json:"identified_customers"` // Customers with user_id or external_id
-	AnonymousCustomers  uint64 `json:"anonymous_customers"`  // Customers with only visitor_id
+	IdentifiedCustomers uint64 `json:"identified_customers"`
+	AnonymousCustomers  uint64 `json:"anonymous_customers"`
 }
