@@ -118,6 +118,10 @@ func (s *AnalyticsService) GetRecentEvents(ctx *ctx.Ctx, filter *types.RecentEve
 		return nil, fmt.Errorf("failed to get recent events: %w", err)
 	}
 
+	if len(events) == 0 {
+		events = make([]types.RecentEvent, 0)
+	}
+
 	return &types.RecentEventsResponse{
 		Events: events,
 		Total:  totalCount,
