@@ -5,6 +5,7 @@ import (
 	"zori/internal/ctx"
 	"zori/internal/storage/postgres/models"
 	"zori/services/analytics/data"
+	"zori/services/analytics/filters"
 	"zori/services/analytics/types"
 	ingestionData "zori/services/ingestion/data"
 	projectsData "zori/services/projects/data"
@@ -33,25 +34,14 @@ func NewAnalyticsService(data *data.AnalyticsData, visitorRepository *ingestionD
 // @Accept json
 // @Produce json
 // @Security ApiKeyAuth
-// @Param project_id query string true "Project ID"
-// @Param time_range query string true "Time range" Enums(last_hour, today, last_7_days, last_30_days, last_90_days)
+// @Param filter query filters.SectionFilter true "Filter parameters"
 // @Success 200 {object} types.VisitorsByDeviceResponse "Visitors grouped by device type"
 // @Failure 400 {object} map[string]interface{} "Invalid request parameters"
 // @Failure 401 {object} map[string]interface{} "Unauthorized - Invalid or missing JWT token"
 // @Failure 500 {object} map[string]interface{} "Internal server error"
 // @Router /api/v1/analytics/visitors/device [get]
-func (s *AnalyticsService) GetVisitorsByDevice(c *ctx.Ctx) (*types.VisitorsByDeviceResponse, error) {
-	var req types.VisitorsRequest
-	if err := c.Echo.Bind(&req); err != nil {
-		return nil, echo.NewHTTPError(400, "Invalid request parameters")
-	}
-
-	// Validate time range
-	if req.TimeRange == "" {
-		req.TimeRange = types.TimeRangeLast7Days
-	}
-
-	dataPoints, err := s.data.GetVisitorsByDevice(c.Echo.Request().Context(), req.ProjectID, req.TimeRange)
+func (s *AnalyticsService) GetVisitorsByDevice(ctx *ctx.Ctx, filter *filters.SectionFilter) (*types.VisitorsByDeviceResponse, error) {
+	dataPoints, err := s.data.GetVisitorsByDevice(ctx, filter)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get visitors by device: %w", err)
 	}
@@ -68,25 +58,14 @@ func (s *AnalyticsService) GetVisitorsByDevice(c *ctx.Ctx) (*types.VisitorsByDev
 // @Accept json
 // @Produce json
 // @Security ApiKeyAuth
-// @Param project_id query string true "Project ID"
-// @Param time_range query string true "Time range" Enums(last_hour, today, last_7_days, last_30_days, last_90_days)
+// @Param filter query filters.SectionFilter true "Filter parameters"
 // @Success 200 {object} types.VisitorsByOriginResponse "Unique visitors grouped by origin"
 // @Failure 400 {object} map[string]interface{} "Invalid request parameters"
 // @Failure 401 {object} map[string]interface{} "Unauthorized - Invalid or missing JWT token"
 // @Failure 500 {object} map[string]interface{} "Internal server error"
 // @Router /api/v1/analytics/visitors/origin [get]
-func (s *AnalyticsService) GetUniqueVisitorsByOrigin(c *ctx.Ctx) (*types.VisitorsByOriginResponse, error) {
-	var req types.VisitorsRequest
-	if err := c.Echo.Bind(&req); err != nil {
-		return nil, echo.NewHTTPError(400, "Invalid request parameters")
-	}
-
-	// Validate time range
-	if req.TimeRange == "" {
-		req.TimeRange = types.TimeRangeLast7Days
-	}
-
-	dataPoints, err := s.data.GetUniqueVisitorsByOrigin(c.Echo.Request().Context(), req.ProjectID, req.TimeRange)
+func (s *AnalyticsService) GetUniqueVisitorsByOrigin(ctx *ctx.Ctx, filter *filters.SectionFilter) (*types.VisitorsByOriginResponse, error) {
+	dataPoints, err := s.data.GetUniqueVisitorsByOrigin(ctx, filter)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get visitors by origin: %w", err)
 	}
@@ -103,25 +82,14 @@ func (s *AnalyticsService) GetUniqueVisitorsByOrigin(c *ctx.Ctx) (*types.Visitor
 // @Accept json
 // @Produce json
 // @Security ApiKeyAuth
-// @Param project_id query string true "Project ID"
-// @Param time_range query string true "Time range" Enums(last_hour, today, last_7_days, last_30_days, last_90_days)
+// @Param filter query filters.SectionFilter true "Filter parameters"
 // @Success 200 {object} types.VisitorsByCountryResponse "Unique visitors grouped by country"
 // @Failure 400 {object} map[string]interface{} "Invalid request parameters"
 // @Failure 401 {object} map[string]interface{} "Unauthorized - Invalid or missing JWT token"
 // @Failure 500 {object} map[string]interface{} "Internal server error"
 // @Router /api/v1/analytics/visitors/country [get]
-func (s *AnalyticsService) GetUniqueVisitorsByCountry(c *ctx.Ctx) (*types.VisitorsByCountryResponse, error) {
-	var req types.VisitorsRequest
-	if err := c.Echo.Bind(&req); err != nil {
-		return nil, echo.NewHTTPError(400, "Invalid request parameters")
-	}
-
-	// Validate time range
-	if req.TimeRange == "" {
-		req.TimeRange = types.TimeRangeLast7Days
-	}
-
-	dataPoints, err := s.data.GetUniqueVisitorsByCountry(c.Echo.Request().Context(), req.ProjectID, req.TimeRange)
+func (s *AnalyticsService) GetUniqueVisitorsByCountry(ctx *ctx.Ctx, filter *filters.SectionFilter) (*types.VisitorsByCountryResponse, error) {
+	dataPoints, err := s.data.GetUniqueVisitorsByCountry(ctx, filter)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get visitors by country: %w", err)
 	}
@@ -138,30 +106,14 @@ func (s *AnalyticsService) GetUniqueVisitorsByCountry(c *ctx.Ctx) (*types.Visito
 // @Accept json
 // @Produce json
 // @Security ApiKeyAuth
-// @Param project_id query string true "Project ID"
-// @Param limit query int false "Maximum number of events to return (default: 15)"
-// @Param offset query int false "Offset for pagination (default: 0)"
-// @Param visitor_id query string false "Filter by visitor ID"
-// @Param user_id query string false "Filter by user ID"
-// @Param external_id query string false "Filter by external ID"
-// @Param traffic_origin query string false "Filter by traffic origin (referrer domain)"
-// @Param page_path query string false "Filter by page path"
+// @Param filter query types.RecentEventsRequest true "Filter parameters"
 // @Success 200 {object} types.RecentEventsResponse "List of recent events with pagination info"
 // @Failure 400 {object} map[string]interface{} "Invalid request parameters"
 // @Failure 401 {object} map[string]interface{} "Unauthorized - Invalid or missing JWT token"
 // @Failure 500 {object} map[string]interface{} "Internal server error"
 // @Router /api/v1/analytics/events/recent [get]
-func (s *AnalyticsService) GetRecentEvents(c *ctx.Ctx) (*types.RecentEventsResponse, error) {
-	var req types.RecentEventsRequest
-	if err := c.Echo.Bind(&req); err != nil {
-		return nil, echo.NewHTTPError(400, "Invalid request parameters")
-	}
-
-	if req.ProjectID == "" {
-		return nil, echo.NewHTTPError(400, "project_id is required")
-	}
-
-	events, totalCount, err := s.data.GetRecentEvents(c.Echo.Request().Context(), req)
+func (s *AnalyticsService) GetRecentEvents(ctx *ctx.Ctx, filter *types.RecentEventsRequest) (*types.RecentEventsResponse, error) {
+	events, totalCount, err := s.data.GetRecentEvents(ctx, filter)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get recent events: %w", err)
 	}
@@ -169,8 +121,8 @@ func (s *AnalyticsService) GetRecentEvents(c *ctx.Ctx) (*types.RecentEventsRespo
 	return &types.RecentEventsResponse{
 		Events: events,
 		Total:  totalCount,
-		Limit:  req.Limit,
-		Offset: req.Offset,
+		Limit:  filter.Limit,
+		Offset: filter.Offset,
 	}, nil
 }
 
@@ -181,29 +133,14 @@ func (s *AnalyticsService) GetRecentEvents(c *ctx.Ctx) (*types.RecentEventsRespo
 // @Accept json
 // @Produce json
 // @Security ApiKeyAuth
-// @Param project_id query string true "Project ID"
-// @Param time_range query string false "Time range" Enums(last_hour, today, last_7_days, last_30_days, last_90_days)
+// @Param filter query filters.SectionFilter true "Filter parameters"
 // @Success 200 {object} types.EventFilterOptionsResponse "Filter options for traffic origins and pages"
 // @Failure 400 {object} map[string]interface{} "Invalid request parameters"
 // @Failure 401 {object} map[string]interface{} "Unauthorized - Invalid or missing JWT token"
 // @Failure 500 {object} map[string]interface{} "Internal server error"
 // @Router /api/v1/analytics/events/filter-options [get]
-func (s *AnalyticsService) GetEventFilterOptions(c *ctx.Ctx) (*types.EventFilterOptionsResponse, error) {
-	var req types.EventFilterOptionsRequest
-	if err := c.Echo.Bind(&req); err != nil {
-		return nil, echo.NewHTTPError(400, "Invalid request parameters")
-	}
-
-	if req.ProjectID == "" {
-		return nil, echo.NewHTTPError(400, "project_id is required")
-	}
-
-	var timeRange *types.TimeRange
-	if req.TimeRange != "" {
-		timeRange = &req.TimeRange
-	}
-
-	filterOptions, err := s.data.GetEventFilterOptions(c.Echo.Request().Context(), req.ProjectID, timeRange)
+func (s *AnalyticsService) GetEventFilterOptions(ctx *ctx.Ctx, filter *filters.SectionFilter) (*types.EventFilterOptionsResponse, error) {
+	filterOptions, err := s.data.GetEventFilterOptions(ctx, filter)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get event filter options: %w", err)
 	}
@@ -218,29 +155,14 @@ func (s *AnalyticsService) GetEventFilterOptions(c *ctx.Ctx) (*types.EventFilter
 // @Accept json
 // @Produce json
 // @Security ApiKeyAuth
-// @Param project_id query string true "Project ID"
-// @Param time_range query string true "Time range" Enums(last_hour, today, last_7_days, last_30_days, last_90_days)
-// @Param limit query int false "Maximum number of visitors to return (default: 50)"
+// @Param filter query filters.SectionFilter true "Filter parameters"
 // @Success 200 {object} types.TopVisitorsResponse "List of top visitors"
 // @Failure 400 {object} map[string]interface{} "Invalid request parameters"
 // @Failure 401 {object} map[string]interface{} "Unauthorized - Invalid or missing JWT token"
 // @Failure 500 {object} map[string]interface{} "Internal server error"
 // @Router /api/v1/analytics/visitors/top [get]
-func (s *AnalyticsService) GetTopVisitors(c *ctx.Ctx) (*types.TopVisitorsResponse, error) {
-	var req types.TopVisitorsRequest
-	if err := c.Echo.Bind(&req); err != nil {
-		return nil, echo.NewHTTPError(400, "Invalid request parameters")
-	}
-
-	if req.TimeRange == "" {
-		req.TimeRange = types.TimeRangeLast7Days
-	}
-
-	if req.Limit <= 0 {
-		req.Limit = 50
-	}
-
-	visitors, err := s.data.GetTopVisitors(c.Echo.Request().Context(), req.ProjectID, req.TimeRange, req.Limit)
+func (s *AnalyticsService) GetTopVisitors(ctx *ctx.Ctx, filter *filters.SectionFilter) (*types.TopVisitorsResponse, error) {
+	visitors, err := s.data.GetTopVisitors(ctx, filter)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get top visitors: %w", err)
 	}
@@ -258,26 +180,15 @@ func (s *AnalyticsService) GetTopVisitors(c *ctx.Ctx) (*types.TopVisitorsRespons
 // @Accept json
 // @Produce json
 // @Security ApiKeyAuth
-// @Param project_id query string true "Project ID"
-// @Param visitor_id query string true "Visitor ID"
+// @Param filter query filters.VisitorProfileFilter true "Filter parameters"
 // @Success 200 {object} types.VisitorProfileResponse "Visitor profile details"
 // @Failure 400 {object} map[string]interface{} "Invalid request parameters"
 // @Failure 401 {object} map[string]interface{} "Unauthorized - Invalid or missing JWT token"
 // @Failure 404 {object} map[string]interface{} "Visitor not found"
 // @Failure 500 {object} map[string]interface{} "Internal server error"
 // @Router /api/v1/analytics/visitors/profile [get]
-func (s *AnalyticsService) GetVisitorProfile(c *ctx.Ctx) (*types.VisitorProfileResponse, error) {
-	projectID := c.Echo.QueryParam("project_id")
-	if projectID == "" {
-		return nil, echo.NewHTTPError(400, "project_id is required")
-	}
-
-	visitorID := c.Echo.QueryParam("visitor_id")
-	if visitorID == "" {
-		return nil, echo.NewHTTPError(400, "visitor_id is required")
-	}
-
-	profile, err := s.data.GetVisitorProfile(c.Echo.Request().Context(), projectID, visitorID)
+func (s *AnalyticsService) GetVisitorProfile(ctx *ctx.Ctx, filter *filters.VisitorProfileFilter) (*types.VisitorProfileResponse, error) {
+	profile, err := s.data.GetVisitorProfile(ctx, filter)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get visitor profile: %w", err)
 	}
@@ -292,24 +203,14 @@ func (s *AnalyticsService) GetVisitorProfile(c *ctx.Ctx) (*types.VisitorProfileR
 // @Accept json
 // @Produce json
 // @Security ApiKeyAuth
-// @Param project_id query string true "Project ID"
-// @Param time_range query string true "Time range" Enums(last_hour, today, last_7_days, last_30_days, last_90_days)
+// @Param filter query filters.SectionFilter true "Filter parameters"
 // @Success 200 {object} types.UniqueVisitorsTimelineResponse "Unique visitors timeline data"
 // @Failure 400 {object} map[string]interface{} "Invalid request parameters"
 // @Failure 401 {object} map[string]interface{} "Unauthorized - Invalid or missing JWT token"
 // @Failure 500 {object} map[string]interface{} "Internal server error"
 // @Router /api/v1/analytics/visitors/timeline [get]
-func (s *AnalyticsService) GetUniqueVisitorsTimeline(c *ctx.Ctx) (*types.UniqueVisitorsTimelineResponse, error) {
-	var req types.VisitorsRequest
-	if err := c.Echo.Bind(&req); err != nil {
-		return nil, echo.NewHTTPError(400, "Invalid request parameters")
-	}
-
-	if req.TimeRange == "" {
-		req.TimeRange = types.TimeRangeLast7Days
-	}
-
-	dataPoints, err := s.data.GetUniqueVisitorsTimeline(c.Echo.Request().Context(), req.ProjectID, req.TimeRange)
+func (s *AnalyticsService) GetUniqueVisitorsTimeline(ctx *ctx.Ctx, filter *filters.SectionFilter) (*types.UniqueVisitorsTimelineResponse, error) {
+	dataPoints, err := s.data.GetUniqueVisitorsTimeline(ctx, filter)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get unique visitors timeline: %w", err)
 	}
@@ -326,24 +227,14 @@ func (s *AnalyticsService) GetUniqueVisitorsTimeline(c *ctx.Ctx) (*types.UniqueV
 // @Accept json
 // @Produce json
 // @Security ApiKeyAuth
-// @Param project_id query string true "Project ID"
-// @Param time_range query string true "Time range" Enums(last_hour, today, last_7_days, last_30_days, last_90_days)
+// @Param filter query filters.SectionFilter true "Filter parameters"
 // @Success 200 {object} types.SessionMetricsResponse "Session metrics"
 // @Failure 400 {object} map[string]interface{} "Invalid request parameters"
 // @Failure 401 {object} map[string]interface{} "Unauthorized - Invalid or missing JWT token"
 // @Failure 500 {object} map[string]interface{} "Internal server error"
 // @Router /api/v1/analytics/sessions/metrics [get]
-func (s *AnalyticsService) GetSessionMetrics(c *ctx.Ctx) (*types.SessionMetricsResponse, error) {
-	var req types.SessionMetricsRequest
-	if err := c.Echo.Bind(&req); err != nil {
-		return nil, echo.NewHTTPError(400, "Invalid request parameters")
-	}
-
-	if req.TimeRange == "" {
-		req.TimeRange = types.TimeRangeLast7Days
-	}
-
-	metrics, err := s.data.GetSessionMetrics(c.Echo.Request().Context(), req.ProjectID, req.TimeRange)
+func (s *AnalyticsService) GetSessionMetrics(ctx *ctx.Ctx, filter *filters.SectionFilter) (*types.SessionMetricsResponse, error) {
+	metrics, err := s.data.GetSessionMetrics(ctx, filter)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get session metrics: %w", err)
 	}
@@ -358,25 +249,14 @@ func (s *AnalyticsService) GetSessionMetrics(c *ctx.Ctx) (*types.SessionMetricsR
 // @Accept json
 // @Produce json
 // @Security ApiKeyAuth
-// @Param project_id query string true "Project ID"
-// @Param time_range query string true "Time range" Enums(last_hour, today, last_7_days, last_30_days, last_90_days)
-// @Param limit query int false "Limit for per-page breakdown (default: 20)"
+// @Param filter query filters.SectionFilter true "Filter parameters"
 // @Success 200 {object} types.BounceRateResponse "Bounce rate metrics"
 // @Failure 400 {object} map[string]interface{} "Invalid request parameters"
 // @Failure 401 {object} map[string]interface{} "Unauthorized - Invalid or missing JWT token"
 // @Failure 500 {object} map[string]interface{} "Internal server error"
 // @Router /api/v1/analytics/sessions/bounce-rate [get]
-func (s *AnalyticsService) GetBounceRate(c *ctx.Ctx) (*types.BounceRateResponse, error) {
-	var req types.BounceRateRequest
-	if err := c.Echo.Bind(&req); err != nil {
-		return nil, echo.NewHTTPError(400, "Invalid request parameters")
-	}
-
-	if req.TimeRange == "" {
-		req.TimeRange = types.TimeRangeLast7Days
-	}
-
-	bounceRate, err := s.data.GetBounceRate(c.Echo.Request().Context(), req.ProjectID, req.TimeRange, req.Limit)
+func (s *AnalyticsService) GetBounceRate(ctx *ctx.Ctx, filter *filters.SectionFilter) (*types.BounceRateResponse, error) {
+	bounceRate, err := s.data.GetBounceRate(ctx, filter)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get bounce rate: %w", err)
 	}
@@ -391,19 +271,14 @@ func (s *AnalyticsService) GetBounceRate(c *ctx.Ctx) (*types.BounceRateResponse,
 // @Accept json
 // @Produce json
 // @Security ApiKeyAuth
-// @Param project_id query string true "Project ID"
+// @Param filter query filters.SectionFilter true "Filter parameters"
 // @Success 200 {object} types.ActiveUsersResponse "Active user metrics"
 // @Failure 400 {object} map[string]interface{} "Invalid request parameters"
 // @Failure 401 {object} map[string]interface{} "Unauthorized - Invalid or missing JWT token"
 // @Failure 500 {object} map[string]interface{} "Internal server error"
 // @Router /api/v1/analytics/users/active [get]
-func (s *AnalyticsService) GetActiveUsers(c *ctx.Ctx) (*types.ActiveUsersResponse, error) {
-	var req types.ActiveUsersRequest
-	if err := c.Echo.Bind(&req); err != nil {
-		return nil, echo.NewHTTPError(400, "Invalid request parameters")
-	}
-
-	activeUsers, err := s.data.GetActiveUsers(c.Echo.Request().Context(), req.ProjectID)
+func (s *AnalyticsService) GetActiveUsers(ctx *ctx.Ctx, filter *filters.SectionFilter) (*types.ActiveUsersResponse, error) {
+	activeUsers, err := s.data.GetActiveUsers(ctx, filter)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get active users: %w", err)
 	}
@@ -418,24 +293,14 @@ func (s *AnalyticsService) GetActiveUsers(c *ctx.Ctx) (*types.ActiveUsersRespons
 // @Accept json
 // @Produce json
 // @Security ApiKeyAuth
-// @Param project_id query string true "Project ID"
-// @Param time_range query string true "Time range" Enums(last_hour, today, last_7_days, last_30_days, last_90_days)
+// @Param filter query filters.SectionFilter true "Filter parameters"
 // @Success 200 {object} types.ReturnRateResponse "Return rate metrics"
 // @Failure 400 {object} map[string]interface{} "Invalid request parameters"
 // @Failure 401 {object} map[string]interface{} "Unauthorized - Invalid or missing JWT token"
 // @Failure 500 {object} map[string]interface{} "Internal server error"
 // @Router /api/v1/analytics/retention/return-rate [get]
-func (s *AnalyticsService) GetReturnRate(c *ctx.Ctx) (*types.ReturnRateResponse, error) {
-	var req types.ReturnRateRequest
-	if err := c.Echo.Bind(&req); err != nil {
-		return nil, echo.NewHTTPError(400, "Invalid request parameters")
-	}
-
-	if req.TimeRange == "" {
-		req.TimeRange = types.TimeRangeLast30Days
-	}
-
-	returnRate, err := s.data.GetReturnRate(c.Echo.Request().Context(), req.ProjectID, req.TimeRange)
+func (s *AnalyticsService) GetReturnRate(ctx *ctx.Ctx, filter *filters.SectionFilter) (*types.ReturnRateResponse, error) {
+	returnRate, err := s.data.GetReturnRate(ctx, filter)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get return rate: %w", err)
 	}
@@ -450,25 +315,15 @@ func (s *AnalyticsService) GetReturnRate(c *ctx.Ctx) (*types.ReturnRateResponse,
 // @Accept json
 // @Produce json
 // @Security ApiKeyAuth
-// @Param project_id query string true "Project ID"
-// @Param time_range query string true "Time range" Enums(last_hour, today, last_7_days, last_30_days, last_90_days)
-// @Param churn_threshold_days query int false "Days of inactivity to consider churned (default: 30)"
+// @Param filter query filters.SectionFilter true "Filter parameters"
 // @Success 200 {object} types.ChurnRateResponse "Churn rate metrics"
 // @Failure 400 {object} map[string]interface{} "Invalid request parameters"
 // @Failure 401 {object} map[string]interface{} "Unauthorized - Invalid or missing JWT token"
 // @Failure 500 {object} map[string]interface{} "Internal server error"
 // @Router /api/v1/analytics/retention/churn-rate [get]
-func (s *AnalyticsService) GetChurnRate(c *ctx.Ctx) (*types.ChurnRateResponse, error) {
-	var req types.ChurnRateRequest
-	if err := c.Echo.Bind(&req); err != nil {
-		return nil, echo.NewHTTPError(400, "Invalid request parameters")
-	}
-
-	if req.TimeRange == "" {
-		req.TimeRange = types.TimeRangeLast90Days
-	}
-
-	churnRate, err := s.data.GetChurnRate(c.Echo.Request().Context(), req.ProjectID, req.TimeRange, req.ChurnThresholdDays)
+func (s *AnalyticsService) GetChurnRate(ctx *ctx.Ctx, filter *filters.SectionFilter) (*types.ChurnRateResponse, error) {
+	// TODO:: replace number of days with user input
+	churnRate, err := s.data.GetChurnRate(ctx, filter, 30)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get churn rate: %w", err)
 	}
@@ -483,24 +338,14 @@ func (s *AnalyticsService) GetChurnRate(c *ctx.Ctx) (*types.ChurnRateResponse, e
 // @Accept json
 // @Produce json
 // @Security ApiKeyAuth
-// @Param project_id query string true "Project ID"
-// @Param time_range query string true "Time range" Enums(last_hour, today, last_7_days, last_30_days, last_90_days)
+// @Param filter query filters.SectionFilter true "Filter parameters"
 // @Success 200 {object} types.CohortAnalysisResponse "Cohort analysis data"
 // @Failure 400 {object} map[string]interface{} "Invalid request parameters"
 // @Failure 401 {object} map[string]interface{} "Unauthorized - Invalid or missing JWT token"
 // @Failure 500 {object} map[string]interface{} "Internal server error"
 // @Router /api/v1/analytics/retention/cohorts [get]
-func (s *AnalyticsService) GetCohortAnalysis(c *ctx.Ctx) (*types.CohortAnalysisResponse, error) {
-	var req types.CohortAnalysisRequest
-	if err := c.Echo.Bind(&req); err != nil {
-		return nil, echo.NewHTTPError(400, "Invalid request parameters")
-	}
-
-	if req.TimeRange == "" {
-		req.TimeRange = types.TimeRangeLast90Days
-	}
-
-	cohorts, err := s.data.GetCohortAnalysis(c.Echo.Request().Context(), req.ProjectID, req.TimeRange)
+func (s *AnalyticsService) GetCohortAnalysis(ctx *ctx.Ctx, filter *filters.SectionFilter) (*types.CohortAnalysisResponse, error) {
+	cohorts, err := s.data.GetCohortAnalysis(ctx, filter)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get cohort analysis: %w", err)
 	}
@@ -515,24 +360,14 @@ func (s *AnalyticsService) GetCohortAnalysis(c *ctx.Ctx) (*types.CohortAnalysisR
 // @Accept json
 // @Produce json
 // @Security ApiKeyAuth
-// @Param project_id query string true "Project ID"
-// @Param time_range query string true "Time range" Enums(last_hour, today, last_7_days, last_30_days, last_90_days)
+// @Param filter query filters.SectionFilter true "Filter parameters"
 // @Success 200 {object} types.DashboardMetricsResponse "Dashboard metrics"
 // @Failure 400 {object} map[string]interface{} "Invalid request parameters"
 // @Failure 401 {object} map[string]interface{} "Unauthorized - Invalid or missing JWT token"
 // @Failure 500 {object} map[string]interface{} "Internal server error"
 // @Router /api/v1/analytics/dashboard [get]
-func (s *AnalyticsService) GetDashboardMetrics(c *ctx.Ctx) (*types.DashboardMetricsResponse, error) {
-	var req types.DashboardMetricsRequest
-	if err := c.Echo.Bind(&req); err != nil {
-		return nil, echo.NewHTTPError(400, "Invalid request parameters")
-	}
-
-	if req.TimeRange == "" {
-		req.TimeRange = types.TimeRangeLast7Days
-	}
-
-	dashboard, err := s.data.GetDashboardMetrics(c.Echo.Request().Context(), req.ProjectID, req.TimeRange)
+func (s *AnalyticsService) GetDashboardMetrics(ctx *ctx.Ctx, filter *filters.SectionFilter) (*types.DashboardMetricsResponse, error) {
+	dashboard, err := s.data.GetDashboardMetrics(ctx, filter)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get dashboard metrics: %w", err)
 	}
