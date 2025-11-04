@@ -101,7 +101,7 @@ func (s *AnalyticsService) GetUniqueVisitorsByCountry(ctx *ctx.Ctx, filter *filt
 
 // GetRecentEvents returns the most recent events for a project with optional filters
 // @Summary Get recent events
-// @Description Get a list of recent events with optional filters (visitor_id, user_id, external_id, traffic_origin, page_path)
+// @Description Get a list of recent events with optional filters (visitor_id, user_id, external_id, traffic_origin, page_path, event_name)
 // @Tags Analytics
 // @Accept json
 // @Produce json
@@ -132,13 +132,13 @@ func (s *AnalyticsService) GetRecentEvents(ctx *ctx.Ctx, filter *types.RecentEve
 
 // GetEventFilterOptions returns available filter options for events
 // @Summary Get event filter options
-// @Description Get unique traffic origins and page paths to populate filter dropdowns
+// @Description Get unique traffic origins, page paths, and event names to populate filter dropdowns
 // @Tags Analytics
 // @Accept json
 // @Produce json
 // @Security ApiKeyAuth
 // @Param filter query filters.SectionFilter true "Filter parameters"
-// @Success 200 {object} types.EventFilterOptionsResponse "Filter options for traffic origins and pages"
+// @Success 200 {object} types.EventFilterOptionsResponse "Filter options for traffic origins, pages, and event names"
 // @Failure 400 {object} map[string]interface{} "Invalid request parameters"
 // @Failure 401 {object} map[string]interface{} "Unauthorized - Invalid or missing JWT token"
 // @Failure 500 {object} map[string]interface{} "Internal server error"
