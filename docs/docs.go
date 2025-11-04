@@ -46,7 +46,7 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "example": "cus_xyz789",
-                        "name": "customerID",
+                        "name": "customer_id",
                         "in": "query"
                     },
                     {
@@ -56,8 +56,7 @@ const docTemplate = `{
                         "default": 50,
                         "example": 50,
                         "name": "limit",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     },
                     {
                         "minimum": 0,
@@ -65,13 +64,12 @@ const docTemplate = `{
                         "default": 0,
                         "example": 0,
                         "name": "offset",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     },
                     {
                         "type": "string",
                         "example": "proj_123",
-                        "name": "projectID",
+                        "name": "project_id",
                         "in": "query",
                         "required": true
                     },
@@ -101,7 +99,7 @@ const docTemplate = `{
                             "TimeBoundariesLastMonth",
                             "TimeBoundariesLast90Days"
                         ],
-                        "name": "timeBoundaries",
+                        "name": "time_range",
                         "in": "query",
                         "required": true
                     },
@@ -120,7 +118,7 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "example": "visitor_abc123",
-                        "name": "visitorID",
+                        "name": "visitor_id",
                         "in": "query"
                     }
                 ],
@@ -177,7 +175,7 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "example": "cus_xyz789",
-                        "name": "customerID",
+                        "name": "customer_id",
                         "in": "query"
                     },
                     {
@@ -187,8 +185,7 @@ const docTemplate = `{
                         "default": 50,
                         "example": 50,
                         "name": "limit",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     },
                     {
                         "minimum": 0,
@@ -196,13 +193,12 @@ const docTemplate = `{
                         "default": 0,
                         "example": 0,
                         "name": "offset",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     },
                     {
                         "type": "string",
                         "example": "proj_123",
-                        "name": "projectID",
+                        "name": "project_id",
                         "in": "query",
                         "required": true
                     },
@@ -232,7 +228,7 @@ const docTemplate = `{
                             "TimeBoundariesLastMonth",
                             "TimeBoundariesLast90Days"
                         ],
-                        "name": "timeBoundaries",
+                        "name": "time_range",
                         "in": "query",
                         "required": true
                     },
@@ -251,7 +247,7 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "example": "visitor_abc123",
-                        "name": "visitorID",
+                        "name": "visitor_id",
                         "in": "query"
                     }
                 ],
@@ -308,7 +304,7 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "example": "cus_xyz789",
-                        "name": "customerID",
+                        "name": "customer_id",
                         "in": "query"
                     },
                     {
@@ -324,8 +320,7 @@ const docTemplate = `{
                         "default": 50,
                         "example": 50,
                         "name": "limit",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     },
                     {
                         "minimum": 0,
@@ -333,8 +328,7 @@ const docTemplate = `{
                         "default": 0,
                         "example": 0,
                         "name": "offset",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     },
                     {
                         "type": "string",
@@ -345,7 +339,7 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "example": "proj_123",
-                        "name": "projectID",
+                        "name": "project_id",
                         "in": "query",
                         "required": true
                     },
@@ -375,7 +369,7 @@ const docTemplate = `{
                             "TimeBoundariesLastMonth",
                             "TimeBoundariesLast90Days"
                         ],
-                        "name": "timeBoundaries",
+                        "name": "time_range",
                         "in": "query",
                         "required": true
                     },
@@ -406,7 +400,7 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "example": "visitor_abc123",
-                        "name": "visitorID",
+                        "name": "visitor_id",
                         "in": "query"
                     }
                 ],
@@ -463,7 +457,7 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "example": "cus_xyz789",
-                        "name": "customerID",
+                        "name": "customer_id",
                         "in": "query"
                     },
                     {
@@ -473,8 +467,7 @@ const docTemplate = `{
                         "default": 50,
                         "example": 50,
                         "name": "limit",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     },
                     {
                         "minimum": 0,
@@ -482,13 +475,12 @@ const docTemplate = `{
                         "default": 0,
                         "example": 0,
                         "name": "offset",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     },
                     {
                         "type": "string",
                         "example": "proj_123",
-                        "name": "projectID",
+                        "name": "project_id",
                         "in": "query",
                         "required": true
                     },
@@ -518,7 +510,7 @@ const docTemplate = `{
                             "TimeBoundariesLastMonth",
                             "TimeBoundariesLast90Days"
                         ],
-                        "name": "timeBoundaries",
+                        "name": "time_range",
                         "in": "query",
                         "required": true
                     },
@@ -537,7 +529,7 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "example": "visitor_abc123",
-                        "name": "visitorID",
+                        "name": "visitor_id",
                         "in": "query"
                     }
                 ],
@@ -594,7 +586,7 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "example": "cus_xyz789",
-                        "name": "customerID",
+                        "name": "customer_id",
                         "in": "query"
                     },
                     {
@@ -604,8 +596,7 @@ const docTemplate = `{
                         "default": 50,
                         "example": 50,
                         "name": "limit",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     },
                     {
                         "minimum": 0,
@@ -613,13 +604,12 @@ const docTemplate = `{
                         "default": 0,
                         "example": 0,
                         "name": "offset",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     },
                     {
                         "type": "string",
                         "example": "proj_123",
-                        "name": "projectID",
+                        "name": "project_id",
                         "in": "query",
                         "required": true
                     },
@@ -649,7 +639,7 @@ const docTemplate = `{
                             "TimeBoundariesLastMonth",
                             "TimeBoundariesLast90Days"
                         ],
-                        "name": "timeBoundaries",
+                        "name": "time_range",
                         "in": "query",
                         "required": true
                     },
@@ -668,7 +658,7 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "example": "visitor_abc123",
-                        "name": "visitorID",
+                        "name": "visitor_id",
                         "in": "query"
                     }
                 ],
@@ -725,7 +715,7 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "example": "cus_xyz789",
-                        "name": "customerID",
+                        "name": "customer_id",
                         "in": "query"
                     },
                     {
@@ -735,8 +725,7 @@ const docTemplate = `{
                         "default": 50,
                         "example": 50,
                         "name": "limit",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     },
                     {
                         "minimum": 0,
@@ -744,13 +733,12 @@ const docTemplate = `{
                         "default": 0,
                         "example": 0,
                         "name": "offset",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     },
                     {
                         "type": "string",
                         "example": "proj_123",
-                        "name": "projectID",
+                        "name": "project_id",
                         "in": "query",
                         "required": true
                     },
@@ -780,7 +768,7 @@ const docTemplate = `{
                             "TimeBoundariesLastMonth",
                             "TimeBoundariesLast90Days"
                         ],
-                        "name": "timeBoundaries",
+                        "name": "time_range",
                         "in": "query",
                         "required": true
                     },
@@ -799,7 +787,7 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "example": "visitor_abc123",
-                        "name": "visitorID",
+                        "name": "visitor_id",
                         "in": "query"
                     }
                 ],
@@ -856,7 +844,7 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "example": "cus_xyz789",
-                        "name": "customerID",
+                        "name": "customer_id",
                         "in": "query"
                     },
                     {
@@ -866,8 +854,7 @@ const docTemplate = `{
                         "default": 50,
                         "example": 50,
                         "name": "limit",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     },
                     {
                         "minimum": 0,
@@ -875,13 +862,12 @@ const docTemplate = `{
                         "default": 0,
                         "example": 0,
                         "name": "offset",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     },
                     {
                         "type": "string",
                         "example": "proj_123",
-                        "name": "projectID",
+                        "name": "project_id",
                         "in": "query",
                         "required": true
                     },
@@ -911,7 +897,7 @@ const docTemplate = `{
                             "TimeBoundariesLastMonth",
                             "TimeBoundariesLast90Days"
                         ],
-                        "name": "timeBoundaries",
+                        "name": "time_range",
                         "in": "query",
                         "required": true
                     },
@@ -930,7 +916,7 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "example": "visitor_abc123",
-                        "name": "visitorID",
+                        "name": "visitor_id",
                         "in": "query"
                     }
                 ],
@@ -987,7 +973,7 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "example": "cus_xyz789",
-                        "name": "customerID",
+                        "name": "customer_id",
                         "in": "query"
                     },
                     {
@@ -997,8 +983,7 @@ const docTemplate = `{
                         "default": 50,
                         "example": 50,
                         "name": "limit",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     },
                     {
                         "minimum": 0,
@@ -1006,13 +991,12 @@ const docTemplate = `{
                         "default": 0,
                         "example": 0,
                         "name": "offset",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     },
                     {
                         "type": "string",
                         "example": "proj_123",
-                        "name": "projectID",
+                        "name": "project_id",
                         "in": "query",
                         "required": true
                     },
@@ -1042,7 +1026,7 @@ const docTemplate = `{
                             "TimeBoundariesLastMonth",
                             "TimeBoundariesLast90Days"
                         ],
-                        "name": "timeBoundaries",
+                        "name": "time_range",
                         "in": "query",
                         "required": true
                     },
@@ -1061,7 +1045,7 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "example": "visitor_abc123",
-                        "name": "visitorID",
+                        "name": "visitor_id",
                         "in": "query"
                     }
                 ],
@@ -1118,7 +1102,7 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "example": "cus_xyz789",
-                        "name": "customerID",
+                        "name": "customer_id",
                         "in": "query"
                     },
                     {
@@ -1128,8 +1112,7 @@ const docTemplate = `{
                         "default": 50,
                         "example": 50,
                         "name": "limit",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     },
                     {
                         "minimum": 0,
@@ -1137,13 +1120,12 @@ const docTemplate = `{
                         "default": 0,
                         "example": 0,
                         "name": "offset",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     },
                     {
                         "type": "string",
                         "example": "proj_123",
-                        "name": "projectID",
+                        "name": "project_id",
                         "in": "query",
                         "required": true
                     },
@@ -1173,7 +1155,7 @@ const docTemplate = `{
                             "TimeBoundariesLastMonth",
                             "TimeBoundariesLast90Days"
                         ],
-                        "name": "timeBoundaries",
+                        "name": "time_range",
                         "in": "query",
                         "required": true
                     },
@@ -1192,7 +1174,7 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "example": "visitor_abc123",
-                        "name": "visitorID",
+                        "name": "visitor_id",
                         "in": "query"
                     }
                 ],
@@ -1249,7 +1231,7 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "example": "cus_xyz789",
-                        "name": "customerID",
+                        "name": "customer_id",
                         "in": "query"
                     },
                     {
@@ -1259,8 +1241,7 @@ const docTemplate = `{
                         "default": 50,
                         "example": 50,
                         "name": "limit",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     },
                     {
                         "minimum": 0,
@@ -1268,13 +1249,12 @@ const docTemplate = `{
                         "default": 0,
                         "example": 0,
                         "name": "offset",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     },
                     {
                         "type": "string",
                         "example": "proj_123",
-                        "name": "projectID",
+                        "name": "project_id",
                         "in": "query",
                         "required": true
                     },
@@ -1304,7 +1284,7 @@ const docTemplate = `{
                             "TimeBoundariesLastMonth",
                             "TimeBoundariesLast90Days"
                         ],
-                        "name": "timeBoundaries",
+                        "name": "time_range",
                         "in": "query",
                         "required": true
                     },
@@ -1323,7 +1303,7 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "example": "visitor_abc123",
-                        "name": "visitorID",
+                        "name": "visitor_id",
                         "in": "query"
                     }
                 ],
@@ -1380,7 +1360,7 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "example": "cus_xyz789",
-                        "name": "customerID",
+                        "name": "customer_id",
                         "in": "query"
                     },
                     {
@@ -1390,8 +1370,7 @@ const docTemplate = `{
                         "default": 50,
                         "example": 50,
                         "name": "limit",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     },
                     {
                         "minimum": 0,
@@ -1399,13 +1378,12 @@ const docTemplate = `{
                         "default": 0,
                         "example": 0,
                         "name": "offset",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     },
                     {
                         "type": "string",
                         "example": "proj_123",
-                        "name": "projectID",
+                        "name": "project_id",
                         "in": "query",
                         "required": true
                     },
@@ -1435,7 +1413,7 @@ const docTemplate = `{
                             "TimeBoundariesLastMonth",
                             "TimeBoundariesLast90Days"
                         ],
-                        "name": "timeBoundaries",
+                        "name": "time_range",
                         "in": "query",
                         "required": true
                     },
@@ -1454,7 +1432,7 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "example": "visitor_abc123",
-                        "name": "visitorID",
+                        "name": "visitor_id",
                         "in": "query"
                     }
                 ],
@@ -1571,7 +1549,7 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "example": "cus_xyz789",
-                        "name": "customerID",
+                        "name": "customer_id",
                         "in": "query"
                     },
                     {
@@ -1581,8 +1559,7 @@ const docTemplate = `{
                         "default": 50,
                         "example": 50,
                         "name": "limit",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     },
                     {
                         "minimum": 0,
@@ -1590,13 +1567,12 @@ const docTemplate = `{
                         "default": 0,
                         "example": 0,
                         "name": "offset",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     },
                     {
                         "type": "string",
                         "example": "proj_123",
-                        "name": "projectID",
+                        "name": "project_id",
                         "in": "query",
                         "required": true
                     },
@@ -1626,7 +1602,7 @@ const docTemplate = `{
                             "TimeBoundariesLastMonth",
                             "TimeBoundariesLast90Days"
                         ],
-                        "name": "timeBoundaries",
+                        "name": "time_range",
                         "in": "query",
                         "required": true
                     },
@@ -1645,7 +1621,7 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "example": "visitor_abc123",
-                        "name": "visitorID",
+                        "name": "visitor_id",
                         "in": "query"
                     }
                 ],
@@ -1702,81 +1678,20 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "example": "cus_xyz789",
-                        "name": "customerID",
+                        "name": "customer_id",
                         "in": "query"
-                    },
-                    {
-                        "maximum": 100,
-                        "minimum": 1,
-                        "type": "integer",
-                        "default": 50,
-                        "example": 50,
-                        "name": "limit",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "minimum": 0,
-                        "type": "integer",
-                        "default": 0,
-                        "example": 0,
-                        "name": "offset",
-                        "in": "query",
-                        "required": true
                     },
                     {
                         "type": "string",
                         "example": "proj_123",
-                        "name": "projectID",
+                        "name": "project_id",
                         "in": "query",
                         "required": true
-                    },
-                    {
-                        "type": "string",
-                        "example": "https://google.com",
-                        "name": "referrer",
-                        "in": "query"
-                    },
-                    {
-                        "enum": [
-                            "last_hour",
-                            "today",
-                            "yesterday",
-                            "last_7_days",
-                            "last_30_days",
-                            "last_90_days"
-                        ],
-                        "type": "string",
-                        "default": "last_7_days",
-                        "example": "last_7_days",
-                        "x-enum-varnames": [
-                            "TimeBoundariesHour",
-                            "TimeBoundariesToday",
-                            "TimeBoundariesYesterday",
-                            "TimeBoundariesLastWeek",
-                            "TimeBoundariesLastMonth",
-                            "TimeBoundariesLast90Days"
-                        ],
-                        "name": "timeBoundaries",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "example": "utm_source",
-                        "name": "utmtag",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "example": "google",
-                        "name": "utmtagValue",
-                        "in": "query"
                     },
                     {
                         "type": "string",
                         "example": "visitor_abc123",
-                        "name": "visitorID",
+                        "name": "visitor_id",
                         "in": "query"
                     }
                 ],
@@ -1840,7 +1755,7 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "example": "cus_xyz789",
-                        "name": "customerID",
+                        "name": "customer_id",
                         "in": "query"
                     },
                     {
@@ -1850,8 +1765,7 @@ const docTemplate = `{
                         "default": 50,
                         "example": 50,
                         "name": "limit",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     },
                     {
                         "minimum": 0,
@@ -1859,13 +1773,12 @@ const docTemplate = `{
                         "default": 0,
                         "example": 0,
                         "name": "offset",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     },
                     {
                         "type": "string",
                         "example": "proj_123",
-                        "name": "projectID",
+                        "name": "project_id",
                         "in": "query",
                         "required": true
                     },
@@ -1895,7 +1808,7 @@ const docTemplate = `{
                             "TimeBoundariesLastMonth",
                             "TimeBoundariesLast90Days"
                         ],
-                        "name": "timeBoundaries",
+                        "name": "time_range",
                         "in": "query",
                         "required": true
                     },
@@ -1914,7 +1827,7 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "example": "visitor_abc123",
-                        "name": "visitorID",
+                        "name": "visitor_id",
                         "in": "query"
                     }
                 ],
@@ -1971,7 +1884,7 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "example": "cus_xyz789",
-                        "name": "customerID",
+                        "name": "customer_id",
                         "in": "query"
                     },
                     {
@@ -1981,8 +1894,7 @@ const docTemplate = `{
                         "default": 50,
                         "example": 50,
                         "name": "limit",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     },
                     {
                         "minimum": 0,
@@ -1990,13 +1902,12 @@ const docTemplate = `{
                         "default": 0,
                         "example": 0,
                         "name": "offset",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     },
                     {
                         "type": "string",
                         "example": "proj_123",
-                        "name": "projectID",
+                        "name": "project_id",
                         "in": "query",
                         "required": true
                     },
@@ -2026,7 +1937,7 @@ const docTemplate = `{
                             "TimeBoundariesLastMonth",
                             "TimeBoundariesLast90Days"
                         ],
-                        "name": "timeBoundaries",
+                        "name": "time_range",
                         "in": "query",
                         "required": true
                     },
@@ -2045,7 +1956,7 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "example": "visitor_abc123",
-                        "name": "visitorID",
+                        "name": "visitor_id",
                         "in": "query"
                     }
                 ],

@@ -26,7 +26,7 @@
           {
             "example": "cus_xyz789",
             "in": "query",
-            "name": "customerID",
+            "name": "customer_id",
             "schema": {
               "type": "string"
             }
@@ -35,7 +35,6 @@
             "example": 50,
             "in": "query",
             "name": "limit",
-            "required": true,
             "schema": {
               "default": 50,
               "maximum": 100,
@@ -47,7 +46,6 @@
             "example": 0,
             "in": "query",
             "name": "offset",
-            "required": true,
             "schema": {
               "default": 0,
               "minimum": 0,
@@ -57,7 +55,7 @@
           {
             "example": "proj_123",
             "in": "query",
-            "name": "projectID",
+            "name": "project_id",
             "required": true,
             "schema": {
               "type": "string"
@@ -74,7 +72,7 @@
           {
             "example": "last_7_days",
             "in": "query",
-            "name": "timeBoundaries",
+            "name": "time_range",
             "required": true,
             "schema": {
               "default": "last_7_days",
@@ -116,7 +114,7 @@
           {
             "example": "visitor_abc123",
             "in": "query",
-            "name": "visitorID",
+            "name": "visitor_id",
             "schema": {
               "type": "string"
             }
@@ -185,7 +183,7 @@
           {
             "example": "cus_xyz789",
             "in": "query",
-            "name": "customerID",
+            "name": "customer_id",
             "schema": {
               "type": "string"
             }
@@ -194,7 +192,6 @@
             "example": 50,
             "in": "query",
             "name": "limit",
-            "required": true,
             "schema": {
               "default": 50,
               "maximum": 100,
@@ -206,7 +203,6 @@
             "example": 0,
             "in": "query",
             "name": "offset",
-            "required": true,
             "schema": {
               "default": 0,
               "minimum": 0,
@@ -216,7 +212,7 @@
           {
             "example": "proj_123",
             "in": "query",
-            "name": "projectID",
+            "name": "project_id",
             "required": true,
             "schema": {
               "type": "string"
@@ -233,7 +229,7 @@
           {
             "example": "last_7_days",
             "in": "query",
-            "name": "timeBoundaries",
+            "name": "time_range",
             "required": true,
             "schema": {
               "default": "last_7_days",
@@ -275,7 +271,7 @@
           {
             "example": "visitor_abc123",
             "in": "query",
-            "name": "visitorID",
+            "name": "visitor_id",
             "schema": {
               "type": "string"
             }
@@ -344,7 +340,7 @@
           {
             "example": "cus_xyz789",
             "in": "query",
-            "name": "customerID",
+            "name": "customer_id",
             "schema": {
               "type": "string"
             }
@@ -361,7 +357,6 @@
             "example": 50,
             "in": "query",
             "name": "limit",
-            "required": true,
             "schema": {
               "default": 50,
               "maximum": 100,
@@ -373,7 +368,6 @@
             "example": 0,
             "in": "query",
             "name": "offset",
-            "required": true,
             "schema": {
               "default": 0,
               "minimum": 0,
@@ -391,7 +385,7 @@
           {
             "example": "proj_123",
             "in": "query",
-            "name": "projectID",
+            "name": "project_id",
             "required": true,
             "schema": {
               "type": "string"
@@ -408,7 +402,7 @@
           {
             "example": "last_7_days",
             "in": "query",
-            "name": "timeBoundaries",
+            "name": "time_range",
             "required": true,
             "schema": {
               "default": "last_7_days",
@@ -466,7 +460,7 @@
           {
             "example": "visitor_abc123",
             "in": "query",
-            "name": "visitorID",
+            "name": "visitor_id",
             "schema": {
               "type": "string"
             }
@@ -535,7 +529,7 @@
           {
             "example": "cus_xyz789",
             "in": "query",
-            "name": "customerID",
+            "name": "customer_id",
             "schema": {
               "type": "string"
             }
@@ -544,7 +538,6 @@
             "example": 50,
             "in": "query",
             "name": "limit",
-            "required": true,
             "schema": {
               "default": 50,
               "maximum": 100,
@@ -556,7 +549,6 @@
             "example": 0,
             "in": "query",
             "name": "offset",
-            "required": true,
             "schema": {
               "default": 0,
               "minimum": 0,
@@ -566,7 +558,7 @@
           {
             "example": "proj_123",
             "in": "query",
-            "name": "projectID",
+            "name": "project_id",
             "required": true,
             "schema": {
               "type": "string"
@@ -583,7 +575,7 @@
           {
             "example": "last_7_days",
             "in": "query",
-            "name": "timeBoundaries",
+            "name": "time_range",
             "required": true,
             "schema": {
               "default": "last_7_days",
@@ -625,7 +617,7 @@
           {
             "example": "visitor_abc123",
             "in": "query",
-            "name": "visitorID",
+            "name": "visitor_id",
             "schema": {
               "type": "string"
             }
@@ -694,7 +686,7 @@
           {
             "example": "cus_xyz789",
             "in": "query",
-            "name": "customerID",
+            "name": "customer_id",
             "schema": {
               "type": "string"
             }
@@ -703,7 +695,6 @@
             "example": 50,
             "in": "query",
             "name": "limit",
-            "required": true,
             "schema": {
               "default": 50,
               "maximum": 100,
@@ -715,7 +706,6 @@
             "example": 0,
             "in": "query",
             "name": "offset",
-            "required": true,
             "schema": {
               "default": 0,
               "minimum": 0,
@@ -725,7 +715,7 @@
           {
             "example": "proj_123",
             "in": "query",
-            "name": "projectID",
+            "name": "project_id",
             "required": true,
             "schema": {
               "type": "string"
@@ -742,7 +732,7 @@
           {
             "example": "last_7_days",
             "in": "query",
-            "name": "timeBoundaries",
+            "name": "time_range",
             "required": true,
             "schema": {
               "default": "last_7_days",
@@ -784,7 +774,7 @@
           {
             "example": "visitor_abc123",
             "in": "query",
-            "name": "visitorID",
+            "name": "visitor_id",
             "schema": {
               "type": "string"
             }
@@ -853,7 +843,7 @@
           {
             "example": "cus_xyz789",
             "in": "query",
-            "name": "customerID",
+            "name": "customer_id",
             "schema": {
               "type": "string"
             }
@@ -862,7 +852,6 @@
             "example": 50,
             "in": "query",
             "name": "limit",
-            "required": true,
             "schema": {
               "default": 50,
               "maximum": 100,
@@ -874,7 +863,6 @@
             "example": 0,
             "in": "query",
             "name": "offset",
-            "required": true,
             "schema": {
               "default": 0,
               "minimum": 0,
@@ -884,7 +872,7 @@
           {
             "example": "proj_123",
             "in": "query",
-            "name": "projectID",
+            "name": "project_id",
             "required": true,
             "schema": {
               "type": "string"
@@ -901,7 +889,7 @@
           {
             "example": "last_7_days",
             "in": "query",
-            "name": "timeBoundaries",
+            "name": "time_range",
             "required": true,
             "schema": {
               "default": "last_7_days",
@@ -943,7 +931,7 @@
           {
             "example": "visitor_abc123",
             "in": "query",
-            "name": "visitorID",
+            "name": "visitor_id",
             "schema": {
               "type": "string"
             }
@@ -1012,7 +1000,7 @@
           {
             "example": "cus_xyz789",
             "in": "query",
-            "name": "customerID",
+            "name": "customer_id",
             "schema": {
               "type": "string"
             }
@@ -1021,7 +1009,6 @@
             "example": 50,
             "in": "query",
             "name": "limit",
-            "required": true,
             "schema": {
               "default": 50,
               "maximum": 100,
@@ -1033,7 +1020,6 @@
             "example": 0,
             "in": "query",
             "name": "offset",
-            "required": true,
             "schema": {
               "default": 0,
               "minimum": 0,
@@ -1043,7 +1029,7 @@
           {
             "example": "proj_123",
             "in": "query",
-            "name": "projectID",
+            "name": "project_id",
             "required": true,
             "schema": {
               "type": "string"
@@ -1060,7 +1046,7 @@
           {
             "example": "last_7_days",
             "in": "query",
-            "name": "timeBoundaries",
+            "name": "time_range",
             "required": true,
             "schema": {
               "default": "last_7_days",
@@ -1102,7 +1088,7 @@
           {
             "example": "visitor_abc123",
             "in": "query",
-            "name": "visitorID",
+            "name": "visitor_id",
             "schema": {
               "type": "string"
             }
@@ -1171,7 +1157,7 @@
           {
             "example": "cus_xyz789",
             "in": "query",
-            "name": "customerID",
+            "name": "customer_id",
             "schema": {
               "type": "string"
             }
@@ -1180,7 +1166,6 @@
             "example": 50,
             "in": "query",
             "name": "limit",
-            "required": true,
             "schema": {
               "default": 50,
               "maximum": 100,
@@ -1192,7 +1177,6 @@
             "example": 0,
             "in": "query",
             "name": "offset",
-            "required": true,
             "schema": {
               "default": 0,
               "minimum": 0,
@@ -1202,7 +1186,7 @@
           {
             "example": "proj_123",
             "in": "query",
-            "name": "projectID",
+            "name": "project_id",
             "required": true,
             "schema": {
               "type": "string"
@@ -1219,7 +1203,7 @@
           {
             "example": "last_7_days",
             "in": "query",
-            "name": "timeBoundaries",
+            "name": "time_range",
             "required": true,
             "schema": {
               "default": "last_7_days",
@@ -1261,7 +1245,7 @@
           {
             "example": "visitor_abc123",
             "in": "query",
-            "name": "visitorID",
+            "name": "visitor_id",
             "schema": {
               "type": "string"
             }
@@ -1330,7 +1314,7 @@
           {
             "example": "cus_xyz789",
             "in": "query",
-            "name": "customerID",
+            "name": "customer_id",
             "schema": {
               "type": "string"
             }
@@ -1339,7 +1323,6 @@
             "example": 50,
             "in": "query",
             "name": "limit",
-            "required": true,
             "schema": {
               "default": 50,
               "maximum": 100,
@@ -1351,7 +1334,6 @@
             "example": 0,
             "in": "query",
             "name": "offset",
-            "required": true,
             "schema": {
               "default": 0,
               "minimum": 0,
@@ -1361,7 +1343,7 @@
           {
             "example": "proj_123",
             "in": "query",
-            "name": "projectID",
+            "name": "project_id",
             "required": true,
             "schema": {
               "type": "string"
@@ -1378,7 +1360,7 @@
           {
             "example": "last_7_days",
             "in": "query",
-            "name": "timeBoundaries",
+            "name": "time_range",
             "required": true,
             "schema": {
               "default": "last_7_days",
@@ -1420,7 +1402,7 @@
           {
             "example": "visitor_abc123",
             "in": "query",
-            "name": "visitorID",
+            "name": "visitor_id",
             "schema": {
               "type": "string"
             }
@@ -1489,7 +1471,7 @@
           {
             "example": "cus_xyz789",
             "in": "query",
-            "name": "customerID",
+            "name": "customer_id",
             "schema": {
               "type": "string"
             }
@@ -1498,7 +1480,6 @@
             "example": 50,
             "in": "query",
             "name": "limit",
-            "required": true,
             "schema": {
               "default": 50,
               "maximum": 100,
@@ -1510,7 +1491,6 @@
             "example": 0,
             "in": "query",
             "name": "offset",
-            "required": true,
             "schema": {
               "default": 0,
               "minimum": 0,
@@ -1520,7 +1500,7 @@
           {
             "example": "proj_123",
             "in": "query",
-            "name": "projectID",
+            "name": "project_id",
             "required": true,
             "schema": {
               "type": "string"
@@ -1537,7 +1517,7 @@
           {
             "example": "last_7_days",
             "in": "query",
-            "name": "timeBoundaries",
+            "name": "time_range",
             "required": true,
             "schema": {
               "default": "last_7_days",
@@ -1579,7 +1559,7 @@
           {
             "example": "visitor_abc123",
             "in": "query",
-            "name": "visitorID",
+            "name": "visitor_id",
             "schema": {
               "type": "string"
             }
@@ -1648,7 +1628,7 @@
           {
             "example": "cus_xyz789",
             "in": "query",
-            "name": "customerID",
+            "name": "customer_id",
             "schema": {
               "type": "string"
             }
@@ -1657,7 +1637,6 @@
             "example": 50,
             "in": "query",
             "name": "limit",
-            "required": true,
             "schema": {
               "default": 50,
               "maximum": 100,
@@ -1669,7 +1648,6 @@
             "example": 0,
             "in": "query",
             "name": "offset",
-            "required": true,
             "schema": {
               "default": 0,
               "minimum": 0,
@@ -1679,7 +1657,7 @@
           {
             "example": "proj_123",
             "in": "query",
-            "name": "projectID",
+            "name": "project_id",
             "required": true,
             "schema": {
               "type": "string"
@@ -1696,7 +1674,7 @@
           {
             "example": "last_7_days",
             "in": "query",
-            "name": "timeBoundaries",
+            "name": "time_range",
             "required": true,
             "schema": {
               "default": "last_7_days",
@@ -1738,7 +1716,7 @@
           {
             "example": "visitor_abc123",
             "in": "query",
-            "name": "visitorID",
+            "name": "visitor_id",
             "schema": {
               "type": "string"
             }
@@ -1877,7 +1855,7 @@
           {
             "example": "cus_xyz789",
             "in": "query",
-            "name": "customerID",
+            "name": "customer_id",
             "schema": {
               "type": "string"
             }
@@ -1886,7 +1864,6 @@
             "example": 50,
             "in": "query",
             "name": "limit",
-            "required": true,
             "schema": {
               "default": 50,
               "maximum": 100,
@@ -1898,7 +1875,6 @@
             "example": 0,
             "in": "query",
             "name": "offset",
-            "required": true,
             "schema": {
               "default": 0,
               "minimum": 0,
@@ -1908,7 +1884,7 @@
           {
             "example": "proj_123",
             "in": "query",
-            "name": "projectID",
+            "name": "project_id",
             "required": true,
             "schema": {
               "type": "string"
@@ -1925,7 +1901,7 @@
           {
             "example": "last_7_days",
             "in": "query",
-            "name": "timeBoundaries",
+            "name": "time_range",
             "required": true,
             "schema": {
               "default": "last_7_days",
@@ -1967,7 +1943,7 @@
           {
             "example": "visitor_abc123",
             "in": "query",
-            "name": "visitorID",
+            "name": "visitor_id",
             "schema": {
               "type": "string"
             }
@@ -2036,89 +2012,16 @@
           {
             "example": "cus_xyz789",
             "in": "query",
-            "name": "customerID",
+            "name": "customer_id",
             "schema": {
               "type": "string"
-            }
-          },
-          {
-            "example": 50,
-            "in": "query",
-            "name": "limit",
-            "required": true,
-            "schema": {
-              "default": 50,
-              "maximum": 100,
-              "minimum": 1,
-              "type": "integer"
-            }
-          },
-          {
-            "example": 0,
-            "in": "query",
-            "name": "offset",
-            "required": true,
-            "schema": {
-              "default": 0,
-              "minimum": 0,
-              "type": "integer"
             }
           },
           {
             "example": "proj_123",
             "in": "query",
-            "name": "projectID",
+            "name": "project_id",
             "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "example": "https://google.com",
-            "in": "query",
-            "name": "referrer",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "example": "last_7_days",
-            "in": "query",
-            "name": "timeBoundaries",
-            "required": true,
-            "schema": {
-              "default": "last_7_days",
-              "enum": [
-                "last_hour",
-                "today",
-                "yesterday",
-                "last_7_days",
-                "last_30_days",
-                "last_90_days"
-              ],
-              "type": "string"
-            },
-            "x-enum-varnames": [
-              "TimeBoundariesHour",
-              "TimeBoundariesToday",
-              "TimeBoundariesYesterday",
-              "TimeBoundariesLastWeek",
-              "TimeBoundariesLastMonth",
-              "TimeBoundariesLast90Days"
-            ]
-          },
-          {
-            "example": "utm_source",
-            "in": "query",
-            "name": "utmtag",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "example": "google",
-            "in": "query",
-            "name": "utmtagValue",
             "schema": {
               "type": "string"
             }
@@ -2126,7 +2029,7 @@
           {
             "example": "visitor_abc123",
             "in": "query",
-            "name": "visitorID",
+            "name": "visitor_id",
             "schema": {
               "type": "string"
             }
@@ -2206,7 +2109,7 @@
           {
             "example": "cus_xyz789",
             "in": "query",
-            "name": "customerID",
+            "name": "customer_id",
             "schema": {
               "type": "string"
             }
@@ -2215,7 +2118,6 @@
             "example": 50,
             "in": "query",
             "name": "limit",
-            "required": true,
             "schema": {
               "default": 50,
               "maximum": 100,
@@ -2227,7 +2129,6 @@
             "example": 0,
             "in": "query",
             "name": "offset",
-            "required": true,
             "schema": {
               "default": 0,
               "minimum": 0,
@@ -2237,7 +2138,7 @@
           {
             "example": "proj_123",
             "in": "query",
-            "name": "projectID",
+            "name": "project_id",
             "required": true,
             "schema": {
               "type": "string"
@@ -2254,7 +2155,7 @@
           {
             "example": "last_7_days",
             "in": "query",
-            "name": "timeBoundaries",
+            "name": "time_range",
             "required": true,
             "schema": {
               "default": "last_7_days",
@@ -2296,7 +2197,7 @@
           {
             "example": "visitor_abc123",
             "in": "query",
-            "name": "visitorID",
+            "name": "visitor_id",
             "schema": {
               "type": "string"
             }
@@ -2365,7 +2266,7 @@
           {
             "example": "cus_xyz789",
             "in": "query",
-            "name": "customerID",
+            "name": "customer_id",
             "schema": {
               "type": "string"
             }
@@ -2374,7 +2275,6 @@
             "example": 50,
             "in": "query",
             "name": "limit",
-            "required": true,
             "schema": {
               "default": 50,
               "maximum": 100,
@@ -2386,7 +2286,6 @@
             "example": 0,
             "in": "query",
             "name": "offset",
-            "required": true,
             "schema": {
               "default": 0,
               "minimum": 0,
@@ -2396,7 +2295,7 @@
           {
             "example": "proj_123",
             "in": "query",
-            "name": "projectID",
+            "name": "project_id",
             "required": true,
             "schema": {
               "type": "string"
@@ -2413,7 +2312,7 @@
           {
             "example": "last_7_days",
             "in": "query",
-            "name": "timeBoundaries",
+            "name": "time_range",
             "required": true,
             "schema": {
               "default": "last_7_days",
@@ -2455,7 +2354,7 @@
           {
             "example": "visitor_abc123",
             "in": "query",
-            "name": "visitorID",
+            "name": "visitor_id",
             "schema": {
               "type": "string"
             }
