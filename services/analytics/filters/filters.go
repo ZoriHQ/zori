@@ -17,17 +17,17 @@ const (
 )
 
 type VisitorProfileFilter struct {
-	ProjectID  string  `json:"project_id" query:"project_id" form:"project_id" validate:"required" example:"proj_123"`
-	VisitorID  *string `json:"visitor_id" query:"visitor_id" form:"visitor_id" validate:"omitempty" example:"visitor_abc123"`
-	CustomerID *string `json:"customer_id" query:"customer_id" form:"customer_id" validate:"omitempty" example:"cus_xyz789"`
+	ProjectID  string  `json:"project_id" query:"projectID" form:"project_id" validate:"required" example:"proj_123"`
+	VisitorID  *string `json:"visitor_id" query:"visitorID" form:"visitor_id" validate:"omitempty" example:"visitor_abc123"`
+	CustomerID *string `json:"customer_id" query:"customerID" form:"customer_id" validate:"omitempty" example:"cus_xyz789"`
 }
 
 type SectionFilter struct {
-	ProjectID      string         `json:"project_id" query:"project_id" form:"project_id" validate:"required" example:"proj_123"`
-	TimeBoundaries TimeBoundaries `json:"time_range" query:"time_range" form:"time_range" validate:"required,oneof=last_hour today yesterday last_7_days last_30_days last_90_days" enums:"last_hour,today,yesterday,last_7_days,last_30_days,last_90_days" default:"last_7_days" example:"last_7_days"`
+	ProjectID      string         `json:"project_id" query:"projectID" form:"project_id" validate:"required" example:"proj_123"`
+	TimeBoundaries TimeBoundaries `json:"time_range" query:"timeRange" form:"time_range" validate:"required,oneof=last_hour today yesterday last_7_days last_30_days last_90_days" enums:"last_hour,today,yesterday,last_7_days,last_30_days,last_90_days" default:"last_7_days" example:"last_7_days"`
 	Referrer       *string        `json:"referrer" query:"referrer" form:"referrer" validate:"omitempty" example:"https://google.com"`
-	VisitorID      *string        `json:"visitor_id" query:"visitor_id" form:"visitor_id" validate:"omitempty" example:"visitor_abc123"`
-	CustomerID     *string        `json:"customer_id" query:"customer_id" form:"customer_id" validate:"omitempty" example:"cus_xyz789"`
+	VisitorID      *string        `json:"visitor_id" query:"visitorID" form:"visitor_id" validate:"omitempty" example:"visitor_abc123"`
+	CustomerID     *string        `json:"customer_id" query:"customerID" form:"customer_id" validate:"omitempty" example:"cus_xyz789"`
 
 	Limit  int `json:"limit" query:"limit" form:"limit" validate:"omitempty,min=1,max=100" default:"50" minimum:"1" maximum:"100" example:"50"`
 	Offset int `json:"offset" query:"offset" form:"offset" validate:"omitempty,min=0" default:"0" minimum:"0" example:"0"`
