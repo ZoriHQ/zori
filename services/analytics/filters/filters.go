@@ -18,13 +18,13 @@ const (
 
 type SectionFilter struct {
 	ProjectID      string         `query:"project_id" validate:"required" example:"proj_123"`
-	TimeBoundaries TimeBoundaries `query:"time_boundaries" validate:"required,default=last_7_days,oneof=last_hour today yesterday last_7_days last_30_days last_90_days" enums:"last_hour,today,yesterday,last_7_days,last_30_days,last_90_days" default:"last_7_days" example:"last_7_days"`
+	TimeBoundaries TimeBoundaries `query:"time_range" validate:"required,oneof=last_hour today yesterday last_7_days last_30_days last_90_days" enums:"last_hour,today,yesterday,last_7_days,last_30_days,last_90_days" default:"last_7_days" example:"last_7_days"`
 	Referrer       *string        `query:"referrer" validate:"omitempty" example:"https://google.com"`
 	VisitorID      *string        `query:"visitor_id" validate:"omitempty" example:"visitor_abc123"`
 	CustomerID     *string        `query:"customer_id" validate:"omitempty" example:"cus_xyz789"`
 
-	Limit  int `query:"limit" validate:"required,default=50,min=1,max=100" default:"50" minimum:"1" maximum:"100" example:"50"`
-	Offset int `query:"offset" validate:"required,default=0,min=0" default:"0" minimum:"0" example:"0"`
+	Limit  int `query:"limit" validate:"omitempty,min=1,max=100" default:"50" minimum:"1" maximum:"100" example:"50"`
+	Offset int `query:"offset" validate:"omitempty,min=0" default:"0" minimum:"0" example:"0"`
 
 	UTMFilter
 	// TimeRange is a computed field
@@ -42,41 +42,36 @@ type TimeRange struct {
 	IntervalFunction string
 }
 
-func (f *SectionFilter) ValidateTimeRange() error {
+func ValidateTimeRange(tb TimeBoundaries) (*TimeRange, error) {
 	now := time.Now().UTC()
 
-	switch f.TimeBoundaries {
+	switch tb {
 	case TimeBoundariesHour:
-		f.TimeRange = &TimeRange{
+		return &TimeRange{
 			Start:            now.Add(-1 * time.Hour),
 			IntervalFunction: "toStartOfMinute",
-		}
-		return nil
+		}, nil
 	case TimeBoundariesToday:
-		f.TimeRange = &TimeRange{
+		return &TimeRange{
 			Start:            time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC),
 			IntervalFunction: "toStartOfHour",
-		}
-		return nil
+		}, nil
 	case TimeBoundariesLastWeek:
-		f.TimeRange = &TimeRange{
+		return &TimeRange{
 			Start:            now.AddDate(0, 0, -7),
 			IntervalFunction: "toStartOfHour",
-		}
-		return nil
+		}, nil
 	case TimeBoundariesLastMonth:
-		f.TimeRange = &TimeRange{
+		return &TimeRange{
 			Start:            now.AddDate(0, 0, -30),
 			IntervalFunction: "toStartOfDay",
-		}
-		return nil
+		}, nil
 	case TimeBoundariesLast90Days:
-		f.TimeRange = &TimeRange{
+		return &TimeRange{
 			Start:            now.AddDate(0, 0, -90),
 			IntervalFunction: "toStartOfDay",
-		}
-		return nil
+		}, nil
 	default:
-		return fmt.Errorf("invalid time range: %s", f.TimeBoundaries)
+		return nil, fmt.Errorf("invalid time range: %s", tb)
 	}
 }
