@@ -52,7 +52,6 @@ resources:
           top_visitors_response: "#/components/schemas/types.TopVisitorsResponse"
           visitor_profile_response: "#/components/schemas/types.VisitorProfileResponse"
           visitor_event: "#/components/schemas/types.VisitorEvent"
-          visitor_payment: "#/components/schemas/types.VisitorPayment"
           events_over_time_data_point: "#/components/schemas/types.EventsOverTimeDataPoint"
           unique_visitors_data_point: "#/components/schemas/types.UniqueVisitorsDataPoint"
           unique_visitors_timeline_response: "#/components/schemas/types.UniqueVisitorsTimelineResponse"
@@ -67,10 +66,6 @@ resources:
           cohort_data: "#/components/schemas/types.CohortData"
           manual_identify_request: "#/components/schemas/types.ManualIdentifyRequest"
           manual_identify_response: "#/components/schemas/types.ManualIdentifyResponse"
-          utm_revenue_data_point: "#/components/schemas/types.UTMRevenueDataPoint"
-          revenue_by_utm_response: "#/components/schemas/types.RevenueByUTMResponse"
-          revenue_timeline_data_point: "#/components/schemas/types.RevenueTimelineDataPoint"
-          revenue_timeline_response: "#/components/schemas/types.RevenueTimelineResponse"
         methods:
           dashboard: get /api/v1/analytics/dashboard
         subresources:
@@ -129,6 +124,9 @@ resources:
           conversion:
             methods:
               metrics: get /api/v1/revenue/conversion/metrics
+          cohort:
+            methods:
+              get_metrics: post /api/v1/revenue/cohort/metrics
       projects:
         # Configure the models--named types--defined in the resource. Each key in the
         # object is the name of the model and the value is either the name of a schema in
@@ -167,6 +165,12 @@ resources:
           update: put /api/v1/payment-providers/{id}
           delete: delete /api/v1/payment-providers/{id}
           instructions: get /api/v1/payment-providers/instructions
+        subresources:
+          stripe:
+            subresources:
+              app:
+                methods:
+                  handle_callback: get /api/v1/payment-providers/stripe/app/callback
 
 settings:
   # All generated integration tests that hit the prism mock http server are marked
