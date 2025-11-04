@@ -16,6 +16,12 @@ const (
 	TimeBoundariesLast90Days TimeBoundaries = "last_90_days"
 )
 
+type VisitorProfileFilter struct {
+	ProjectID  string  `query:"project_id" validate:"required" example:"proj_123"`
+	VisitorID  *string `query:"visitor_id" validate:"omitempty" example:"visitor_abc123"`
+	CustomerID *string `query:"customer_id" validate:"omitempty" example:"cus_xyz789"`
+}
+
 type SectionFilter struct {
 	ProjectID      string         `query:"project_id" validate:"required" example:"proj_123"`
 	TimeBoundaries TimeBoundaries `query:"time_range" validate:"required,oneof=last_hour today yesterday last_7_days last_30_days last_90_days" enums:"last_hour,today,yesterday,last_7_days,last_30_days,last_90_days" default:"last_7_days" example:"last_7_days"`

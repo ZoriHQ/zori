@@ -2,6 +2,7 @@ package data
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"time"
 	"zori/internal/ctx"
@@ -472,7 +473,7 @@ func (a *AnalyticsData) GetTopVisitors(ctx *ctx.Ctx, filter *filters.SectionFilt
 	return visitors, nil
 }
 
-func (a *AnalyticsData) GetVisitorProfile(ctx *ctx.Ctx, filter *filters.SectionFilter) (*types.VisitorProfileResponse, error) {
+func (a *AnalyticsData) GetVisitorProfile(ctx *ctx.Ctx, filter *filters.VisitorProfileFilter) (*types.VisitorProfileResponse, error) {
 	summaryQuery := `
 		SELECT
 			visitor_id,
@@ -517,72 +518,6 @@ func (a *AnalyticsData) GetVisitorProfile(ctx *ctx.Ctx, filter *filters.SectionF
 		profile.FirstReferrerURL = nil
 	}
 
-	eventsQuery := `
-		SELECT
-			event_name,
-			client_timestamp_utc,
-			page_url,
-			page_path,
-			referrer_url,
-			device_type,
-			browser_name,
-			click_element_tag,
-			click_element_selector,
-			click_element_text,
-			click_position_x,
-			click_position_y,
-			click_screen_width,
-			click_screen_height,
-			click_element_type,
-			click_element_category,
-			is_cta_click,
-			link_destination,
-			is_external_link,
-			is_download_link
-		FROM events
-		WHERE project_id = ?
-			AND visitor_id = ?
-		ORDER BY client_timestamp_utc DESC
-		LIMIT 100
-	`
-
-	eventsRows, err := a.clickDb.Db().Query(ctx, eventsQuery, filter.ProjectID, filter.VisitorID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to query visitor events: %w", err)
-	}
-	defer eventsRows.Close()
-
-	var events []types.VisitorEvent
-	for eventsRows.Next() {
-		var event types.VisitorEvent
-		if err := eventsRows.Scan(
-			&event.EventName,
-			&event.ClientTimestampUTC,
-			&event.PageURL,
-			&event.PagePath,
-			&event.ReferrerURL,
-			&event.DeviceType,
-			&event.BrowserName,
-			&event.ClickElementTag,
-			&event.ClickElementSelector,
-			&event.ClickElementText,
-			&event.ClickPositionX,
-			&event.ClickPositionY,
-			&event.ClickScreenWidth,
-			&event.ClickScreenHeight,
-			&event.ClickElementType,
-			&event.ClickElementCategory,
-			&event.IsCTAClick,
-			&event.LinkDestination,
-			&event.IsExternalLink,
-			&event.IsDownloadLink,
-		); err != nil {
-			return nil, fmt.Errorf("failed to scan event row: %w", err)
-		}
-		events = append(events, event)
-	}
-	profile.Events = events
-
 	now := time.Now().UTC()
 	startTime := now.AddDate(0, 0, -30)
 
@@ -616,7 +551,7 @@ func (a *AnalyticsData) GetVisitorProfile(ctx *ctx.Ctx, filter *filters.SectionF
 	profile.EventsOverTime = eventsOverTime
 
 	visitorIdentity, err := a.visitorRepository.GetVisitorByID(ctx, *filter.VisitorID)
-	if err != nil && err != sql.ErrNoRows {
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		fmt.Printf("Warning: failed to fetch visitor identity: %v\n", err)
 	}
 

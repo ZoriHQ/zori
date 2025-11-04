@@ -180,14 +180,14 @@ func (s *AnalyticsService) GetTopVisitors(ctx *ctx.Ctx, filter *filters.SectionF
 // @Accept json
 // @Produce json
 // @Security ApiKeyAuth
-// @Param filter query filters.SectionFilter true "Filter parameters"
+// @Param filter query filters.VisitorProfileFilter true "Filter parameters"
 // @Success 200 {object} types.VisitorProfileResponse "Visitor profile details"
 // @Failure 400 {object} map[string]interface{} "Invalid request parameters"
 // @Failure 401 {object} map[string]interface{} "Unauthorized - Invalid or missing JWT token"
 // @Failure 404 {object} map[string]interface{} "Visitor not found"
 // @Failure 500 {object} map[string]interface{} "Internal server error"
 // @Router /api/v1/analytics/visitors/profile [get]
-func (s *AnalyticsService) GetVisitorProfile(ctx *ctx.Ctx, filter *filters.SectionFilter) (*types.VisitorProfileResponse, error) {
+func (s *AnalyticsService) GetVisitorProfile(ctx *ctx.Ctx, filter *filters.VisitorProfileFilter) (*types.VisitorProfileResponse, error) {
 	profile, err := s.data.GetVisitorProfile(ctx, filter)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get visitor profile: %w", err)
