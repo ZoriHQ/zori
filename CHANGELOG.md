@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.3](https://github.com/ZoriHQ/zori/compare/v0.2.2...v0.2.3) (2025-11-03)
+
+
+### Bug Fixes
+
+* **misc:** updated migrate up command to run clickhouse migrations ([dc0a815](https://github.com/ZoriHQ/zori/commit/dc0a815f36e0079beea3092852ff987e509cc193))
+
 ## [0.2.2](https://github.com/ZoriHQ/zori/compare/v0.2.1...v0.2.2) (2025-11-02)
 
 
