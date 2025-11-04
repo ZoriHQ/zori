@@ -59,6 +59,7 @@ type RecentEventsRequest struct {
 	ExternalID    *string `query:"external_id" example:"ext_789"`
 	TrafficOrigin *string `query:"traffic_origin" example:"google.com"`
 	PagePath      *string `query:"page_path" example:"/pricing"`
+	EventName     *string `query:"event_name" example:"page_view,click"`
 }
 
 type RecentEventsResponse struct {
@@ -261,4 +262,5 @@ type ManualIdentifyResponse struct {
 type EventFilterOptionsResponse struct {
 	TrafficOrigins []string `json:"traffic_origins"`
 	Pages          []string `json:"pages"`
+	EventNames     []string `json:"event_names"`
 }
