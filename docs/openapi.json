@@ -24,27 +24,100 @@
       "get": {
         "parameters": [
           {
-            "description": "Project ID",
+            "example": "cus_xyz789",
             "in": "query",
-            "name": "project_id",
+            "name": "customerID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "example": 50,
+            "in": "query",
+            "name": "limit",
+            "required": true,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "example": 0,
+            "in": "query",
+            "name": "offset",
+            "required": true,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          {
+            "example": "proj_123",
+            "in": "query",
+            "name": "projectID",
             "required": true,
             "schema": {
               "type": "string"
             }
           },
           {
-            "description": "Time range",
+            "example": "https://google.com",
             "in": "query",
-            "name": "time_range",
+            "name": "referrer",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "example": "last_7_days",
+            "in": "query",
+            "name": "timeBoundaries",
             "required": true,
             "schema": {
+              "default": "last_7_days",
               "enum": [
                 "last_hour",
                 "today",
+                "yesterday",
                 "last_7_days",
                 "last_30_days",
                 "last_90_days"
               ],
+              "type": "string"
+            },
+            "x-enum-varnames": [
+              "TimeBoundariesHour",
+              "TimeBoundariesToday",
+              "TimeBoundariesYesterday",
+              "TimeBoundariesLastWeek",
+              "TimeBoundariesLastMonth",
+              "TimeBoundariesLast90Days"
+            ]
+          },
+          {
+            "example": "utm_source",
+            "in": "query",
+            "name": "utmtag",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "example": "google",
+            "in": "query",
+            "name": "utmtagValue",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "example": "visitor_abc123",
+            "in": "query",
+            "name": "visitorID",
+            "schema": {
               "type": "string"
             }
           }
@@ -110,26 +183,100 @@
       "get": {
         "parameters": [
           {
-            "description": "Project ID",
+            "example": "cus_xyz789",
             "in": "query",
-            "name": "project_id",
+            "name": "customerID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "example": 50,
+            "in": "query",
+            "name": "limit",
+            "required": true,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "example": 0,
+            "in": "query",
+            "name": "offset",
+            "required": true,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          {
+            "example": "proj_123",
+            "in": "query",
+            "name": "projectID",
             "required": true,
             "schema": {
               "type": "string"
             }
           },
           {
-            "description": "Time range",
+            "example": "https://google.com",
             "in": "query",
-            "name": "time_range",
+            "name": "referrer",
             "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "example": "last_7_days",
+            "in": "query",
+            "name": "timeBoundaries",
+            "required": true,
+            "schema": {
+              "default": "last_7_days",
               "enum": [
                 "last_hour",
                 "today",
+                "yesterday",
                 "last_7_days",
                 "last_30_days",
                 "last_90_days"
               ],
+              "type": "string"
+            },
+            "x-enum-varnames": [
+              "TimeBoundariesHour",
+              "TimeBoundariesToday",
+              "TimeBoundariesYesterday",
+              "TimeBoundariesLastWeek",
+              "TimeBoundariesLastMonth",
+              "TimeBoundariesLast90Days"
+            ]
+          },
+          {
+            "example": "utm_source",
+            "in": "query",
+            "name": "utmtag",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "example": "google",
+            "in": "query",
+            "name": "utmtagValue",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "example": "visitor_abc123",
+            "in": "query",
+            "name": "visitorID",
+            "schema": {
               "type": "string"
             }
           }
@@ -195,66 +342,131 @@
       "get": {
         "parameters": [
           {
-            "description": "Project ID",
+            "example": "cus_xyz789",
             "in": "query",
-            "name": "project_id",
+            "name": "customerID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "example": "ext_789",
+            "in": "query",
+            "name": "externalID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "example": 50,
+            "in": "query",
+            "name": "limit",
+            "required": true,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "example": 0,
+            "in": "query",
+            "name": "offset",
+            "required": true,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          {
+            "example": "/pricing",
+            "in": "query",
+            "name": "pagePath",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "example": "proj_123",
+            "in": "query",
+            "name": "projectID",
             "required": true,
             "schema": {
               "type": "string"
             }
           },
           {
-            "description": "Maximum number of events to return (default: 15)",
+            "example": "https://google.com",
             "in": "query",
-            "name": "limit",
-            "schema": {
-              "type": "integer"
-            }
-          },
-          {
-            "description": "Offset for pagination (default: 0)",
-            "in": "query",
-            "name": "offset",
-            "schema": {
-              "type": "integer"
-            }
-          },
-          {
-            "description": "Filter by visitor ID",
-            "in": "query",
-            "name": "visitor_id",
+            "name": "referrer",
             "schema": {
               "type": "string"
             }
           },
           {
-            "description": "Filter by user ID",
+            "example": "last_7_days",
             "in": "query",
-            "name": "user_id",
+            "name": "timeBoundaries",
+            "required": true,
+            "schema": {
+              "default": "last_7_days",
+              "enum": [
+                "last_hour",
+                "today",
+                "yesterday",
+                "last_7_days",
+                "last_30_days",
+                "last_90_days"
+              ],
+              "type": "string"
+            },
+            "x-enum-varnames": [
+              "TimeBoundariesHour",
+              "TimeBoundariesToday",
+              "TimeBoundariesYesterday",
+              "TimeBoundariesLastWeek",
+              "TimeBoundariesLastMonth",
+              "TimeBoundariesLast90Days"
+            ]
+          },
+          {
+            "example": "google.com",
+            "in": "query",
+            "name": "trafficOrigin",
             "schema": {
               "type": "string"
             }
           },
           {
-            "description": "Filter by external ID",
+            "example": "user_456",
             "in": "query",
-            "name": "external_id",
+            "name": "userID",
             "schema": {
               "type": "string"
             }
           },
           {
-            "description": "Filter by traffic origin (referrer domain)",
+            "example": "utm_source",
             "in": "query",
-            "name": "traffic_origin",
+            "name": "utmtag",
             "schema": {
               "type": "string"
             }
           },
           {
-            "description": "Filter by page path",
+            "example": "google",
             "in": "query",
-            "name": "page_path",
+            "name": "utmtagValue",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "example": "visitor_abc123",
+            "in": "query",
+            "name": "visitorID",
             "schema": {
               "type": "string"
             }
@@ -321,36 +533,101 @@
       "get": {
         "parameters": [
           {
-            "description": "Project ID",
+            "example": "cus_xyz789",
             "in": "query",
-            "name": "project_id",
+            "name": "customerID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "example": 50,
+            "in": "query",
+            "name": "limit",
+            "required": true,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "example": 0,
+            "in": "query",
+            "name": "offset",
+            "required": true,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          {
+            "example": "proj_123",
+            "in": "query",
+            "name": "projectID",
             "required": true,
             "schema": {
               "type": "string"
             }
           },
           {
-            "description": "Time range",
+            "example": "https://google.com",
             "in": "query",
-            "name": "time_range",
+            "name": "referrer",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "example": "last_7_days",
+            "in": "query",
+            "name": "timeBoundaries",
             "required": true,
             "schema": {
+              "default": "last_7_days",
               "enum": [
                 "last_hour",
                 "today",
+                "yesterday",
                 "last_7_days",
                 "last_30_days",
                 "last_90_days"
               ],
               "type": "string"
+            },
+            "x-enum-varnames": [
+              "TimeBoundariesHour",
+              "TimeBoundariesToday",
+              "TimeBoundariesYesterday",
+              "TimeBoundariesLastWeek",
+              "TimeBoundariesLastMonth",
+              "TimeBoundariesLast90Days"
+            ]
+          },
+          {
+            "example": "utm_source",
+            "in": "query",
+            "name": "utmtag",
+            "schema": {
+              "type": "string"
             }
           },
           {
-            "description": "Days of inactivity to consider churned (default: 30)",
+            "example": "google",
             "in": "query",
-            "name": "churn_threshold_days",
+            "name": "utmtagValue",
             "schema": {
-              "type": "integer"
+              "type": "string"
+            }
+          },
+          {
+            "example": "visitor_abc123",
+            "in": "query",
+            "name": "visitorID",
+            "schema": {
+              "type": "string"
             }
           }
         ],
@@ -415,27 +692,100 @@
       "get": {
         "parameters": [
           {
-            "description": "Project ID",
+            "example": "cus_xyz789",
             "in": "query",
-            "name": "project_id",
+            "name": "customerID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "example": 50,
+            "in": "query",
+            "name": "limit",
+            "required": true,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "example": 0,
+            "in": "query",
+            "name": "offset",
+            "required": true,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          {
+            "example": "proj_123",
+            "in": "query",
+            "name": "projectID",
             "required": true,
             "schema": {
               "type": "string"
             }
           },
           {
-            "description": "Time range",
+            "example": "https://google.com",
             "in": "query",
-            "name": "time_range",
+            "name": "referrer",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "example": "last_7_days",
+            "in": "query",
+            "name": "timeBoundaries",
             "required": true,
             "schema": {
+              "default": "last_7_days",
               "enum": [
                 "last_hour",
                 "today",
+                "yesterday",
                 "last_7_days",
                 "last_30_days",
                 "last_90_days"
               ],
+              "type": "string"
+            },
+            "x-enum-varnames": [
+              "TimeBoundariesHour",
+              "TimeBoundariesToday",
+              "TimeBoundariesYesterday",
+              "TimeBoundariesLastWeek",
+              "TimeBoundariesLastMonth",
+              "TimeBoundariesLast90Days"
+            ]
+          },
+          {
+            "example": "utm_source",
+            "in": "query",
+            "name": "utmtag",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "example": "google",
+            "in": "query",
+            "name": "utmtagValue",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "example": "visitor_abc123",
+            "in": "query",
+            "name": "visitorID",
+            "schema": {
               "type": "string"
             }
           }
@@ -501,27 +851,100 @@
       "get": {
         "parameters": [
           {
-            "description": "Project ID",
+            "example": "cus_xyz789",
             "in": "query",
-            "name": "project_id",
+            "name": "customerID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "example": 50,
+            "in": "query",
+            "name": "limit",
+            "required": true,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "example": 0,
+            "in": "query",
+            "name": "offset",
+            "required": true,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          {
+            "example": "proj_123",
+            "in": "query",
+            "name": "projectID",
             "required": true,
             "schema": {
               "type": "string"
             }
           },
           {
-            "description": "Time range",
+            "example": "https://google.com",
             "in": "query",
-            "name": "time_range",
+            "name": "referrer",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "example": "last_7_days",
+            "in": "query",
+            "name": "timeBoundaries",
             "required": true,
             "schema": {
+              "default": "last_7_days",
               "enum": [
                 "last_hour",
                 "today",
+                "yesterday",
                 "last_7_days",
                 "last_30_days",
                 "last_90_days"
               ],
+              "type": "string"
+            },
+            "x-enum-varnames": [
+              "TimeBoundariesHour",
+              "TimeBoundariesToday",
+              "TimeBoundariesYesterday",
+              "TimeBoundariesLastWeek",
+              "TimeBoundariesLastMonth",
+              "TimeBoundariesLast90Days"
+            ]
+          },
+          {
+            "example": "utm_source",
+            "in": "query",
+            "name": "utmtag",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "example": "google",
+            "in": "query",
+            "name": "utmtagValue",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "example": "visitor_abc123",
+            "in": "query",
+            "name": "visitorID",
+            "schema": {
               "type": "string"
             }
           }
@@ -587,36 +1010,101 @@
       "get": {
         "parameters": [
           {
-            "description": "Project ID",
+            "example": "cus_xyz789",
             "in": "query",
-            "name": "project_id",
+            "name": "customerID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "example": 50,
+            "in": "query",
+            "name": "limit",
+            "required": true,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "example": 0,
+            "in": "query",
+            "name": "offset",
+            "required": true,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          {
+            "example": "proj_123",
+            "in": "query",
+            "name": "projectID",
             "required": true,
             "schema": {
               "type": "string"
             }
           },
           {
-            "description": "Time range",
+            "example": "https://google.com",
             "in": "query",
-            "name": "time_range",
+            "name": "referrer",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "example": "last_7_days",
+            "in": "query",
+            "name": "timeBoundaries",
             "required": true,
             "schema": {
+              "default": "last_7_days",
               "enum": [
                 "last_hour",
                 "today",
+                "yesterday",
                 "last_7_days",
                 "last_30_days",
                 "last_90_days"
               ],
               "type": "string"
+            },
+            "x-enum-varnames": [
+              "TimeBoundariesHour",
+              "TimeBoundariesToday",
+              "TimeBoundariesYesterday",
+              "TimeBoundariesLastWeek",
+              "TimeBoundariesLastMonth",
+              "TimeBoundariesLast90Days"
+            ]
+          },
+          {
+            "example": "utm_source",
+            "in": "query",
+            "name": "utmtag",
+            "schema": {
+              "type": "string"
             }
           },
           {
-            "description": "Limit for per-page breakdown (default: 20)",
+            "example": "google",
             "in": "query",
-            "name": "limit",
+            "name": "utmtagValue",
             "schema": {
-              "type": "integer"
+              "type": "string"
+            }
+          },
+          {
+            "example": "visitor_abc123",
+            "in": "query",
+            "name": "visitorID",
+            "schema": {
+              "type": "string"
             }
           }
         ],
@@ -681,27 +1169,100 @@
       "get": {
         "parameters": [
           {
-            "description": "Project ID",
+            "example": "cus_xyz789",
             "in": "query",
-            "name": "project_id",
+            "name": "customerID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "example": 50,
+            "in": "query",
+            "name": "limit",
+            "required": true,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "example": 0,
+            "in": "query",
+            "name": "offset",
+            "required": true,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          {
+            "example": "proj_123",
+            "in": "query",
+            "name": "projectID",
             "required": true,
             "schema": {
               "type": "string"
             }
           },
           {
-            "description": "Time range",
+            "example": "https://google.com",
             "in": "query",
-            "name": "time_range",
+            "name": "referrer",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "example": "last_7_days",
+            "in": "query",
+            "name": "timeBoundaries",
             "required": true,
             "schema": {
+              "default": "last_7_days",
               "enum": [
                 "last_hour",
                 "today",
+                "yesterday",
                 "last_7_days",
                 "last_30_days",
                 "last_90_days"
               ],
+              "type": "string"
+            },
+            "x-enum-varnames": [
+              "TimeBoundariesHour",
+              "TimeBoundariesToday",
+              "TimeBoundariesYesterday",
+              "TimeBoundariesLastWeek",
+              "TimeBoundariesLastMonth",
+              "TimeBoundariesLast90Days"
+            ]
+          },
+          {
+            "example": "utm_source",
+            "in": "query",
+            "name": "utmtag",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "example": "google",
+            "in": "query",
+            "name": "utmtagValue",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "example": "visitor_abc123",
+            "in": "query",
+            "name": "visitorID",
+            "schema": {
               "type": "string"
             }
           }
@@ -767,10 +1328,99 @@
       "get": {
         "parameters": [
           {
-            "description": "Project ID",
+            "example": "cus_xyz789",
             "in": "query",
-            "name": "project_id",
+            "name": "customerID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "example": 50,
+            "in": "query",
+            "name": "limit",
             "required": true,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "example": 0,
+            "in": "query",
+            "name": "offset",
+            "required": true,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          {
+            "example": "proj_123",
+            "in": "query",
+            "name": "projectID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "example": "https://google.com",
+            "in": "query",
+            "name": "referrer",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "example": "last_7_days",
+            "in": "query",
+            "name": "timeBoundaries",
+            "required": true,
+            "schema": {
+              "default": "last_7_days",
+              "enum": [
+                "last_hour",
+                "today",
+                "yesterday",
+                "last_7_days",
+                "last_30_days",
+                "last_90_days"
+              ],
+              "type": "string"
+            },
+            "x-enum-varnames": [
+              "TimeBoundariesHour",
+              "TimeBoundariesToday",
+              "TimeBoundariesYesterday",
+              "TimeBoundariesLastWeek",
+              "TimeBoundariesLastMonth",
+              "TimeBoundariesLast90Days"
+            ]
+          },
+          {
+            "example": "utm_source",
+            "in": "query",
+            "name": "utmtag",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "example": "google",
+            "in": "query",
+            "name": "utmtagValue",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "example": "visitor_abc123",
+            "in": "query",
+            "name": "visitorID",
             "schema": {
               "type": "string"
             }
@@ -837,27 +1487,100 @@
       "get": {
         "parameters": [
           {
-            "description": "Project ID",
+            "example": "cus_xyz789",
             "in": "query",
-            "name": "project_id",
+            "name": "customerID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "example": 50,
+            "in": "query",
+            "name": "limit",
+            "required": true,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "example": 0,
+            "in": "query",
+            "name": "offset",
+            "required": true,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          {
+            "example": "proj_123",
+            "in": "query",
+            "name": "projectID",
             "required": true,
             "schema": {
               "type": "string"
             }
           },
           {
-            "description": "Time range",
+            "example": "https://google.com",
             "in": "query",
-            "name": "time_range",
+            "name": "referrer",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "example": "last_7_days",
+            "in": "query",
+            "name": "timeBoundaries",
             "required": true,
             "schema": {
+              "default": "last_7_days",
               "enum": [
                 "last_hour",
                 "today",
+                "yesterday",
                 "last_7_days",
                 "last_30_days",
                 "last_90_days"
               ],
+              "type": "string"
+            },
+            "x-enum-varnames": [
+              "TimeBoundariesHour",
+              "TimeBoundariesToday",
+              "TimeBoundariesYesterday",
+              "TimeBoundariesLastWeek",
+              "TimeBoundariesLastMonth",
+              "TimeBoundariesLast90Days"
+            ]
+          },
+          {
+            "example": "utm_source",
+            "in": "query",
+            "name": "utmtag",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "example": "google",
+            "in": "query",
+            "name": "utmtagValue",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "example": "visitor_abc123",
+            "in": "query",
+            "name": "visitorID",
+            "schema": {
               "type": "string"
             }
           }
@@ -923,27 +1646,100 @@
       "get": {
         "parameters": [
           {
-            "description": "Project ID",
+            "example": "cus_xyz789",
             "in": "query",
-            "name": "project_id",
+            "name": "customerID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "example": 50,
+            "in": "query",
+            "name": "limit",
+            "required": true,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "example": 0,
+            "in": "query",
+            "name": "offset",
+            "required": true,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          {
+            "example": "proj_123",
+            "in": "query",
+            "name": "projectID",
             "required": true,
             "schema": {
               "type": "string"
             }
           },
           {
-            "description": "Time range",
+            "example": "https://google.com",
             "in": "query",
-            "name": "time_range",
+            "name": "referrer",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "example": "last_7_days",
+            "in": "query",
+            "name": "timeBoundaries",
             "required": true,
             "schema": {
+              "default": "last_7_days",
               "enum": [
                 "last_hour",
                 "today",
+                "yesterday",
                 "last_7_days",
                 "last_30_days",
                 "last_90_days"
               ],
+              "type": "string"
+            },
+            "x-enum-varnames": [
+              "TimeBoundariesHour",
+              "TimeBoundariesToday",
+              "TimeBoundariesYesterday",
+              "TimeBoundariesLastWeek",
+              "TimeBoundariesLastMonth",
+              "TimeBoundariesLast90Days"
+            ]
+          },
+          {
+            "example": "utm_source",
+            "in": "query",
+            "name": "utmtag",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "example": "google",
+            "in": "query",
+            "name": "utmtagValue",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "example": "visitor_abc123",
+            "in": "query",
+            "name": "visitorID",
+            "schema": {
               "type": "string"
             }
           }
@@ -1079,27 +1875,100 @@
       "get": {
         "parameters": [
           {
-            "description": "Project ID",
+            "example": "cus_xyz789",
             "in": "query",
-            "name": "project_id",
+            "name": "customerID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "example": 50,
+            "in": "query",
+            "name": "limit",
+            "required": true,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "example": 0,
+            "in": "query",
+            "name": "offset",
+            "required": true,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          {
+            "example": "proj_123",
+            "in": "query",
+            "name": "projectID",
             "required": true,
             "schema": {
               "type": "string"
             }
           },
           {
-            "description": "Time range",
+            "example": "https://google.com",
             "in": "query",
-            "name": "time_range",
+            "name": "referrer",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "example": "last_7_days",
+            "in": "query",
+            "name": "timeBoundaries",
             "required": true,
             "schema": {
+              "default": "last_7_days",
               "enum": [
                 "last_hour",
                 "today",
+                "yesterday",
                 "last_7_days",
                 "last_30_days",
                 "last_90_days"
               ],
+              "type": "string"
+            },
+            "x-enum-varnames": [
+              "TimeBoundariesHour",
+              "TimeBoundariesToday",
+              "TimeBoundariesYesterday",
+              "TimeBoundariesLastWeek",
+              "TimeBoundariesLastMonth",
+              "TimeBoundariesLast90Days"
+            ]
+          },
+          {
+            "example": "utm_source",
+            "in": "query",
+            "name": "utmtag",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "example": "google",
+            "in": "query",
+            "name": "utmtagValue",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "example": "visitor_abc123",
+            "in": "query",
+            "name": "visitorID",
+            "schema": {
               "type": "string"
             }
           }
@@ -1165,19 +2034,99 @@
       "get": {
         "parameters": [
           {
-            "description": "Project ID",
+            "example": "cus_xyz789",
             "in": "query",
-            "name": "project_id",
+            "name": "customerID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "example": 50,
+            "in": "query",
+            "name": "limit",
+            "required": true,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "example": 0,
+            "in": "query",
+            "name": "offset",
+            "required": true,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          {
+            "example": "proj_123",
+            "in": "query",
+            "name": "projectID",
             "required": true,
             "schema": {
               "type": "string"
             }
           },
           {
-            "description": "Visitor ID",
+            "example": "https://google.com",
             "in": "query",
-            "name": "visitor_id",
+            "name": "referrer",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "example": "last_7_days",
+            "in": "query",
+            "name": "timeBoundaries",
             "required": true,
+            "schema": {
+              "default": "last_7_days",
+              "enum": [
+                "last_hour",
+                "today",
+                "yesterday",
+                "last_7_days",
+                "last_30_days",
+                "last_90_days"
+              ],
+              "type": "string"
+            },
+            "x-enum-varnames": [
+              "TimeBoundariesHour",
+              "TimeBoundariesToday",
+              "TimeBoundariesYesterday",
+              "TimeBoundariesLastWeek",
+              "TimeBoundariesLastMonth",
+              "TimeBoundariesLast90Days"
+            ]
+          },
+          {
+            "example": "utm_source",
+            "in": "query",
+            "name": "utmtag",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "example": "google",
+            "in": "query",
+            "name": "utmtagValue",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "example": "visitor_abc123",
+            "in": "query",
+            "name": "visitorID",
             "schema": {
               "type": "string"
             }
@@ -1255,27 +2204,100 @@
       "get": {
         "parameters": [
           {
-            "description": "Project ID",
+            "example": "cus_xyz789",
             "in": "query",
-            "name": "project_id",
+            "name": "customerID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "example": 50,
+            "in": "query",
+            "name": "limit",
+            "required": true,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "example": 0,
+            "in": "query",
+            "name": "offset",
+            "required": true,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          {
+            "example": "proj_123",
+            "in": "query",
+            "name": "projectID",
             "required": true,
             "schema": {
               "type": "string"
             }
           },
           {
-            "description": "Time range",
+            "example": "https://google.com",
             "in": "query",
-            "name": "time_range",
+            "name": "referrer",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "example": "last_7_days",
+            "in": "query",
+            "name": "timeBoundaries",
             "required": true,
             "schema": {
+              "default": "last_7_days",
               "enum": [
                 "last_hour",
                 "today",
+                "yesterday",
                 "last_7_days",
                 "last_30_days",
                 "last_90_days"
               ],
+              "type": "string"
+            },
+            "x-enum-varnames": [
+              "TimeBoundariesHour",
+              "TimeBoundariesToday",
+              "TimeBoundariesYesterday",
+              "TimeBoundariesLastWeek",
+              "TimeBoundariesLastMonth",
+              "TimeBoundariesLast90Days"
+            ]
+          },
+          {
+            "example": "utm_source",
+            "in": "query",
+            "name": "utmtag",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "example": "google",
+            "in": "query",
+            "name": "utmtagValue",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "example": "visitor_abc123",
+            "in": "query",
+            "name": "visitorID",
+            "schema": {
               "type": "string"
             }
           }
@@ -1341,36 +2363,101 @@
       "get": {
         "parameters": [
           {
-            "description": "Project ID",
+            "example": "cus_xyz789",
             "in": "query",
-            "name": "project_id",
+            "name": "customerID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "example": 50,
+            "in": "query",
+            "name": "limit",
+            "required": true,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "example": 0,
+            "in": "query",
+            "name": "offset",
+            "required": true,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          {
+            "example": "proj_123",
+            "in": "query",
+            "name": "projectID",
             "required": true,
             "schema": {
               "type": "string"
             }
           },
           {
-            "description": "Time range",
+            "example": "https://google.com",
             "in": "query",
-            "name": "time_range",
+            "name": "referrer",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "example": "last_7_days",
+            "in": "query",
+            "name": "timeBoundaries",
             "required": true,
             "schema": {
+              "default": "last_7_days",
               "enum": [
                 "last_hour",
                 "today",
+                "yesterday",
                 "last_7_days",
                 "last_30_days",
                 "last_90_days"
               ],
               "type": "string"
+            },
+            "x-enum-varnames": [
+              "TimeBoundariesHour",
+              "TimeBoundariesToday",
+              "TimeBoundariesYesterday",
+              "TimeBoundariesLastWeek",
+              "TimeBoundariesLastMonth",
+              "TimeBoundariesLast90Days"
+            ]
+          },
+          {
+            "example": "utm_source",
+            "in": "query",
+            "name": "utmtag",
+            "schema": {
+              "type": "string"
             }
           },
           {
-            "description": "Maximum number of visitors to return (default: 50)",
+            "example": "google",
             "in": "query",
-            "name": "limit",
+            "name": "utmtagValue",
             "schema": {
-              "type": "integer"
+              "type": "string"
+            }
+          },
+          {
+            "example": "visitor_abc123",
+            "in": "query",
+            "name": "visitorID",
+            "schema": {
+              "type": "string"
             }
           }
         ],
@@ -3073,6 +4160,25 @@
   },
   "components": {
     "schemas": {
+      "filters.TimeBoundaries": {
+        "enum": [
+          "last_hour",
+          "today",
+          "yesterday",
+          "last_7_days",
+          "last_30_days",
+          "last_90_days"
+        ],
+        "type": "string",
+        "x-enum-varnames": [
+          "TimeBoundariesHour",
+          "TimeBoundariesToday",
+          "TimeBoundariesYesterday",
+          "TimeBoundariesLastWeek",
+          "TimeBoundariesLastMonth",
+          "TimeBoundariesLast90Days"
+        ]
+      },
       "models.Project": {
         "properties": {
           "allow_local_host": {
@@ -3314,15 +4420,9 @@
             "type": "string"
           },
           "time_range": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/zori_services_revenue_types.TimeRange"
-              }
-            ],
-            "description": "Optional: filter by payment date"
+            "$ref": "#/components/schemas/types.TimeRange"
           },
           "visitor_ids": {
-            "description": "List of visitor IDs to analyze",
             "items": {
               "type": "string"
             },
@@ -3339,7 +4439,6 @@
       "types.CohortRevenueMetricsResponse": {
         "properties": {
           "anonymous_customers": {
-            "description": "Customers with only visitor_id",
             "type": "integer"
           },
           "avg_order_value": {
@@ -3355,46 +4454,36 @@
             "type": "number"
           },
           "avg_time_to_first_purchase_hours": {
-            "description": "Time metrics",
             "type": "number"
           },
           "conversion_rate": {
-            "description": "paying_customers / total_customers * 100",
             "type": "number"
           },
           "currency": {
             "type": "string"
           },
           "identified_customers": {
-            "description": "Customer identity mapping",
             "type": "integer"
           },
           "median_time_to_first_purchase_hours": {
-            "description": "Median time to first payment",
             "type": "number"
           },
           "paying_customers": {
-            "description": "Unique customer identities who made payments",
             "type": "integer"
           },
           "total_customers": {
-            "description": "Total unique customer identities in cohort",
             "type": "integer"
           },
           "total_payments": {
-            "description": "Payment metrics",
             "type": "integer"
           },
           "total_revenue": {
-            "description": "Revenue metrics",
             "type": "integer"
           },
           "total_visitors": {
-            "description": "Cohort size",
             "type": "integer"
           },
           "visitor_conversion_rate": {
-            "description": "paying_customers / total_visitors * 100",
             "type": "number"
           }
         },
@@ -3406,15 +4495,12 @@
             "type": "number"
           },
           "avg_time_to_first_purchase_hours": {
-            "description": "Time to conversion",
             "type": "number"
           },
           "conversion_rate": {
-            "description": "% of visitors who paid",
             "type": "number"
           },
           "customer_lifetime_value": {
-            "description": "Customer value",
             "type": "number"
           },
           "median_time_to_first_purchase_hours": {
@@ -3424,7 +4510,6 @@
             "type": "integer"
           },
           "repeat_purchase_rate": {
-            "description": "Repeat purchase metrics",
             "type": "number"
           },
           "total_visitors": {
@@ -3526,7 +4611,6 @@
             "type": "string"
           },
           "first_traffic_origin": {
-            "description": "Attribution",
             "type": "string"
           },
           "first_utm_campaign": {
@@ -3548,28 +4632,24 @@
             "type": "integer"
           },
           "payments": {
-            "description": "Payment history",
             "items": {
               "$ref": "#/components/schemas/types.Payment"
             },
             "type": "array"
           },
           "revenue_over_time": {
-            "description": "Revenue over time (last 90 days)",
             "items": {
               "$ref": "#/components/schemas/types.RevenueOverTimeDataPoint"
             },
             "type": "array"
           },
           "total_revenue": {
-            "description": "Revenue summary",
             "type": "integer"
           },
           "user_id": {
             "type": "string"
           },
           "visitor_id": {
-            "description": "Identity",
             "type": "string"
           }
         },
@@ -3584,11 +4664,9 @@
             "type": "number"
           },
           "bounce_rate": {
-            "description": "Engagement metrics",
             "type": "number"
           },
           "dau": {
-            "description": "Active users",
             "type": "integer"
           },
           "mau": {
@@ -3598,18 +4676,15 @@
             "type": "number"
           },
           "sessions_today": {
-            "description": "Sessions",
             "type": "integer"
           },
           "total_events": {
-            "description": "Total metrics",
             "type": "integer"
           },
           "total_sessions_in_period": {
             "type": "integer"
           },
           "unique_sessions": {
-            "description": "Total unique sessions in period",
             "type": "integer"
           },
           "unique_visitors": {
@@ -3624,22 +4699,18 @@
       "types.DashboardResponse": {
         "properties": {
           "avg_order_value": {
-            "description": "Average metrics",
             "type": "number"
           },
           "avg_revenue_per_customer": {
-            "description": "Average revenue per paying customer",
             "type": "number"
           },
           "avg_revenue_per_identified_customer": {
             "type": "number"
           },
           "avg_revenue_per_session": {
-            "description": "Average revenue per session",
             "type": "number"
           },
           "conversion_rate": {
-            "description": "% of visitors who paid",
             "type": "number"
           },
           "currency": {
@@ -3649,19 +4720,15 @@
             "type": "integer"
           },
           "identified_customers": {
-            "description": "Identified customers (have email/user_id)",
             "type": "integer"
           },
           "paying_customers": {
-            "description": "Customer metrics",
             "type": "integer"
           },
           "total_payments": {
-            "description": "Count of successful payments",
             "type": "integer"
           },
           "total_revenue": {
-            "description": "Core revenue metrics",
             "type": "integer"
           }
         },
@@ -3670,14 +4737,12 @@
       "types.EventFilterOptionsResponse": {
         "properties": {
           "pages": {
-            "description": "Unique page paths",
             "items": {
               "type": "string"
             },
             "type": "array"
           },
           "traffic_origins": {
-            "description": "Unique referrer domains",
             "items": {
               "type": "string"
             },
@@ -3789,11 +4854,9 @@
       "types.OriginAttributionDataPoint": {
         "properties": {
           "avg_revenue_per_customer": {
-            "description": "Average revenue per paying customer",
             "type": "number"
           },
           "conversion_rate": {
-            "description": "paying_customers / unique_visitors * 100",
             "type": "number"
           },
           "currency": {
@@ -3812,7 +4875,6 @@
             "type": "number"
           },
           "total_revenue": {
-            "description": "Revenue in smallest currency unit (cents)",
             "type": "integer"
           },
           "unique_visitors": {
@@ -3934,7 +4996,6 @@
       "types.ProviderInstructionsResponse": {
         "properties": {
           "connection_method": {
-            "description": "\"oauth\" or \"manual\"",
             "example": "oauth",
             "type": "string"
           },
@@ -3975,14 +5036,12 @@
             "type": "string"
           },
           "click_element_tag": {
-            "description": "Click element details",
             "type": "string"
           },
           "click_element_text": {
             "type": "string"
           },
           "click_element_type": {
-            "description": "Click element classification",
             "type": "string"
           },
           "click_position_x": {
@@ -4139,6 +5198,23 @@
         },
         "type": "object"
       },
+      "types.TimeRange": {
+        "enum": [
+          "last_hour",
+          "today",
+          "last_7_days",
+          "last_30_days",
+          "last_90_days"
+        ],
+        "type": "string",
+        "x-enum-varnames": [
+          "TimeRangeLastHour",
+          "TimeRangeToday",
+          "TimeRangeLast7Days",
+          "TimeRangeLast30Days",
+          "TimeRangeLast90Days"
+        ]
+      },
       "types.TimelineDataPoint": {
         "properties": {
           "currency": {
@@ -4151,7 +5227,6 @@
             "type": "string"
           },
           "total_revenue": {
-            "description": "Revenue in smallest currency unit (cents)",
             "type": "integer"
           }
         },
@@ -4177,7 +5252,6 @@
             "type": "string"
           },
           "customer_id": {
-            "description": "Resolved customer identity (user_id > external_id > visitor_id)",
             "type": "string"
           },
           "email": {
@@ -4205,18 +5279,15 @@
             "type": "integer"
           },
           "total_revenue": {
-            "description": "Total revenue in smallest currency unit (cents)",
             "type": "integer"
           },
           "user_id": {
             "type": "string"
           },
           "visitor_id": {
-            "description": "Representative visitor_id for this customer",
             "type": "string"
           },
           "visitor_ids": {
-            "description": "All visitor_ids for this customer",
             "items": {
               "type": "string"
             },
@@ -4291,11 +5362,9 @@
       "types.UTMAttributionDataPoint": {
         "properties": {
           "avg_revenue_per_customer": {
-            "description": "Average revenue per paying customer",
             "type": "number"
           },
           "conversion_rate": {
-            "description": "paying_customers / unique_visitors * 100",
             "type": "number"
           },
           "currency": {
@@ -4311,7 +5380,6 @@
             "type": "number"
           },
           "total_revenue": {
-            "description": "Revenue in smallest currency unit (cents)",
             "type": "integer"
           },
           "unique_visitors": {
@@ -4413,14 +5481,12 @@
             "type": "string"
           },
           "click_element_tag": {
-            "description": "Click element details",
             "type": "string"
           },
           "click_element_text": {
             "type": "string"
           },
           "click_element_type": {
-            "description": "Click element classification",
             "type": "string"
           },
           "click_position_x": {
@@ -4569,23 +5635,6 @@
           }
         },
         "type": "object"
-      },
-      "zori_services_revenue_types.TimeRange": {
-        "enum": [
-          "last_hour",
-          "today",
-          "last_7_days",
-          "last_30_days",
-          "last_90_days"
-        ],
-        "type": "string",
-        "x-enum-varnames": [
-          "TimeRangeLastHour",
-          "TimeRangeToday",
-          "TimeRangeLast7Days",
-          "TimeRangeLast30Days",
-          "TimeRangeLast90Days"
-        ]
       }
     },
     "securitySchemes": {

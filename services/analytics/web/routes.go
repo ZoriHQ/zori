@@ -8,6 +8,31 @@ import (
 	"zori/services/analytics/services"
 )
 
+const (
+	highFrequencyTTL   = 1 * time.Minute
+	mediumFrequencyTTL = 2 * time.Minute
+	lowFrequencyTTL    = 5 * time.Minute
+
+	cachePrefix = string(cache.AnalyticsCacheKey)
+)
+
+var (
+	lowFreqTTLCache = middlewares.CacheConfig{
+		TTL:       lowFrequencyTTL,
+		KeyPrefix: cachePrefix,
+	}
+
+	mediumFreqTTLCache = middlewares.CacheConfig{
+		TTL:       mediumFrequencyTTL,
+		KeyPrefix: cachePrefix,
+	}
+
+	highFreqTTLCache = middlewares.CacheConfig{
+		TTL:       highFrequencyTTL,
+		KeyPrefix: cachePrefix,
+	}
+)
+
 func RegisterRoutes(
 	s *server.Server,
 	analyticsService *services.AnalyticsService,
@@ -17,106 +42,23 @@ func RegisterRoutes(
 	analyticsRouteGroup := s.Group("/api/v1/analytics")
 	analyticsRouteGroup.Use(authMiddleware.Middleware())
 
-	highFrequencyTTL := 1 * time.Minute
-	mediumFrequencyTTL := 2 * time.Minute
-	lowFrequencyTTL := 5 * time.Minute
+	mfMiddleware := cacheMiddleware.Middleware(mediumFreqTTLCache)
+	hfMiddleware := cacheMiddleware.Middleware(highFreqTTLCache)
+	lfMiddleware := cacheMiddleware.Middleware(lowFreqTTLCache)
 
-	cachePrefix := string(cache.AnalyticsCacheKey)
+	server.GroupGetWithFilter(analyticsRouteGroup, "/visitors/device", analyticsService.GetVisitorsByDevice, mfMiddleware)
+	server.GroupGetWithFilter(analyticsRouteGroup, "/visitors/origin", analyticsService.GetUniqueVisitorsByOrigin, lfMiddleware)
+	server.GroupGetWithFilter(analyticsRouteGroup, "/visitors/country", analyticsService.GetUniqueVisitorsByCountry, lfMiddleware)
+	server.GroupGetWithFilter(analyticsRouteGroup, "/visitors/top", analyticsService.GetTopVisitors, mfMiddleware)
 
-	server.GroupGET(analyticsRouteGroup, "/visitors/device",
-		analyticsService.GetVisitorsByDevice,
-		cacheMiddleware.Middleware(middlewares.CacheConfig{
-			TTL:       mediumFrequencyTTL,
-			KeyPrefix: cachePrefix,
-		}))
-
-	server.GroupGET(analyticsRouteGroup, "/visitors/origin",
-		analyticsService.GetUniqueVisitorsByOrigin,
-		cacheMiddleware.Middleware(middlewares.CacheConfig{
-			TTL:       lowFrequencyTTL,
-			KeyPrefix: cachePrefix,
-		}))
-
-	server.GroupGET(analyticsRouteGroup, "/visitors/country",
-		analyticsService.GetUniqueVisitorsByCountry,
-		cacheMiddleware.Middleware(middlewares.CacheConfig{
-			TTL:       lowFrequencyTTL,
-			KeyPrefix: cachePrefix,
-		}))
-
-	server.GroupGET(analyticsRouteGroup, "/visitors/top",
-		analyticsService.GetTopVisitors,
-		cacheMiddleware.Middleware(middlewares.CacheConfig{
-			TTL:       mediumFrequencyTTL,
-			KeyPrefix: cachePrefix,
-		}))
-
-	server.GroupGET(analyticsRouteGroup, "/visitors/profile", analyticsService.GetVisitorProfile)
-
+	server.GroupGetWithFilter(analyticsRouteGroup, "/visitors/profile", analyticsService.GetVisitorProfile)
 	server.GroupPOST(analyticsRouteGroup, "/visitors/identify", analyticsService.IdentifyVisitor)
 
-	server.GroupGET(analyticsRouteGroup, "/visitors/timeline",
-		analyticsService.GetUniqueVisitorsTimeline,
-		cacheMiddleware.Middleware(middlewares.CacheConfig{
-			TTL:       highFrequencyTTL,
-			KeyPrefix: cachePrefix,
-		}))
+	server.GroupGetWithFilter(analyticsRouteGroup, "/visitors/timeline", analyticsService.GetUniqueVisitorsTimeline, hfMiddleware)
 
-	server.GroupGET(analyticsRouteGroup, "/events/recent", analyticsService.GetRecentEvents)
+	// Events page endpoints
+	server.GroupGetWithFilter(analyticsRouteGroup, "/events/recent", analyticsService.GetRecentEvents)
+	server.GroupGetWithFilter(analyticsRouteGroup, "/events/filter-options", analyticsService.GetEventFilterOptions, mfMiddleware)
 
-	server.GroupGET(analyticsRouteGroup, "/events/filter-options",
-		analyticsService.GetEventFilterOptions,
-		cacheMiddleware.Middleware(middlewares.CacheConfig{
-			TTL:       mediumFrequencyTTL,
-			KeyPrefix: cachePrefix,
-		}))
-
-	server.GroupGET(analyticsRouteGroup, "/sessions/metrics",
-		analyticsService.GetSessionMetrics,
-		cacheMiddleware.Middleware(middlewares.CacheConfig{
-			TTL:       mediumFrequencyTTL,
-			KeyPrefix: cachePrefix,
-		}))
-
-	server.GroupGET(analyticsRouteGroup, "/sessions/bounce-rate",
-		analyticsService.GetBounceRate,
-		cacheMiddleware.Middleware(middlewares.CacheConfig{
-			TTL:       mediumFrequencyTTL,
-			KeyPrefix: cachePrefix,
-		}))
-
-	server.GroupGET(analyticsRouteGroup, "/users/active",
-		analyticsService.GetActiveUsers,
-		cacheMiddleware.Middleware(middlewares.CacheConfig{
-			TTL:       mediumFrequencyTTL,
-			KeyPrefix: cachePrefix,
-		}))
-
-	server.GroupGET(analyticsRouteGroup, "/retention/return-rate",
-		analyticsService.GetReturnRate,
-		cacheMiddleware.Middleware(middlewares.CacheConfig{
-			TTL:       lowFrequencyTTL,
-			KeyPrefix: cachePrefix,
-		}))
-
-	server.GroupGET(analyticsRouteGroup, "/retention/churn-rate",
-		analyticsService.GetChurnRate,
-		cacheMiddleware.Middleware(middlewares.CacheConfig{
-			TTL:       lowFrequencyTTL,
-			KeyPrefix: cachePrefix,
-		}))
-
-	server.GroupGET(analyticsRouteGroup, "/retention/cohorts",
-		analyticsService.GetCohortAnalysis,
-		cacheMiddleware.Middleware(middlewares.CacheConfig{
-			TTL:       lowFrequencyTTL,
-			KeyPrefix: cachePrefix,
-		}))
-
-	server.GroupGET(analyticsRouteGroup, "/dashboard",
-		analyticsService.GetDashboardMetrics,
-		cacheMiddleware.Middleware(middlewares.CacheConfig{
-			TTL:       highFrequencyTTL,
-			KeyPrefix: cachePrefix,
-		}))
+	server.GroupGetWithFilter(analyticsRouteGroup, "/dashboard", analyticsService.GetDashboardMetrics, hfMiddleware)
 }

@@ -45,24 +45,83 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Project ID",
-                        "name": "project_id",
+                        "example": "cus_xyz789",
+                        "name": "customerID",
+                        "in": "query"
+                    },
+                    {
+                        "maximum": 100,
+                        "minimum": 1,
+                        "type": "integer",
+                        "default": 50,
+                        "example": 50,
+                        "name": "limit",
                         "in": "query",
                         "required": true
+                    },
+                    {
+                        "minimum": 0,
+                        "type": "integer",
+                        "default": 0,
+                        "example": 0,
+                        "name": "offset",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "proj_123",
+                        "name": "projectID",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "https://google.com",
+                        "name": "referrer",
+                        "in": "query"
                     },
                     {
                         "enum": [
                             "last_hour",
                             "today",
+                            "yesterday",
                             "last_7_days",
                             "last_30_days",
                             "last_90_days"
                         ],
                         "type": "string",
-                        "description": "Time range",
-                        "name": "time_range",
+                        "default": "last_7_days",
+                        "example": "last_7_days",
+                        "x-enum-varnames": [
+                            "TimeBoundariesHour",
+                            "TimeBoundariesToday",
+                            "TimeBoundariesYesterday",
+                            "TimeBoundariesLastWeek",
+                            "TimeBoundariesLastMonth",
+                            "TimeBoundariesLast90Days"
+                        ],
+                        "name": "timeBoundaries",
                         "in": "query",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "utm_source",
+                        "name": "utmtag",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "google",
+                        "name": "utmtagValue",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "visitor_abc123",
+                        "name": "visitorID",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -117,22 +176,82 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Project ID",
-                        "name": "project_id",
+                        "example": "cus_xyz789",
+                        "name": "customerID",
+                        "in": "query"
+                    },
+                    {
+                        "maximum": 100,
+                        "minimum": 1,
+                        "type": "integer",
+                        "default": 50,
+                        "example": 50,
+                        "name": "limit",
                         "in": "query",
                         "required": true
+                    },
+                    {
+                        "minimum": 0,
+                        "type": "integer",
+                        "default": 0,
+                        "example": 0,
+                        "name": "offset",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "proj_123",
+                        "name": "projectID",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "https://google.com",
+                        "name": "referrer",
+                        "in": "query"
                     },
                     {
                         "enum": [
                             "last_hour",
                             "today",
+                            "yesterday",
                             "last_7_days",
                             "last_30_days",
                             "last_90_days"
                         ],
                         "type": "string",
-                        "description": "Time range",
-                        "name": "time_range",
+                        "default": "last_7_days",
+                        "example": "last_7_days",
+                        "x-enum-varnames": [
+                            "TimeBoundariesHour",
+                            "TimeBoundariesToday",
+                            "TimeBoundariesYesterday",
+                            "TimeBoundariesLastWeek",
+                            "TimeBoundariesLastMonth",
+                            "TimeBoundariesLast90Days"
+                        ],
+                        "name": "timeBoundaries",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "utm_source",
+                        "name": "utmtag",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "google",
+                        "name": "utmtagValue",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "visitor_abc123",
+                        "name": "visitorID",
                         "in": "query"
                     }
                 ],
@@ -188,51 +307,106 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Project ID",
-                        "name": "project_id",
+                        "example": "cus_xyz789",
+                        "name": "customerID",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "ext_789",
+                        "name": "externalID",
+                        "in": "query"
+                    },
+                    {
+                        "maximum": 100,
+                        "minimum": 1,
+                        "type": "integer",
+                        "default": 50,
+                        "example": 50,
+                        "name": "limit",
                         "in": "query",
                         "required": true
                     },
                     {
+                        "minimum": 0,
                         "type": "integer",
-                        "description": "Maximum number of events to return (default: 15)",
-                        "name": "limit",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Offset for pagination (default: 0)",
+                        "default": 0,
+                        "example": 0,
                         "name": "offset",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "/pricing",
+                        "name": "pagePath",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "Filter by visitor ID",
-                        "name": "visitor_id",
+                        "example": "proj_123",
+                        "name": "projectID",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "https://google.com",
+                        "name": "referrer",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "last_hour",
+                            "today",
+                            "yesterday",
+                            "last_7_days",
+                            "last_30_days",
+                            "last_90_days"
+                        ],
+                        "type": "string",
+                        "default": "last_7_days",
+                        "example": "last_7_days",
+                        "x-enum-varnames": [
+                            "TimeBoundariesHour",
+                            "TimeBoundariesToday",
+                            "TimeBoundariesYesterday",
+                            "TimeBoundariesLastWeek",
+                            "TimeBoundariesLastMonth",
+                            "TimeBoundariesLast90Days"
+                        ],
+                        "name": "timeBoundaries",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "google.com",
+                        "name": "trafficOrigin",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "Filter by user ID",
-                        "name": "user_id",
+                        "example": "user_456",
+                        "name": "userID",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "Filter by external ID",
-                        "name": "external_id",
+                        "example": "utm_source",
+                        "name": "utmtag",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "Filter by traffic origin (referrer domain)",
-                        "name": "traffic_origin",
+                        "example": "google",
+                        "name": "utmtagValue",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "Filter by page path",
-                        "name": "page_path",
+                        "example": "visitor_abc123",
+                        "name": "visitorID",
                         "in": "query"
                     }
                 ],
@@ -288,29 +462,82 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Project ID",
-                        "name": "project_id",
+                        "example": "cus_xyz789",
+                        "name": "customerID",
+                        "in": "query"
+                    },
+                    {
+                        "maximum": 100,
+                        "minimum": 1,
+                        "type": "integer",
+                        "default": 50,
+                        "example": 50,
+                        "name": "limit",
                         "in": "query",
                         "required": true
+                    },
+                    {
+                        "minimum": 0,
+                        "type": "integer",
+                        "default": 0,
+                        "example": 0,
+                        "name": "offset",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "proj_123",
+                        "name": "projectID",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "https://google.com",
+                        "name": "referrer",
+                        "in": "query"
                     },
                     {
                         "enum": [
                             "last_hour",
                             "today",
+                            "yesterday",
                             "last_7_days",
                             "last_30_days",
                             "last_90_days"
                         ],
                         "type": "string",
-                        "description": "Time range",
-                        "name": "time_range",
+                        "default": "last_7_days",
+                        "example": "last_7_days",
+                        "x-enum-varnames": [
+                            "TimeBoundariesHour",
+                            "TimeBoundariesToday",
+                            "TimeBoundariesYesterday",
+                            "TimeBoundariesLastWeek",
+                            "TimeBoundariesLastMonth",
+                            "TimeBoundariesLast90Days"
+                        ],
+                        "name": "timeBoundaries",
                         "in": "query",
                         "required": true
                     },
                     {
-                        "type": "integer",
-                        "description": "Days of inactivity to consider churned (default: 30)",
-                        "name": "churn_threshold_days",
+                        "type": "string",
+                        "example": "utm_source",
+                        "name": "utmtag",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "google",
+                        "name": "utmtagValue",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "visitor_abc123",
+                        "name": "visitorID",
                         "in": "query"
                     }
                 ],
@@ -366,24 +593,83 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Project ID",
-                        "name": "project_id",
+                        "example": "cus_xyz789",
+                        "name": "customerID",
+                        "in": "query"
+                    },
+                    {
+                        "maximum": 100,
+                        "minimum": 1,
+                        "type": "integer",
+                        "default": 50,
+                        "example": 50,
+                        "name": "limit",
                         "in": "query",
                         "required": true
+                    },
+                    {
+                        "minimum": 0,
+                        "type": "integer",
+                        "default": 0,
+                        "example": 0,
+                        "name": "offset",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "proj_123",
+                        "name": "projectID",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "https://google.com",
+                        "name": "referrer",
+                        "in": "query"
                     },
                     {
                         "enum": [
                             "last_hour",
                             "today",
+                            "yesterday",
                             "last_7_days",
                             "last_30_days",
                             "last_90_days"
                         ],
                         "type": "string",
-                        "description": "Time range",
-                        "name": "time_range",
+                        "default": "last_7_days",
+                        "example": "last_7_days",
+                        "x-enum-varnames": [
+                            "TimeBoundariesHour",
+                            "TimeBoundariesToday",
+                            "TimeBoundariesYesterday",
+                            "TimeBoundariesLastWeek",
+                            "TimeBoundariesLastMonth",
+                            "TimeBoundariesLast90Days"
+                        ],
+                        "name": "timeBoundaries",
                         "in": "query",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "utm_source",
+                        "name": "utmtag",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "google",
+                        "name": "utmtagValue",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "visitor_abc123",
+                        "name": "visitorID",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -438,24 +724,83 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Project ID",
-                        "name": "project_id",
+                        "example": "cus_xyz789",
+                        "name": "customerID",
+                        "in": "query"
+                    },
+                    {
+                        "maximum": 100,
+                        "minimum": 1,
+                        "type": "integer",
+                        "default": 50,
+                        "example": 50,
+                        "name": "limit",
                         "in": "query",
                         "required": true
+                    },
+                    {
+                        "minimum": 0,
+                        "type": "integer",
+                        "default": 0,
+                        "example": 0,
+                        "name": "offset",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "proj_123",
+                        "name": "projectID",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "https://google.com",
+                        "name": "referrer",
+                        "in": "query"
                     },
                     {
                         "enum": [
                             "last_hour",
                             "today",
+                            "yesterday",
                             "last_7_days",
                             "last_30_days",
                             "last_90_days"
                         ],
                         "type": "string",
-                        "description": "Time range",
-                        "name": "time_range",
+                        "default": "last_7_days",
+                        "example": "last_7_days",
+                        "x-enum-varnames": [
+                            "TimeBoundariesHour",
+                            "TimeBoundariesToday",
+                            "TimeBoundariesYesterday",
+                            "TimeBoundariesLastWeek",
+                            "TimeBoundariesLastMonth",
+                            "TimeBoundariesLast90Days"
+                        ],
+                        "name": "timeBoundaries",
                         "in": "query",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "utm_source",
+                        "name": "utmtag",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "google",
+                        "name": "utmtagValue",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "visitor_abc123",
+                        "name": "visitorID",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -510,29 +855,82 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Project ID",
-                        "name": "project_id",
+                        "example": "cus_xyz789",
+                        "name": "customerID",
+                        "in": "query"
+                    },
+                    {
+                        "maximum": 100,
+                        "minimum": 1,
+                        "type": "integer",
+                        "default": 50,
+                        "example": 50,
+                        "name": "limit",
                         "in": "query",
                         "required": true
+                    },
+                    {
+                        "minimum": 0,
+                        "type": "integer",
+                        "default": 0,
+                        "example": 0,
+                        "name": "offset",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "proj_123",
+                        "name": "projectID",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "https://google.com",
+                        "name": "referrer",
+                        "in": "query"
                     },
                     {
                         "enum": [
                             "last_hour",
                             "today",
+                            "yesterday",
                             "last_7_days",
                             "last_30_days",
                             "last_90_days"
                         ],
                         "type": "string",
-                        "description": "Time range",
-                        "name": "time_range",
+                        "default": "last_7_days",
+                        "example": "last_7_days",
+                        "x-enum-varnames": [
+                            "TimeBoundariesHour",
+                            "TimeBoundariesToday",
+                            "TimeBoundariesYesterday",
+                            "TimeBoundariesLastWeek",
+                            "TimeBoundariesLastMonth",
+                            "TimeBoundariesLast90Days"
+                        ],
+                        "name": "timeBoundaries",
                         "in": "query",
                         "required": true
                     },
                     {
-                        "type": "integer",
-                        "description": "Limit for per-page breakdown (default: 20)",
-                        "name": "limit",
+                        "type": "string",
+                        "example": "utm_source",
+                        "name": "utmtag",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "google",
+                        "name": "utmtagValue",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "visitor_abc123",
+                        "name": "visitorID",
                         "in": "query"
                     }
                 ],
@@ -588,24 +986,83 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Project ID",
-                        "name": "project_id",
+                        "example": "cus_xyz789",
+                        "name": "customerID",
+                        "in": "query"
+                    },
+                    {
+                        "maximum": 100,
+                        "minimum": 1,
+                        "type": "integer",
+                        "default": 50,
+                        "example": 50,
+                        "name": "limit",
                         "in": "query",
                         "required": true
+                    },
+                    {
+                        "minimum": 0,
+                        "type": "integer",
+                        "default": 0,
+                        "example": 0,
+                        "name": "offset",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "proj_123",
+                        "name": "projectID",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "https://google.com",
+                        "name": "referrer",
+                        "in": "query"
                     },
                     {
                         "enum": [
                             "last_hour",
                             "today",
+                            "yesterday",
                             "last_7_days",
                             "last_30_days",
                             "last_90_days"
                         ],
                         "type": "string",
-                        "description": "Time range",
-                        "name": "time_range",
+                        "default": "last_7_days",
+                        "example": "last_7_days",
+                        "x-enum-varnames": [
+                            "TimeBoundariesHour",
+                            "TimeBoundariesToday",
+                            "TimeBoundariesYesterday",
+                            "TimeBoundariesLastWeek",
+                            "TimeBoundariesLastMonth",
+                            "TimeBoundariesLast90Days"
+                        ],
+                        "name": "timeBoundaries",
                         "in": "query",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "utm_source",
+                        "name": "utmtag",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "google",
+                        "name": "utmtagValue",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "visitor_abc123",
+                        "name": "visitorID",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -660,10 +1117,83 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Project ID",
-                        "name": "project_id",
+                        "example": "cus_xyz789",
+                        "name": "customerID",
+                        "in": "query"
+                    },
+                    {
+                        "maximum": 100,
+                        "minimum": 1,
+                        "type": "integer",
+                        "default": 50,
+                        "example": 50,
+                        "name": "limit",
                         "in": "query",
                         "required": true
+                    },
+                    {
+                        "minimum": 0,
+                        "type": "integer",
+                        "default": 0,
+                        "example": 0,
+                        "name": "offset",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "proj_123",
+                        "name": "projectID",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "https://google.com",
+                        "name": "referrer",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "last_hour",
+                            "today",
+                            "yesterday",
+                            "last_7_days",
+                            "last_30_days",
+                            "last_90_days"
+                        ],
+                        "type": "string",
+                        "default": "last_7_days",
+                        "example": "last_7_days",
+                        "x-enum-varnames": [
+                            "TimeBoundariesHour",
+                            "TimeBoundariesToday",
+                            "TimeBoundariesYesterday",
+                            "TimeBoundariesLastWeek",
+                            "TimeBoundariesLastMonth",
+                            "TimeBoundariesLast90Days"
+                        ],
+                        "name": "timeBoundaries",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "utm_source",
+                        "name": "utmtag",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "google",
+                        "name": "utmtagValue",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "visitor_abc123",
+                        "name": "visitorID",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -718,24 +1248,83 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Project ID",
-                        "name": "project_id",
+                        "example": "cus_xyz789",
+                        "name": "customerID",
+                        "in": "query"
+                    },
+                    {
+                        "maximum": 100,
+                        "minimum": 1,
+                        "type": "integer",
+                        "default": 50,
+                        "example": 50,
+                        "name": "limit",
                         "in": "query",
                         "required": true
+                    },
+                    {
+                        "minimum": 0,
+                        "type": "integer",
+                        "default": 0,
+                        "example": 0,
+                        "name": "offset",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "proj_123",
+                        "name": "projectID",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "https://google.com",
+                        "name": "referrer",
+                        "in": "query"
                     },
                     {
                         "enum": [
                             "last_hour",
                             "today",
+                            "yesterday",
                             "last_7_days",
                             "last_30_days",
                             "last_90_days"
                         ],
                         "type": "string",
-                        "description": "Time range",
-                        "name": "time_range",
+                        "default": "last_7_days",
+                        "example": "last_7_days",
+                        "x-enum-varnames": [
+                            "TimeBoundariesHour",
+                            "TimeBoundariesToday",
+                            "TimeBoundariesYesterday",
+                            "TimeBoundariesLastWeek",
+                            "TimeBoundariesLastMonth",
+                            "TimeBoundariesLast90Days"
+                        ],
+                        "name": "timeBoundaries",
                         "in": "query",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "utm_source",
+                        "name": "utmtag",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "google",
+                        "name": "utmtagValue",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "visitor_abc123",
+                        "name": "visitorID",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -790,24 +1379,83 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Project ID",
-                        "name": "project_id",
+                        "example": "cus_xyz789",
+                        "name": "customerID",
+                        "in": "query"
+                    },
+                    {
+                        "maximum": 100,
+                        "minimum": 1,
+                        "type": "integer",
+                        "default": 50,
+                        "example": 50,
+                        "name": "limit",
                         "in": "query",
                         "required": true
+                    },
+                    {
+                        "minimum": 0,
+                        "type": "integer",
+                        "default": 0,
+                        "example": 0,
+                        "name": "offset",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "proj_123",
+                        "name": "projectID",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "https://google.com",
+                        "name": "referrer",
+                        "in": "query"
                     },
                     {
                         "enum": [
                             "last_hour",
                             "today",
+                            "yesterday",
                             "last_7_days",
                             "last_30_days",
                             "last_90_days"
                         ],
                         "type": "string",
-                        "description": "Time range",
-                        "name": "time_range",
+                        "default": "last_7_days",
+                        "example": "last_7_days",
+                        "x-enum-varnames": [
+                            "TimeBoundariesHour",
+                            "TimeBoundariesToday",
+                            "TimeBoundariesYesterday",
+                            "TimeBoundariesLastWeek",
+                            "TimeBoundariesLastMonth",
+                            "TimeBoundariesLast90Days"
+                        ],
+                        "name": "timeBoundaries",
                         "in": "query",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "utm_source",
+                        "name": "utmtag",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "google",
+                        "name": "utmtagValue",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "visitor_abc123",
+                        "name": "visitorID",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -922,24 +1570,83 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Project ID",
-                        "name": "project_id",
+                        "example": "cus_xyz789",
+                        "name": "customerID",
+                        "in": "query"
+                    },
+                    {
+                        "maximum": 100,
+                        "minimum": 1,
+                        "type": "integer",
+                        "default": 50,
+                        "example": 50,
+                        "name": "limit",
                         "in": "query",
                         "required": true
+                    },
+                    {
+                        "minimum": 0,
+                        "type": "integer",
+                        "default": 0,
+                        "example": 0,
+                        "name": "offset",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "proj_123",
+                        "name": "projectID",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "https://google.com",
+                        "name": "referrer",
+                        "in": "query"
                     },
                     {
                         "enum": [
                             "last_hour",
                             "today",
+                            "yesterday",
                             "last_7_days",
                             "last_30_days",
                             "last_90_days"
                         ],
                         "type": "string",
-                        "description": "Time range",
-                        "name": "time_range",
+                        "default": "last_7_days",
+                        "example": "last_7_days",
+                        "x-enum-varnames": [
+                            "TimeBoundariesHour",
+                            "TimeBoundariesToday",
+                            "TimeBoundariesYesterday",
+                            "TimeBoundariesLastWeek",
+                            "TimeBoundariesLastMonth",
+                            "TimeBoundariesLast90Days"
+                        ],
+                        "name": "timeBoundaries",
                         "in": "query",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "utm_source",
+                        "name": "utmtag",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "google",
+                        "name": "utmtagValue",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "visitor_abc123",
+                        "name": "visitorID",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -994,17 +1701,83 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Project ID",
-                        "name": "project_id",
+                        "example": "cus_xyz789",
+                        "name": "customerID",
+                        "in": "query"
+                    },
+                    {
+                        "maximum": 100,
+                        "minimum": 1,
+                        "type": "integer",
+                        "default": 50,
+                        "example": 50,
+                        "name": "limit",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "minimum": 0,
+                        "type": "integer",
+                        "default": 0,
+                        "example": 0,
+                        "name": "offset",
                         "in": "query",
                         "required": true
                     },
                     {
                         "type": "string",
-                        "description": "Visitor ID",
-                        "name": "visitor_id",
+                        "example": "proj_123",
+                        "name": "projectID",
                         "in": "query",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "https://google.com",
+                        "name": "referrer",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "last_hour",
+                            "today",
+                            "yesterday",
+                            "last_7_days",
+                            "last_30_days",
+                            "last_90_days"
+                        ],
+                        "type": "string",
+                        "default": "last_7_days",
+                        "example": "last_7_days",
+                        "x-enum-varnames": [
+                            "TimeBoundariesHour",
+                            "TimeBoundariesToday",
+                            "TimeBoundariesYesterday",
+                            "TimeBoundariesLastWeek",
+                            "TimeBoundariesLastMonth",
+                            "TimeBoundariesLast90Days"
+                        ],
+                        "name": "timeBoundaries",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "utm_source",
+                        "name": "utmtag",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "google",
+                        "name": "utmtagValue",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "visitor_abc123",
+                        "name": "visitorID",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -1066,24 +1839,83 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Project ID",
-                        "name": "project_id",
+                        "example": "cus_xyz789",
+                        "name": "customerID",
+                        "in": "query"
+                    },
+                    {
+                        "maximum": 100,
+                        "minimum": 1,
+                        "type": "integer",
+                        "default": 50,
+                        "example": 50,
+                        "name": "limit",
                         "in": "query",
                         "required": true
+                    },
+                    {
+                        "minimum": 0,
+                        "type": "integer",
+                        "default": 0,
+                        "example": 0,
+                        "name": "offset",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "proj_123",
+                        "name": "projectID",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "https://google.com",
+                        "name": "referrer",
+                        "in": "query"
                     },
                     {
                         "enum": [
                             "last_hour",
                             "today",
+                            "yesterday",
                             "last_7_days",
                             "last_30_days",
                             "last_90_days"
                         ],
                         "type": "string",
-                        "description": "Time range",
-                        "name": "time_range",
+                        "default": "last_7_days",
+                        "example": "last_7_days",
+                        "x-enum-varnames": [
+                            "TimeBoundariesHour",
+                            "TimeBoundariesToday",
+                            "TimeBoundariesYesterday",
+                            "TimeBoundariesLastWeek",
+                            "TimeBoundariesLastMonth",
+                            "TimeBoundariesLast90Days"
+                        ],
+                        "name": "timeBoundaries",
                         "in": "query",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "utm_source",
+                        "name": "utmtag",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "google",
+                        "name": "utmtagValue",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "visitor_abc123",
+                        "name": "visitorID",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -1138,29 +1970,82 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Project ID",
-                        "name": "project_id",
+                        "example": "cus_xyz789",
+                        "name": "customerID",
+                        "in": "query"
+                    },
+                    {
+                        "maximum": 100,
+                        "minimum": 1,
+                        "type": "integer",
+                        "default": 50,
+                        "example": 50,
+                        "name": "limit",
                         "in": "query",
                         "required": true
+                    },
+                    {
+                        "minimum": 0,
+                        "type": "integer",
+                        "default": 0,
+                        "example": 0,
+                        "name": "offset",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "proj_123",
+                        "name": "projectID",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "https://google.com",
+                        "name": "referrer",
+                        "in": "query"
                     },
                     {
                         "enum": [
                             "last_hour",
                             "today",
+                            "yesterday",
                             "last_7_days",
                             "last_30_days",
                             "last_90_days"
                         ],
                         "type": "string",
-                        "description": "Time range",
-                        "name": "time_range",
+                        "default": "last_7_days",
+                        "example": "last_7_days",
+                        "x-enum-varnames": [
+                            "TimeBoundariesHour",
+                            "TimeBoundariesToday",
+                            "TimeBoundariesYesterday",
+                            "TimeBoundariesLastWeek",
+                            "TimeBoundariesLastMonth",
+                            "TimeBoundariesLast90Days"
+                        ],
+                        "name": "timeBoundaries",
                         "in": "query",
                         "required": true
                     },
                     {
-                        "type": "integer",
-                        "description": "Maximum number of visitors to return (default: 50)",
-                        "name": "limit",
+                        "type": "string",
+                        "example": "utm_source",
+                        "name": "utmtag",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "google",
+                        "name": "utmtagValue",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "visitor_abc123",
+                        "name": "visitorID",
                         "in": "query"
                     }
                 ],
@@ -2560,6 +3445,25 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "filters.TimeBoundaries": {
+            "type": "string",
+            "enum": [
+                "last_hour",
+                "today",
+                "yesterday",
+                "last_7_days",
+                "last_30_days",
+                "last_90_days"
+            ],
+            "x-enum-varnames": [
+                "TimeBoundariesHour",
+                "TimeBoundariesToday",
+                "TimeBoundariesYesterday",
+                "TimeBoundariesLastWeek",
+                "TimeBoundariesLastMonth",
+                "TimeBoundariesLast90Days"
+            ]
+        },
         "models.Project": {
             "type": "object",
             "properties": {
@@ -2806,15 +3710,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "time_range": {
-                    "description": "Optional: filter by payment date",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/zori_services_revenue_types.TimeRange"
-                        }
-                    ]
+                    "$ref": "#/definitions/types.TimeRange"
                 },
                 "visitor_ids": {
-                    "description": "List of visitor IDs to analyze",
                     "type": "array",
                     "minItems": 1,
                     "items": {
@@ -2827,7 +3725,6 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "anonymous_customers": {
-                    "description": "Customers with only visitor_id",
                     "type": "integer"
                 },
                 "avg_order_value": {
@@ -2843,46 +3740,36 @@ const docTemplate = `{
                     "type": "number"
                 },
                 "avg_time_to_first_purchase_hours": {
-                    "description": "Time metrics",
                     "type": "number"
                 },
                 "conversion_rate": {
-                    "description": "paying_customers / total_customers * 100",
                     "type": "number"
                 },
                 "currency": {
                     "type": "string"
                 },
                 "identified_customers": {
-                    "description": "Customer identity mapping",
                     "type": "integer"
                 },
                 "median_time_to_first_purchase_hours": {
-                    "description": "Median time to first payment",
                     "type": "number"
                 },
                 "paying_customers": {
-                    "description": "Unique customer identities who made payments",
                     "type": "integer"
                 },
                 "total_customers": {
-                    "description": "Total unique customer identities in cohort",
                     "type": "integer"
                 },
                 "total_payments": {
-                    "description": "Payment metrics",
                     "type": "integer"
                 },
                 "total_revenue": {
-                    "description": "Revenue metrics",
                     "type": "integer"
                 },
                 "total_visitors": {
-                    "description": "Cohort size",
                     "type": "integer"
                 },
                 "visitor_conversion_rate": {
-                    "description": "paying_customers / total_visitors * 100",
                     "type": "number"
                 }
             }
@@ -2894,15 +3781,12 @@ const docTemplate = `{
                     "type": "number"
                 },
                 "avg_time_to_first_purchase_hours": {
-                    "description": "Time to conversion",
                     "type": "number"
                 },
                 "conversion_rate": {
-                    "description": "% of visitors who paid",
                     "type": "number"
                 },
                 "customer_lifetime_value": {
-                    "description": "Customer value",
                     "type": "number"
                 },
                 "median_time_to_first_purchase_hours": {
@@ -2912,7 +3796,6 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "repeat_purchase_rate": {
-                    "description": "Repeat purchase metrics",
                     "type": "number"
                 },
                 "total_visitors": {
@@ -3014,7 +3897,6 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "first_traffic_origin": {
-                    "description": "Attribution",
                     "type": "string"
                 },
                 "first_utm_campaign": {
@@ -3036,28 +3918,24 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "payments": {
-                    "description": "Payment history",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/types.Payment"
                     }
                 },
                 "revenue_over_time": {
-                    "description": "Revenue over time (last 90 days)",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/types.RevenueOverTimeDataPoint"
                     }
                 },
                 "total_revenue": {
-                    "description": "Revenue summary",
                     "type": "integer"
                 },
                 "user_id": {
                     "type": "string"
                 },
                 "visitor_id": {
-                    "description": "Identity",
                     "type": "string"
                 }
             }
@@ -3072,11 +3950,9 @@ const docTemplate = `{
                     "type": "number"
                 },
                 "bounce_rate": {
-                    "description": "Engagement metrics",
                     "type": "number"
                 },
                 "dau": {
-                    "description": "Active users",
                     "type": "integer"
                 },
                 "mau": {
@@ -3086,18 +3962,15 @@ const docTemplate = `{
                     "type": "number"
                 },
                 "sessions_today": {
-                    "description": "Sessions",
                     "type": "integer"
                 },
                 "total_events": {
-                    "description": "Total metrics",
                     "type": "integer"
                 },
                 "total_sessions_in_period": {
                     "type": "integer"
                 },
                 "unique_sessions": {
-                    "description": "Total unique sessions in period",
                     "type": "integer"
                 },
                 "unique_visitors": {
@@ -3112,22 +3985,18 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "avg_order_value": {
-                    "description": "Average metrics",
                     "type": "number"
                 },
                 "avg_revenue_per_customer": {
-                    "description": "Average revenue per paying customer",
                     "type": "number"
                 },
                 "avg_revenue_per_identified_customer": {
                     "type": "number"
                 },
                 "avg_revenue_per_session": {
-                    "description": "Average revenue per session",
                     "type": "number"
                 },
                 "conversion_rate": {
-                    "description": "% of visitors who paid",
                     "type": "number"
                 },
                 "currency": {
@@ -3137,19 +4006,15 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "identified_customers": {
-                    "description": "Identified customers (have email/user_id)",
                     "type": "integer"
                 },
                 "paying_customers": {
-                    "description": "Customer metrics",
                     "type": "integer"
                 },
                 "total_payments": {
-                    "description": "Count of successful payments",
                     "type": "integer"
                 },
                 "total_revenue": {
-                    "description": "Core revenue metrics",
                     "type": "integer"
                 }
             }
@@ -3158,14 +4023,12 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "pages": {
-                    "description": "Unique page paths",
                     "type": "array",
                     "items": {
                         "type": "string"
                     }
                 },
                 "traffic_origins": {
-                    "description": "Unique referrer domains",
                     "type": "array",
                     "items": {
                         "type": "string"
@@ -3277,11 +4140,9 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "avg_revenue_per_customer": {
-                    "description": "Average revenue per paying customer",
                     "type": "number"
                 },
                 "conversion_rate": {
-                    "description": "paying_customers / unique_visitors * 100",
                     "type": "number"
                 },
                 "currency": {
@@ -3300,7 +4161,6 @@ const docTemplate = `{
                     "type": "number"
                 },
                 "total_revenue": {
-                    "description": "Revenue in smallest currency unit (cents)",
                     "type": "integer"
                 },
                 "unique_visitors": {
@@ -3422,7 +4282,6 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "connection_method": {
-                    "description": "\"oauth\" or \"manual\"",
                     "type": "string",
                     "example": "oauth"
                 },
@@ -3463,14 +4322,12 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "click_element_tag": {
-                    "description": "Click element details",
                     "type": "string"
                 },
                 "click_element_text": {
                     "type": "string"
                 },
                 "click_element_type": {
-                    "description": "Click element classification",
                     "type": "string"
                 },
                 "click_position_x": {
@@ -3626,6 +4483,23 @@ const docTemplate = `{
                 }
             }
         },
+        "types.TimeRange": {
+            "type": "string",
+            "enum": [
+                "last_hour",
+                "today",
+                "last_7_days",
+                "last_30_days",
+                "last_90_days"
+            ],
+            "x-enum-varnames": [
+                "TimeRangeLastHour",
+                "TimeRangeToday",
+                "TimeRangeLast7Days",
+                "TimeRangeLast30Days",
+                "TimeRangeLast90Days"
+            ]
+        },
         "types.TimelineDataPoint": {
             "type": "object",
             "properties": {
@@ -3639,7 +4513,6 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "total_revenue": {
-                    "description": "Revenue in smallest currency unit (cents)",
                     "type": "integer"
                 }
             }
@@ -3665,7 +4538,6 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "customer_id": {
-                    "description": "Resolved customer identity (user_id \u003e external_id \u003e visitor_id)",
                     "type": "string"
                 },
                 "email": {
@@ -3693,18 +4565,15 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "total_revenue": {
-                    "description": "Total revenue in smallest currency unit (cents)",
                     "type": "integer"
                 },
                 "user_id": {
                     "type": "string"
                 },
                 "visitor_id": {
-                    "description": "Representative visitor_id for this customer",
                     "type": "string"
                 },
                 "visitor_ids": {
-                    "description": "All visitor_ids for this customer",
                     "type": "array",
                     "items": {
                         "type": "string"
@@ -3779,11 +4648,9 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "avg_revenue_per_customer": {
-                    "description": "Average revenue per paying customer",
                     "type": "number"
                 },
                 "conversion_rate": {
-                    "description": "paying_customers / unique_visitors * 100",
                     "type": "number"
                 },
                 "currency": {
@@ -3799,7 +4666,6 @@ const docTemplate = `{
                     "type": "number"
                 },
                 "total_revenue": {
-                    "description": "Revenue in smallest currency unit (cents)",
                     "type": "integer"
                 },
                 "unique_visitors": {
@@ -3901,14 +4767,12 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "click_element_tag": {
-                    "description": "Click element details",
                     "type": "string"
                 },
                 "click_element_text": {
                     "type": "string"
                 },
                 "click_element_type": {
-                    "description": "Click element classification",
                     "type": "string"
                 },
                 "click_position_x": {
@@ -4056,23 +4920,6 @@ const docTemplate = `{
                     }
                 }
             }
-        },
-        "zori_services_revenue_types.TimeRange": {
-            "type": "string",
-            "enum": [
-                "last_hour",
-                "today",
-                "last_7_days",
-                "last_30_days",
-                "last_90_days"
-            ],
-            "x-enum-varnames": [
-                "TimeRangeLastHour",
-                "TimeRangeToday",
-                "TimeRangeLast7Days",
-                "TimeRangeLast30Days",
-                "TimeRangeLast90Days"
-            ]
         }
     },
     "securityDefinitions": {
