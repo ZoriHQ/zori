@@ -4,7 +4,7 @@
   "stainless_config": "stainless.yml",
   "targets": {
     "typescript": {
-      "output_path": "../zoriapi-typescript"
+      "output_path": ".sdks/zoriapi-typescript"
     }
   }
 }
