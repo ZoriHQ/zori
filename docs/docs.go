@@ -1869,7 +1869,7 @@ const docTemplate = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "Get a list of the most active visitors ranked by event count",
+                "description": "Get top visitors grouped by identified information (user_id, external_id, email) with payment metrics including revenue, distinct payments, and time to first purchase",
                 "consumes": [
                     "application/json"
                 ],
@@ -1879,7 +1879,7 @@ const docTemplate = `{
                 "tags": [
                     "Analytics"
                 ],
-                "summary": "Get top visitors",
+                "summary": "Get top visitors with payment data",
                 "parameters": [
                     {
                         "type": "string",
@@ -1962,7 +1962,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "List of top visitors",
+                        "description": "List of top visitors with payment data",
                         "schema": {
                             "$ref": "#/definitions/types.TopVisitorsResponse"
                         }
@@ -4512,7 +4512,16 @@ const docTemplate = `{
                 "browser_name": {
                     "type": "string"
                 },
+                "currency": {
+                    "type": "string"
+                },
                 "device_type": {
+                    "type": "string"
+                },
+                "distinct_payments": {
+                    "type": "integer"
+                },
+                "email": {
                     "type": "string"
                 },
                 "event_count": {
@@ -4521,8 +4530,14 @@ const docTemplate = `{
                 "external_id": {
                     "type": "string"
                 },
+                "first_payment_date": {
+                    "type": "string"
+                },
                 "first_seen": {
                     "type": "string"
+                },
+                "is_grouped": {
+                    "type": "boolean"
                 },
                 "last_seen": {
                     "type": "string"
@@ -4533,11 +4548,23 @@ const docTemplate = `{
                 "location_country_iso": {
                     "type": "string"
                 },
+                "name": {
+                    "type": "string"
+                },
+                "time_to_first_purchase_seconds": {
+                    "type": "number"
+                },
+                "total_revenue": {
+                    "type": "number"
+                },
                 "user_id": {
                     "type": "string"
                 },
-                "visitor_id": {
-                    "type": "string"
+                "visitor_ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 }
             }
         },
