@@ -107,16 +107,29 @@ type TopVisitorsResponse struct {
 }
 
 type TopVisitor struct {
-	VisitorID          string    `json:"visitor_id"`
-	UserID             *string   `json:"user_id,omitempty"`
-	ExternalID         *string   `json:"external_id,omitempty"`
-	EventCount         uint64    `json:"event_count"`
-	LastSeen           time.Time `json:"last_seen"`
-	FirstSeen          time.Time `json:"first_seen"`
-	LocationCountryISO *string   `json:"location_country_iso,omitempty"`
-	LocationCity       *string   `json:"location_city,omitempty"`
-	DeviceType         *string   `json:"device_type,omitempty"`
-	BrowserName        *string   `json:"browser_name,omitempty"`
+	UserID     *string `json:"user_id,omitempty"`
+	ExternalID *string `json:"external_id,omitempty"`
+	Email      *string `json:"email,omitempty"`
+	Name       *string `json:"name,omitempty"`
+
+	VisitorIDs []string `json:"visitor_ids"`
+	IsGrouped  bool     `json:"is_grouped"`
+
+	EventCount uint64    `json:"event_count"`
+	FirstSeen  time.Time `json:"first_seen"`
+	LastSeen   time.Time `json:"last_seen"`
+
+	DistinctPayments int        `json:"distinct_payments"`
+	TotalRevenue     float64    `json:"total_revenue"`
+	Currency         *string    `json:"currency,omitempty"`
+	FirstPaymentDate *time.Time `json:"first_payment_date,omitempty"`
+
+	TimeToFirstPurchaseSeconds *float64 `json:"time_to_first_purchase_seconds,omitempty"`
+
+	LocationCountryISO *string `json:"location_country_iso,omitempty"`
+	LocationCity       *string `json:"location_city,omitempty"`
+	DeviceType         *string `json:"device_type,omitempty"`
+	BrowserName        *string `json:"browser_name,omitempty"`
 }
 
 type VisitorProfileResponse struct {

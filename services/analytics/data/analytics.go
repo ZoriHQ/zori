@@ -419,12 +419,12 @@ func (a *AnalyticsData) GetEventFilterOptions(ctx *ctx.Ctx, filter *filters.Sect
 }
 
 func (a *AnalyticsData) GetTopVisitors(ctx *ctx.Ctx, filter *filters.SectionFilter) ([]types.TopVisitor, error) {
-	query := `
+	visitorDataQuery := `
 		SELECT
 			visitor_id,
 			count() as event_count,
-			max(client_timestamp_utc) as last_seen,
 			min(client_timestamp_utc) as first_seen,
+			max(client_timestamp_utc) as last_seen,
 			any(location_country_iso) as location_country_iso,
 			any(location_city) as location_city,
 			any(device_type) as device_type,
@@ -435,42 +435,278 @@ func (a *AnalyticsData) GetTopVisitors(ctx *ctx.Ctx, filter *filters.SectionFilt
 			AND client_timestamp_utc <= now()
 		GROUP BY visitor_id
 		ORDER BY event_count DESC
-		LIMIT ?
 	`
 
-	rows, err := a.clickDb.Db().Query(ctx, query, filter.ProjectID, filter.TimeRange.Start, filter.Limit)
+	rows, err := a.clickDb.Db().Query(ctx, visitorDataQuery, filter.ProjectID, filter.TimeRange.Start)
 	if err != nil {
-		return nil, fmt.Errorf("failed to query top visitors: %w", err)
+		return nil, fmt.Errorf("failed to query visitor data: %w", err)
 	}
 	defer rows.Close()
 
-	var visitors []types.TopVisitor
+	type visitorData struct {
+		VisitorID          string
+		EventCount         uint64
+		FirstSeen          time.Time
+		LastSeen           time.Time
+		LocationCountryISO *string
+		LocationCity       *string
+		DeviceType         *string
+		BrowserName        *string
+	}
+
+	var allVisitorData []visitorData
+	visitorIDs := make([]string, 0)
+
 	for rows.Next() {
-		var visitor types.TopVisitor
+		var vd visitorData
 		if err := rows.Scan(
-			&visitor.VisitorID,
-			&visitor.EventCount,
-			&visitor.LastSeen,
-			&visitor.FirstSeen,
-			&visitor.LocationCountryISO,
-			&visitor.LocationCity,
-			&visitor.DeviceType,
-			&visitor.BrowserName,
+			&vd.VisitorID,
+			&vd.EventCount,
+			&vd.FirstSeen,
+			&vd.LastSeen,
+			&vd.LocationCountryISO,
+			&vd.LocationCity,
+			&vd.DeviceType,
+			&vd.BrowserName,
 		); err != nil {
-			return nil, fmt.Errorf("failed to scan row: %w", err)
+			return nil, fmt.Errorf("failed to scan visitor data: %w", err)
 		}
-		visitors = append(visitors, visitor)
+		allVisitorData = append(allVisitorData, vd)
+		visitorIDs = append(visitorIDs, vd.VisitorID)
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("error iterating rows: %w", err)
+		return nil, fmt.Errorf("error iterating visitor rows: %w", err)
 	}
 
-	if visitors == nil {
-		visitors = []types.TopVisitor{}
+	type visitorIdentity struct {
+		UserID     *string
+		ExternalID *string
+		Email      *string
+		Name       *string
+	}
+	visitorIdentityMap := make(map[string]*visitorIdentity)
+	if len(visitorIDs) > 0 {
+		identities, err := a.visitorRepository.GetVisitorsByIDs(ctx, visitorIDs)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get visitor identities: %w", err)
+		}
+		for _, identity := range identities {
+			visitorIdentityMap[identity.VisitorID] = &visitorIdentity{
+				UserID:     identity.UserID,
+				ExternalID: identity.ExternalID,
+				Email:      identity.Email,
+				Name:       identity.Name,
+			}
+		}
 	}
 
-	return visitors, nil
+	paymentQuery := `
+		SELECT
+			visitor_id,
+			count(DISTINCT payment_id) as distinct_payments,
+			sum(amount) as total_amount,
+			any(currency) as currency,
+			min(payment_timestamp_utc) as first_payment_date
+		FROM payment_events
+		WHERE project_id = ?
+			AND payment_status = 'succeeded'
+			AND visitor_id IS NOT NULL
+			AND visitor_id IN (` + clickhouse.BuildPlaceholders(len(visitorIDs)) + `)
+		GROUP BY visitor_id
+	`
+
+	paymentArgs := []interface{}{filter.ProjectID}
+	for _, vid := range visitorIDs {
+		paymentArgs = append(paymentArgs, vid)
+	}
+
+	type paymentData struct {
+		VisitorID        string
+		DistinctPayments int
+		TotalAmount      int64 // in cents
+		Currency         string
+		FirstPaymentDate time.Time
+	}
+
+	paymentMap := make(map[string]paymentData)
+	if len(visitorIDs) > 0 {
+		paymentRows, err := a.clickDb.Db().Query(ctx, paymentQuery, paymentArgs...)
+		if err != nil {
+			return nil, fmt.Errorf("failed to query payment data: %w", err)
+		}
+		defer paymentRows.Close()
+
+		for paymentRows.Next() {
+			var pd paymentData
+			if err := paymentRows.Scan(
+				&pd.VisitorID,
+				&pd.DistinctPayments,
+				&pd.TotalAmount,
+				&pd.Currency,
+				&pd.FirstPaymentDate,
+			); err != nil {
+				return nil, fmt.Errorf("failed to scan payment data: %w", err)
+			}
+			paymentMap[pd.VisitorID] = pd
+		}
+
+		if err := paymentRows.Err(); err != nil {
+			return nil, fmt.Errorf("error iterating payment rows: %w", err)
+		}
+	}
+
+	type groupKey struct {
+		UserID     string
+		ExternalID string
+		Email      string
+	}
+
+	groupMap := make(map[groupKey]*types.TopVisitor)
+	ungroupedVisitors := make([]*types.TopVisitor, 0)
+
+	for _, vd := range allVisitorData {
+		identity, hasIdentity := visitorIdentityMap[vd.VisitorID]
+
+		var key groupKey
+		var canGroup bool
+
+		if hasIdentity {
+			if identity.UserID != nil && *identity.UserID != "" {
+				key.UserID = *identity.UserID
+				canGroup = true
+			} else if identity.ExternalID != nil && *identity.ExternalID != "" {
+				key.ExternalID = *identity.ExternalID
+				canGroup = true
+			} else if identity.Email != nil && *identity.Email != "" {
+				key.Email = *identity.Email
+				canGroup = true
+			}
+		}
+
+		if canGroup {
+			if existing, exists := groupMap[key]; exists {
+				existing.VisitorIDs = append(existing.VisitorIDs, vd.VisitorID)
+				existing.IsGrouped = true
+				existing.EventCount += vd.EventCount
+
+				if vd.FirstSeen.Before(existing.FirstSeen) {
+					existing.FirstSeen = vd.FirstSeen
+				}
+				if vd.LastSeen.After(existing.LastSeen) {
+					existing.LastSeen = vd.LastSeen
+				}
+
+				if pd, hasPayment := paymentMap[vd.VisitorID]; hasPayment {
+					existing.DistinctPayments += pd.DistinctPayments
+					existing.TotalRevenue += float64(pd.TotalAmount) / 100.0
+
+					if existing.FirstPaymentDate == nil || pd.FirstPaymentDate.Before(*existing.FirstPaymentDate) {
+						existing.FirstPaymentDate = &pd.FirstPaymentDate
+					}
+				}
+			} else {
+				enhanced := &types.TopVisitor{
+					UserID:             identity.UserID,
+					ExternalID:         identity.ExternalID,
+					Email:              identity.Email,
+					Name:               identity.Name,
+					VisitorIDs:         []string{vd.VisitorID},
+					IsGrouped:          false,
+					EventCount:         vd.EventCount,
+					FirstSeen:          vd.FirstSeen,
+					LastSeen:           vd.LastSeen,
+					LocationCountryISO: vd.LocationCountryISO,
+					LocationCity:       vd.LocationCity,
+					DeviceType:         vd.DeviceType,
+					BrowserName:        vd.BrowserName,
+				}
+
+				if pd, hasPayment := paymentMap[vd.VisitorID]; hasPayment {
+					enhanced.DistinctPayments = pd.DistinctPayments
+					enhanced.TotalRevenue = float64(pd.TotalAmount) / 100.0
+					enhanced.Currency = &pd.Currency
+					enhanced.FirstPaymentDate = &pd.FirstPaymentDate
+				}
+
+				groupMap[key] = enhanced
+			}
+		} else {
+			enhanced := &types.TopVisitor{
+				VisitorIDs:         []string{vd.VisitorID},
+				IsGrouped:          false,
+				EventCount:         vd.EventCount,
+				FirstSeen:          vd.FirstSeen,
+				LastSeen:           vd.LastSeen,
+				LocationCountryISO: vd.LocationCountryISO,
+				LocationCity:       vd.LocationCity,
+				DeviceType:         vd.DeviceType,
+				BrowserName:        vd.BrowserName,
+			}
+
+			if pd, hasPayment := paymentMap[vd.VisitorID]; hasPayment {
+				enhanced.DistinctPayments = pd.DistinctPayments
+				enhanced.TotalRevenue = float64(pd.TotalAmount) / 100.0
+				enhanced.Currency = &pd.Currency
+				enhanced.FirstPaymentDate = &pd.FirstPaymentDate
+			}
+
+			ungroupedVisitors = append(ungroupedVisitors, enhanced)
+		}
+	}
+
+	result := make([]types.TopVisitor, 0)
+
+	for _, enhanced := range groupMap {
+		if enhanced.FirstPaymentDate != nil {
+			timeToFirstPurchase := enhanced.FirstPaymentDate.Sub(enhanced.FirstSeen).Seconds()
+			if timeToFirstPurchase >= 0 {
+				enhanced.TimeToFirstPurchaseSeconds = &timeToFirstPurchase
+			}
+		}
+		result = append(result, *enhanced)
+	}
+
+	for _, enhanced := range ungroupedVisitors {
+		if enhanced.FirstPaymentDate != nil {
+			timeToFirstPurchase := enhanced.FirstPaymentDate.Sub(enhanced.FirstSeen).Seconds()
+			if timeToFirstPurchase >= 0 {
+				enhanced.TimeToFirstPurchaseSeconds = &timeToFirstPurchase
+			}
+		}
+		result = append(result, *enhanced)
+	}
+
+	type sortable struct {
+		visitor types.TopVisitor
+	}
+	sortableList := make([]sortable, len(result))
+	for i, v := range result {
+		sortableList[i] = sortable{visitor: v}
+	}
+
+	for i := 0; i < len(sortableList); i++ {
+		for j := i + 1; j < len(sortableList); j++ {
+			if sortableList[j].visitor.EventCount > sortableList[i].visitor.EventCount {
+				sortableList[i], sortableList[j] = sortableList[j], sortableList[i]
+			}
+		}
+	}
+
+	finalResult := make([]types.TopVisitor, 0)
+	limit := filter.Limit
+	if limit == 0 {
+		limit = 50 // default limit
+	}
+	for i := 0; i < len(sortableList) && i < limit; i++ {
+		finalResult = append(finalResult, sortableList[i].visitor)
+	}
+
+	if finalResult == nil {
+		finalResult = []types.TopVisitor{}
+	}
+
+	return finalResult, nil
 }
 
 func (a *AnalyticsData) GetVisitorProfile(ctx *ctx.Ctx, filter *filters.VisitorProfileFilter) (*types.VisitorProfileResponse, error) {
