@@ -5,3 +5,8 @@
 .zed/
 .vscode/
 .claude/
+
+# folder for SDKs
+# This is where we store generated SDKs for different languages
+# We ignore this folder to keep the repository clean
+sdks/
