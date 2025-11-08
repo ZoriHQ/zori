@@ -55,11 +55,11 @@ type CountryDataPoint struct {
 
 type RecentEventsRequest struct {
 	filters.SectionFilter
-	UserID        *string `query:"user_id" example:"user_456"`
-	ExternalID    *string `query:"external_id" example:"ext_789"`
-	TrafficOrigin *string `query:"traffic_origin" example:"google.com"`
-	PagePath      *string `query:"page_path" example:"/pricing"`
-	EventName     *string `query:"event_name" example:"page_view,click"`
+	UserID        *string `json:"user_id" query:"user_id" example:"user_456"`
+	ExternalID    *string `json:"external_id" query:"external_id" example:"ext_789"`
+	TrafficOrigin *string `json:"traffic_origin" query:"traffic_origin" example:"google.com"`
+	PagePath      *string `json:"page_path" query:"page_path" example:"/pricing"`
+	EventName     *string `json:"event_name" query:"event_name" example:"page_view,click"`
 }
 
 type RecentEventsResponse struct {

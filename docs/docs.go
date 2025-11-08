@@ -160,7 +160,7 @@ const docTemplate = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "Get unique traffic origins and page paths to populate filter dropdowns",
+                "description": "Get unique traffic origins, page paths, and event names to populate filter dropdowns",
                 "consumes": [
                     "application/json"
                 ],
@@ -253,7 +253,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "Filter options for traffic origins and pages",
+                        "description": "Filter options for traffic origins, pages, and event names",
                         "schema": {
                             "$ref": "#/definitions/types.EventFilterOptionsResponse"
                         }
@@ -289,7 +289,7 @@ const docTemplate = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "Get a list of recent events with optional filters (visitor_id, user_id, external_id, traffic_origin, page_path)",
+                "description": "Get a list of recent events with optional filters (visitor_id, user_id, external_id, traffic_origin, page_path, event_name)",
                 "consumes": [
                     "application/json"
                 ],
@@ -309,8 +309,14 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
+                        "example": "page_view,click",
+                        "name": "event_name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
                         "example": "ext_789",
-                        "name": "externalID",
+                        "name": "external_id",
                         "in": "query"
                     },
                     {
@@ -333,7 +339,7 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "example": "/pricing",
-                        "name": "pagePath",
+                        "name": "page_path",
                         "in": "query"
                     },
                     {
@@ -376,13 +382,13 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "example": "google.com",
-                        "name": "trafficOrigin",
+                        "name": "traffic_origin",
                         "in": "query"
                     },
                     {
                         "type": "string",
                         "example": "user_456",
-                        "name": "userID",
+                        "name": "user_id",
                         "in": "query"
                     },
                     {
@@ -3933,6 +3939,12 @@ const docTemplate = `{
         "types.EventFilterOptionsResponse": {
             "type": "object",
             "properties": {
+                "event_names": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "pages": {
                     "type": "array",
                     "items": {
