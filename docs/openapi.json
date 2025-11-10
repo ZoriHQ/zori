@@ -286,7 +286,7 @@
                 }
               }
             },
-            "description": "Filter options for traffic origins and pages"
+            "description": "Filter options for traffic origins, pages, and event names"
           },
           "400": {
             "content": {
@@ -330,7 +330,7 @@
         "tags": [
           "Analytics"
         ],
-        "description": "Get unique traffic origins and page paths to populate filter dropdowns",
+        "description": "Get unique traffic origins, page paths, and event names to populate filter dropdowns",
         "summary": "Get event filter options"
       }
     },
@@ -346,9 +346,17 @@
             }
           },
           {
+            "example": "page_view,click",
+            "in": "query",
+            "name": "event_name",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "example": "ext_789",
             "in": "query",
-            "name": "externalID",
+            "name": "external_id",
             "schema": {
               "type": "string"
             }
@@ -377,7 +385,7 @@
           {
             "example": "/pricing",
             "in": "query",
-            "name": "pagePath",
+            "name": "page_path",
             "schema": {
               "type": "string"
             }
@@ -428,7 +436,7 @@
           {
             "example": "google.com",
             "in": "query",
-            "name": "trafficOrigin",
+            "name": "traffic_origin",
             "schema": {
               "type": "string"
             }
@@ -436,7 +444,7 @@
           {
             "example": "user_456",
             "in": "query",
-            "name": "userID",
+            "name": "user_id",
             "schema": {
               "type": "string"
             }
@@ -519,7 +527,7 @@
         "tags": [
           "Analytics"
         ],
-        "description": "Get a list of recent events with optional filters (visitor_id, user_id, external_id, traffic_origin, page_path)",
+        "description": "Get a list of recent events with optional filters (visitor_id, user_id, external_id, traffic_origin, page_path, event_name)",
         "summary": "Get recent events"
       }
     },
@@ -4635,6 +4643,12 @@
       },
       "types.EventFilterOptionsResponse": {
         "properties": {
+          "event_names": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
           "pages": {
             "items": {
               "type": "string"
