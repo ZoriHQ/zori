@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 	"zori/internal/ctx"
 	"zori/internal/storage/clickhouse"
@@ -227,6 +228,30 @@ func (a *AnalyticsData) GetRecentEvents(ctx *ctx.Ctx, req *types.RecentEventsReq
 		args = append(args, *req.PagePath)
 	}
 
+	if req.EventName != nil && *req.EventName != "" {
+		eventNames := strings.Split(*req.EventName, ",")
+		// Trim whitespace from each event name
+		trimmedEventNames := make([]string, 0, len(eventNames))
+		for _, name := range eventNames {
+			trimmed := strings.TrimSpace(name)
+			if trimmed != "" {
+				trimmedEventNames = append(trimmedEventNames, trimmed)
+			}
+		}
+		if len(trimmedEventNames) > 0 {
+			// Build IN clause with placeholders
+			placeholders := make([]string, len(trimmedEventNames))
+			for i := range trimmedEventNames {
+				placeholders[i] = "?"
+			}
+			whereConditions = append(whereConditions, fmt.Sprintf("event_name IN (%s)", strings.Join(placeholders, ",")))
+			// Add each event name as a separate argument
+			for _, name := range trimmedEventNames {
+				args = append(args, name)
+			}
+		}
+	}
+
 	whereClause := ""
 	if len(whereConditions) > 0 {
 		whereClause = "WHERE " + whereConditions[0]
@@ -405,16 +430,49 @@ func (a *AnalyticsData) GetEventFilterOptions(ctx *ctx.Ctx, filter *filters.Sect
 		return nil, fmt.Errorf("error iterating pages: %w", err)
 	}
 
+	eventNamesQuery := fmt.Sprintf(`
+		SELECT DISTINCT event_name
+		FROM events
+		%s
+			AND event_name IS NOT NULL
+			AND event_name != ''
+		ORDER BY event_name
+		LIMIT 1000
+	`, whereClause)
+
+	eventNamesRows, err := a.clickDb.Db().Query(ctx, eventNamesQuery, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query event names: %w", err)
+	}
+	defer eventNamesRows.Close()
+
+	var eventNames []string
+	for eventNamesRows.Next() {
+		var eventName string
+		if err := eventNamesRows.Scan(&eventName); err != nil {
+			return nil, fmt.Errorf("failed to scan event name: %w", err)
+		}
+		eventNames = append(eventNames, eventName)
+	}
+
+	if err := eventNamesRows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating event names: %w", err)
+	}
+
 	if origins == nil {
 		origins = []string{}
 	}
 	if pages == nil {
 		pages = []string{}
 	}
+	if eventNames == nil {
+		eventNames = []string{}
+	}
 
 	return &types.EventFilterOptionsResponse{
 		TrafficOrigins: origins,
 		Pages:          pages,
+		EventNames:     eventNames,
 	}, nil
 }
 
