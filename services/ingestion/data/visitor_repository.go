@@ -124,3 +124,19 @@ func (r *VisitorRepository) GetVisitorsByProjectID(ctx context.Context, projectI
 	}
 	return visitors, nil
 }
+
+func (r *VisitorRepository) GetVisitorsByIDs(ctx context.Context, visitorIDs []string) ([]*models.Visitor, error) {
+	if len(visitorIDs) == 0 {
+		return []*models.Visitor{}, nil
+	}
+
+	var visitors []*models.Visitor
+	err := r.db.NewSelect().
+		Model(&visitors).
+		Where("visitor_id IN (?)", bun.In(visitorIDs)).
+		Scan(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return visitors, nil
+}

@@ -152,15 +152,15 @@ func (s *AnalyticsService) GetEventFilterOptions(ctx *ctx.Ctx, filter *filters.S
 	return filterOptions, nil
 }
 
-// GetTopVisitors returns the most active visitors for a project
-// @Summary Get top visitors
-// @Description Get a list of the most active visitors ranked by event count
+// GetTopVisitors returns the most active visitors grouped by identified information with payment metrics
+// @Summary Get top visitors with payment data
+// @Description Get top visitors grouped by identified information (user_id, external_id, email) with payment metrics including revenue, distinct payments, and time to first purchase
 // @Tags Analytics
 // @Accept json
 // @Produce json
 // @Security ApiKeyAuth
 // @Param filter query filters.SectionFilter true "Filter parameters"
-// @Success 200 {object} types.TopVisitorsResponse "List of top visitors"
+// @Success 200 {object} types.TopVisitorsResponse "List of top visitors with payment data"
 // @Failure 400 {object} map[string]interface{} "Invalid request parameters"
 // @Failure 401 {object} map[string]interface{} "Unauthorized - Invalid or missing JWT token"
 // @Failure 500 {object} map[string]interface{} "Internal server error"
