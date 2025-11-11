@@ -47,11 +47,15 @@ require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/boyter/go-string v1.0.5 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
+	github.com/cockroachdb/errors v1.12.0 // indirect
+	github.com/cockroachdb/logtags v0.0.0-20230118201751-21c54148d20b // indirect
+	github.com/cockroachdb/redact v1.1.5 // indirect
 	github.com/codemodus/kace v0.5.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/fatih/color v1.18.0 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.8 // indirect
+	github.com/getsentry/sentry-go v0.27.0 // indirect
 	github.com/ghodss/yaml v1.0.0 // indirect
 	github.com/go-faster/city v1.0.1 // indirect
 	github.com/go-faster/errors v0.7.1 // indirect
@@ -70,10 +74,12 @@ require (
 	github.com/go-playground/universal-translator v0.18.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
-	github.com/golang/snappy v0.0.1 // indirect
+	github.com/golang/snappy v0.0.4 // indirect
 	github.com/grpc-ecosystem/grpc-gateway v1.9.5 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/klauspost/compress v1.18.0 // indirect
+	github.com/kr/pretty v0.3.1 // indirect
+	github.com/kr/text v0.2.0 // indirect
 	github.com/labstack/gommon v0.4.2 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
@@ -83,11 +89,13 @@ require (
 	github.com/nats-io/nuid v1.0.1 // indirect
 	github.com/paulmach/orb v0.12.0 // indirect
 	github.com/pierrec/lz4/v4 v4.1.22 // indirect
+	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/prometheus/common v0.66.1 // indirect
 	github.com/prometheus/procfs v0.16.1 // indirect
 	github.com/prometheus/prometheus v0.0.0-20190818123050-43acd0e2e93f // indirect
 	github.com/puzpuzpuz/xsync/v3 v3.5.1 // indirect
+	github.com/rogpeppe/go-internal v1.11.0 // indirect
 	github.com/segmentio/asm v1.2.1 // indirect
 	github.com/shopspring/decimal v1.4.0 // indirect
 	github.com/swaggo/files/v2 v2.0.2 // indirect
@@ -110,8 +118,8 @@ require (
 	golang.org/x/text v0.29.0 // indirect
 	golang.org/x/time v0.11.0 // indirect
 	golang.org/x/tools v0.37.0 // indirect
-	google.golang.org/genproto v0.0.0-20190801165951-fa694d86fc64 // indirect
-	google.golang.org/grpc v1.22.1 // indirect
+	google.golang.org/genproto v0.0.0-20230410155749-daa745c078e1 // indirect
+	google.golang.org/grpc v1.56.3 // indirect
 	google.golang.org/protobuf v1.36.8 // indirect
 	gopkg.in/go-playground/assert.v1 v1.2.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect

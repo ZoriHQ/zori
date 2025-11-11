@@ -28,7 +28,6 @@ func NewAnalyticsData(clickDb *clickhouse.ClickhouseDB, visitorRepository *inges
 }
 
 func (a *AnalyticsData) GetVisitorsByDevice(ctx *ctx.Ctx, filter *filters.SectionFilter) ([]types.VisitorDataPoint, error) {
-
 	query := fmt.Sprintf(`
 		SELECT
 			%s(client_timestamp_utc) as time_bucket,
