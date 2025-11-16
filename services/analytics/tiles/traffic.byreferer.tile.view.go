@@ -64,13 +64,13 @@ func (t *TrafficRefererSourceTile) fetchRefererTrafficData(ctx *ctx.Ctx, filter 
 func (t *TrafficRefererSourceTile) buildTrafficSourceRefererQuery(ctx *ctx.Ctx, filter *filters.SectionFilter) string {
 	return fmt.Sprintf(`
 		SELECT
-		    ifNull(referrer_domain, 'DIRECT/NONE') AS referer_url,
+		    ifNull(nullIf(referrer_domain, ''), 'DIRECT/NONE') AS referer_url,
 		    uniqIf(visitor_id, created_at > now() - %[1]s) AS current_visits,
 		    uniqIf(visitor_id, created_at BETWEEN now() - %[2]s AND now() - %[1]s) AS previous_visits
 		FROM events
 		WHERE events.organization_id = ?
 		AND events.project_id = ?
-		GROUP BY referrer_domain
+		GROUP BY referer_url
 		ORDER BY current_visits DESC
 	`, filter.TimeRange.IntervalValue, filter.TimeRange.IntervalValueDelta)
 }

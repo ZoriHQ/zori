@@ -135,23 +135,40 @@ func TestTrafficRefererSourceTile_FetchByReferer(t *testing.T) {
 
 		assert.NotEmpty(t, response.Data, "Should have referrer traffic data")
 
+		// Verify exactly 2 referrer sources and no duplicates
+		assert.Equal(t, 2, len(response.Data), "Should have exactly 2 referrer sources (google.com and facebook.com)")
+
+		// Check for duplicates
+		refererSeen := make(map[string]bool)
 		var googleData, facebookData *tiles.RefererTrafficSourceData
+
 		for i := range response.Data {
-			if response.Data[i].RefererURL == "google.com" {
+			referer := response.Data[i].RefererURL
+
+			// Check for duplicates
+			assert.False(t, refererSeen[referer], "Referer %s should not appear more than once", referer)
+			refererSeen[referer] = true
+
+			// Verify only expected referers
+			assert.Contains(t, []string{"google.com", "facebook.com"}, referer, "Referer should be either google.com or facebook.com")
+
+			if referer == "google.com" {
 				googleData = &response.Data[i]
 			}
-			if response.Data[i].RefererURL == "facebook.com" {
+			if referer == "facebook.com" {
 				facebookData = &response.Data[i]
 			}
 		}
 
 		require.NotNil(t, googleData, "Should have Google referrer data")
+		assert.Equal(t, "google.com", googleData.RefererURL, "Referer URL should be google.com")
 		assert.NotNil(t, googleData.Count, "Google current count should not be nil")
 		assert.Equal(t, uint64(3), *googleData.Count, "Google should have 3 current visitors")
 		assert.NotNil(t, googleData.PreviousCount, "Google previous count should not be nil")
 		assert.Equal(t, uint64(1), *googleData.PreviousCount, "Google should have 1 previous visitor")
 
 		require.NotNil(t, facebookData, "Should have Facebook referrer data")
+		assert.Equal(t, "facebook.com", facebookData.RefererURL, "Referer URL should be facebook.com")
 		assert.NotNil(t, facebookData.Count, "Facebook current count should not be nil")
 		assert.Equal(t, uint64(2), *facebookData.Count, "Facebook should have 2 current visitors")
 
@@ -221,15 +238,30 @@ func TestTrafficRefererSourceTile_FetchByReferer(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, response)
 
+		// Should have exactly 1 DIRECT/NONE entry
+		assert.Equal(t, 1, len(response.Data), "Should have exactly 1 referrer entry (DIRECT/NONE)")
+
+		// Check for duplicates
+		refererSeen := make(map[string]bool)
 		var directData *tiles.RefererTrafficSourceData
+
 		for i := range response.Data {
-			if response.Data[i].RefererURL == "DIRECT/NONE" {
+			referer := response.Data[i].RefererURL
+
+			// Check for duplicates
+			assert.False(t, refererSeen[referer], "Referer %s should not appear more than once", referer)
+			refererSeen[referer] = true
+
+			// Should only be DIRECT/NONE
+			assert.Equal(t, "DIRECT/NONE", referer, "Referer should be DIRECT/NONE for missing referrer data")
+
+			if referer == "DIRECT/NONE" {
 				directData = &response.Data[i]
-				break
 			}
 		}
 
 		require.NotNil(t, directData, "Should have DIRECT/NONE entry for missing referrers")
+		assert.Equal(t, "DIRECT/NONE", directData.RefererURL, "Referer URL should be DIRECT/NONE")
 		assert.NotNil(t, directData.Count)
 		assert.Equal(t, uint64(2), *directData.Count, "Should have 2 direct visitors")
 

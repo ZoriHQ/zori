@@ -60,13 +60,13 @@ func (t *TrafficCountrySourceTile) fetchCountryTrafficData(ctx *ctx.Ctx, filter 
 func (t *TrafficCountrySourceTile) buildTrafficSourceCountryQuery(ctx *ctx.Ctx, filter *filters.SectionFilter) string {
 	return fmt.Sprintf(`
 		SELECT
-		    ifNull(location_country_iso, 'UNKNOWN') AS country,
+		    ifNull(nullIf(location_country_iso, ''), 'UNKNOWN') AS country,
 		    uniqIf(visitor_id, created_at > now() - %[1]s) AS count,
 		    uniqIf(visitor_id, created_at BETWEEN now() - %[2]s AND now() - %[1]s) AS previous_count
 		FROM events
 		WHERE events.organization_id = ?
 		AND events.project_id = ?
-		GROUP BY location_country_iso
+		GROUP BY country
 		HAVING count > 0
 		ORDER BY count DESC
 	`, filter.TimeRange.IntervalValue, filter.TimeRange.IntervalValueDelta)

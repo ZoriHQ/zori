@@ -161,22 +161,34 @@ func TestTrafficCountrySourceTile_FetchByCountry(t *testing.T) {
 
 		assert.NotEmpty(t, response.Data, "Should have country traffic data")
 
+		assert.Equal(t, 2, len(response.Data), "Should have exactly 2 countries (US and GB)")
+
+		countrySeen := make(map[string]bool)
 		var usData, ukData *tiles.CountryTrafficSourceData
+
 		for i := range response.Data {
-			if response.Data[i].Country == "US" {
+			country := response.Data[i].Country
+
+			assert.False(t, countrySeen[country], "Country %s should not appear more than once", country)
+			countrySeen[country] = true
+
+			assert.Contains(t, []string{"US", "GB"}, country, "Country should be either US or GB")
+
+			if country == "US" {
 				usData = response.Data[i]
 			}
-			if response.Data[i].Country == "GB" {
+			if country == "GB" {
 				ukData = response.Data[i]
 			}
 		}
 
 		require.NotNil(t, usData, "Should have US country data")
+		assert.Equal(t, "US", usData.Country, "Country code should be US")
 		assert.Equal(t, uint64(3), usData.Count, "US should have 3 current visitors")
 		assert.Equal(t, uint64(1), usData.PreviousCount, "US should have 1 previous visitor")
 
-		// Verify UK data
 		require.NotNil(t, ukData, "Should have UK country data")
+		assert.Equal(t, "GB", ukData.Country, "Country code should be GB")
 		assert.Equal(t, uint64(2), ukData.Count, "UK should have 2 current visitors")
 		assert.Equal(t, uint64(2), ukData.PreviousCount, "UK should have 2 previous visitors")
 
@@ -244,15 +256,26 @@ func TestTrafficCountrySourceTile_FetchByCountry(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, response)
 
+		assert.Equal(t, 1, len(response.Data), "Should have exactly 1 country entry (UNKNOWN)")
+
+		countrySeen := make(map[string]bool)
 		var unknownData *tiles.CountryTrafficSourceData
+
 		for i := range response.Data {
-			if response.Data[i].Country == "UNKNOWN" {
+			country := response.Data[i].Country
+
+			assert.False(t, countrySeen[country], "Country %s should not appear more than once", country)
+			countrySeen[country] = true
+
+			assert.Equal(t, "UNKNOWN", country, "Country should be UNKNOWN for missing country data")
+
+			if country == "UNKNOWN" {
 				unknownData = response.Data[i]
-				break
 			}
 		}
 
 		require.NotNil(t, unknownData, "Should have UNKNOWN entry for missing countries")
+		assert.Equal(t, "UNKNOWN", unknownData.Country, "Country code should be UNKNOWN")
 		assert.Equal(t, uint64(2), unknownData.Count, "Should have 2 unknown country visitors")
 
 		t.Logf("Unknown country traffic: %d visitors", unknownData.Count)
@@ -381,6 +404,16 @@ func TestTrafficCountrySourceTile_FetchByCountry(t *testing.T) {
 		require.NotNil(t, response)
 
 		assert.GreaterOrEqual(t, len(response.Data), 2, "Should have at least 2 countries")
+		assert.Equal(t, 2, len(response.Data), "Should have exactly 2 countries (FR and CA)")
+
+		countrySeen := make(map[string]bool)
+		for i := range response.Data {
+			country := response.Data[i].Country
+			assert.False(t, countrySeen[country], "Country %s should not appear more than once", country)
+			countrySeen[country] = true
+
+			assert.Contains(t, []string{"FR", "CA"}, country, "Country should be either FR or CA")
+		}
 
 		if len(response.Data) >= 2 {
 			assert.GreaterOrEqual(t, response.Data[0].Count, response.Data[1].Count,

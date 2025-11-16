@@ -45,10 +45,6 @@ func RegisterRoutes(
 	// TODO:: move to tiles service
 	server.GroupGetWithFilter(analyticsRouteGroup, "/visitors/device", analyticsService.GetVisitorsByDevice, mfMiddleware)
 
-	// Moved to tiles service
-	server.GroupGetWithFilter(analyticsRouteGroup, "/visitors/origin", tilesService.GetTrafficSourceRefererTile, lfMiddleware)
-	server.GroupGetWithFilter(analyticsRouteGroup, "/visitors/country", tilesService.GetTrafficSourceCountriesTile, lfMiddleware)
-
 	// TODO:: potential refactor
 	server.GroupGetWithFilter(analyticsRouteGroup, "/visitors/top", analyticsService.GetTopVisitors, mfMiddleware)
 
@@ -57,10 +53,21 @@ func RegisterRoutes(
 
 	// Tiles endpoints
 	server.GroupGetWithFilter(analyticsRouteGroup, "/timeline", tilesService.GetTimelineTile, hfMiddleware)
+	server.GroupGetWithFilter(analyticsRouteGroup, "/tiles/unique-visitors", tilesService.GetUniqueVisitorsTile, hfMiddleware)
+	server.GroupGetWithFilter(analyticsRouteGroup, "/tiles/unique-sessions", tilesService.GetUniqueSessionsTile, hfMiddleware)
+	server.GroupGetWithFilter(analyticsRouteGroup, "/tiles/bounce-rate", tilesService.GetBounceRateTile, hfMiddleware)
+	server.GroupGetWithFilter(analyticsRouteGroup, "/tiles/session-duration", tilesService.GetSessionDurationTile, hfMiddleware)
+	server.GroupGetWithFilter(analyticsRouteGroup, "/tiles/pages-per-session", tilesService.GetPagesPerSessionTile, hfMiddleware)
+	server.GroupGetWithFilter(analyticsRouteGroup, "/tiles/dau", tilesService.GetDAUTile, hfMiddleware)
+	server.GroupGetWithFilter(analyticsRouteGroup, "/tiles/wau", tilesService.GetWAUTile, hfMiddleware)
+	server.GroupGetWithFilter(analyticsRouteGroup, "/tiles/mau", tilesService.GetMAUTile, hfMiddleware)
+	server.GroupGetWithFilter(analyticsRouteGroup, "/tiles/return-rate", tilesService.GetReturnRateTile, hfMiddleware)
+	server.GroupGetWithFilter(analyticsRouteGroup, "/tiles/time-between-visits", tilesService.GetTimeBetweenVisitsTile, hfMiddleware)
+	server.GroupGetWithFilter(analyticsRouteGroup, "/tiles/traffic-by-country", tilesService.GetTrafficSourceCountriesTile, lfMiddleware)
+	server.GroupGetWithFilter(analyticsRouteGroup, "/tiles/traffic-by-referer", tilesService.GetTrafficSourceRefererTile, lfMiddleware)
+	server.GroupGetWithFilter(analyticsRouteGroup, "/tiles/traffic-by-utm", tilesService.GetTrafficSourceUTMTile, lfMiddleware)
 
 	// Events page endpoints
 	server.GroupGetWithFilter(analyticsRouteGroup, "/events/recent", analyticsService.GetRecentEvents)
 	server.GroupGetWithFilter(analyticsRouteGroup, "/events/filter-options", analyticsService.GetEventFilterOptions, mfMiddleware)
-
-	server.GroupGetWithFilter(analyticsRouteGroup, "/dashboard", analyticsService.GetDashboardMetrics, hfMiddleware)
 }

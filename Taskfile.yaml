@@ -1,4 +1,8 @@
 version: "3"
+includes:
+  lib:
+    taskfile: ./Taskfile.tests.yaml
+    flatten: true
 
 dotenv: [".env"]
 
@@ -42,51 +46,6 @@ tasks:
       - rm docs/swagger.yaml
       - rm docs/swagger.json
     silent: true
-
-  test:containers:
-    desc: Start test database containers
-    cmds:
-      - docker run --rm -d --name postgres-test -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=postgres -p 5434:5432 postgres:latest
-      - docker run --rm -d --name clickhouse-test -p 9002:9000 -v {{.ROOT_DIR}}/scripts/clickhouse-users-test.xml:/etc/clickhouse-server/users.d/test.xml clickhouse/clickhouse-server:latest
-      - docker run --rm -d --name nats-test -p 4222:4222 -p 8222:8222 nats:latest -js
-      - docker run --rm -d --name redis-test -p 6379:6379 redis:latest
-      - ./scripts/init-test-dbs.sh
-
-  test:migrate:
-    desc: Run migrations for test databases
-    dotenv: [".env.test"]
-    cmds:
-      - goose -dir internal/storage/postgres/migrations postgres "postgres://postgres:postgres@localhost:5434/zori_test?sslmode=disable" up
-      - GOOSE_DRIVER=clickhouse GOOSE_DBSTRING="tcp://localhost:9002/zori_test" goose -dir internal/storage/clickhouse/migrations up
-
-  test-cleanup:
-    desc: Stop and remove test database containers
-    cmds:
-      - docker stop postgres-test clickhouse-test nats-test redis-test || true
-      - docker rm postgres-test clickhouse-test nats-test redis-test || true
-
-  test:
-    desc: "Run tests (usage: task test -- ./path/to/tests or task test -- -v -run TestName ./path)"
-    dotenv: [".env.test"]
-    deps:
-      - test:migrate
-    cmds:
-      # - defer: { task: test-cleanup }
-      - go test {{if .CLI_ARGS}}{{.CLI_ARGS}}{{else}}./...{{end}}
-
-  test:verbose:
-    desc: Run all tests with verbose output
-    dotenv: [".env.test"]
-    cmds:
-      - go test -v ./...
-
-  # Clean tasks
-  clean:
-    desc: Clean build artifacts and temporary files
-    cmds:
-      - rm -f {{.GO_MODULE}}
-      - rm -f coverage.out coverage.html
-      - go clean -testcache
 
   start:
     desc: Quick start - setup environment and run server
