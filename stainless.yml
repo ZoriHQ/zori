@@ -201,7 +201,7 @@ client_settings:
   opts:
     api_key:
       type: string
-      nullable: false
+      nullable: true
       auth:
         security_scheme: ApiKeyAuth
       read_env: ZORIAPI_API_KEY
