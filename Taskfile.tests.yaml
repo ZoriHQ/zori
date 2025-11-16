@@ -10,15 +10,20 @@ tasks:
       - docker compose -f docker-compose.test.yaml up -d
       - echo "Waiting for services to be healthy..."
       - |
-        timeout 60s bash -c 'until docker compose -f docker-compose.test.yaml ps | grep -q "healthy.*healthy.*healthy.*healthy"; do
-          echo "Waiting for services...";
-          sleep 2;
-        done' || {
-          echo "Services failed to become healthy:"
-          docker compose -f docker-compose.test.yaml ps
-          exit 1
-        }
-      - echo "All services are healthy and ready!"
+        max_wait=60
+        elapsed=0
+        while [ $elapsed -lt $max_wait ]; do
+          if docker compose -f docker-compose.test.yaml ps | grep -q "healthy.*healthy.*healthy.*healthy"; then
+            echo "All services are healthy and ready!"
+            exit 0
+          fi
+          echo "Waiting for services... ($elapsed/$max_wait seconds)"
+          sleep 2
+          elapsed=$((elapsed + 2))
+        done
+        echo "Services failed to become healthy within ${max_wait} seconds:"
+        docker compose -f docker-compose.test.yaml ps
+        exit 1
 
   test:migrate:
     desc: Run migrations for test databases
