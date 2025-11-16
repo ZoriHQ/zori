@@ -1,34 +1,28 @@
 package metrics
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"time"
 	"zori/internal/config"
 
-	"github.com/m3db/prometheus_remote_client_golang/promremote"
+	"github.com/gogo/protobuf/proto"
+	"github.com/golang/snappy"
 	dto "github.com/prometheus/client_model/go"
+	"github.com/prometheus/prometheus/prompb"
 )
 
 type MetricsPusher struct {
-	client    promremote.Client
-	collector *MetricsCollector
-	config    *config.Config
-	stopCh    chan struct{}
-	doneCh    chan struct{}
-}
-
-type authRoundTripper struct {
-	username string
-	password string
-	rt       http.RoundTripper
-}
-
-func (a *authRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
-	req.SetBasicAuth(a.username, a.password)
-	return a.rt.RoundTrip(req)
+	httpClient *http.Client
+	endpoint   string
+	collector  *MetricsCollector
+	config     *config.Config
+	stopCh     chan struct{}
+	doneCh     chan struct{}
 }
 
 func NewMetricsPusher(collector *MetricsCollector, cfg *config.Config) (*MetricsPusher, error) {
@@ -36,39 +30,17 @@ func NewMetricsPusher(collector *MetricsCollector, cfg *config.Config) (*Metrics
 		return nil, fmt.Errorf("grafana cloud remote write URL is not configured")
 	}
 
-	var httpClient *http.Client
-	if cfg.GrafanaCloudUsername != "" && cfg.GrafanaCloudAPIKey != "" {
-		httpClient = &http.Client{
-			Timeout: 30 * time.Second,
-			Transport: &authRoundTripper{
-				username: cfg.GrafanaCloudUsername,
-				password: cfg.GrafanaCloudAPIKey,
-				rt:       http.DefaultTransport,
-			},
-		}
-	} else {
-		httpClient = &http.Client{
-			Timeout: 30 * time.Second,
-		}
-	}
-
-	clientCfg := promremote.NewConfig(
-		promremote.WriteURLOption(cfg.GrafanaCloudRemoteURL),
-		promremote.HTTPClientOption(httpClient),
-		promremote.UserAgent("zori-metrics-pusher/1.0"),
-	)
-
-	client, err := promremote.NewClient(clientCfg)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create remote write client: %w", err)
+	httpClient := &http.Client{
+		Timeout: 30 * time.Second,
 	}
 
 	return &MetricsPusher{
-		client:    client,
-		collector: collector,
-		config:    cfg,
-		stopCh:    make(chan struct{}),
-		doneCh:    make(chan struct{}),
+		httpClient: httpClient,
+		endpoint:   cfg.GrafanaCloudRemoteURL,
+		collector:  collector,
+		config:     cfg,
+		stopCh:     make(chan struct{}),
+		doneCh:     make(chan struct{}),
 	}, nil
 }
 
@@ -79,14 +51,14 @@ func (p *MetricsPusher) Start(ctx context.Context) {
 
 	log.Println("Starting metrics pusher to Grafana Cloud")
 
-	if err := p.pushMetrics(); err != nil {
+	if err := p.pushMetrics(ctx); err != nil {
 		log.Printf("Failed to push metrics: %v", err)
 	}
 
 	for {
 		select {
 		case <-ticker.C:
-			if err := p.pushMetrics(); err != nil {
+			if err := p.pushMetrics(ctx); err != nil {
 				log.Printf("Failed to push metrics: %v", err)
 			}
 		case <-p.stopCh:
@@ -104,7 +76,7 @@ func (p *MetricsPusher) Stop() {
 	<-p.doneCh
 }
 
-func (p *MetricsPusher) pushMetrics() error {
+func (p *MetricsPusher) pushMetrics(ctx context.Context) error {
 	metricFamilies, err := p.collector.Registry.Gather()
 	if err != nil {
 		return fmt.Errorf("failed to gather metrics: %w", err)
@@ -115,24 +87,55 @@ func (p *MetricsPusher) pushMetrics() error {
 		return nil
 	}
 
-	_, err = p.client.WriteTimeSeries(context.Background(), timeSeries, promremote.WriteOptions{})
+	writeRequest := &prompb.WriteRequest{
+		Timeseries: timeSeries,
+	}
+
+	data, err := proto.Marshal(writeRequest)
 	if err != nil {
-		return fmt.Errorf("failed to write time series: %w", err)
+		return fmt.Errorf("failed to marshal write request: %w", err)
+	}
+
+	compressed := snappy.Encode(nil, data)
+
+	req, err := http.NewRequestWithContext(ctx, "POST", p.endpoint, bytes.NewReader(compressed))
+	if err != nil {
+		return fmt.Errorf("failed to create request: %w", err)
+	}
+
+	req.Header.Set("Content-Encoding", "snappy")
+	req.Header.Set("Content-Type", "application/x-protobuf")
+	req.Header.Set("X-Prometheus-Remote-Write-Version", "0.1.0")
+	req.Header.Set("User-Agent", "zori-metrics-pusher/1.0")
+
+	if p.config.GrafanaCloudUsername != "" && p.config.GrafanaCloudAPIKey != "" {
+		req.SetBasicAuth(p.config.GrafanaCloudUsername, p.config.GrafanaCloudAPIKey)
+	}
+
+	resp, err := p.httpClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to send request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode/100 != 2 {
+		body, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("remote write failed with status %d: %s", resp.StatusCode, string(body))
 	}
 
 	return nil
 }
 
-func (p *MetricsPusher) convertToTimeSeries(metricFamilies []*dto.MetricFamily) []promremote.TimeSeries {
-	var timeSeries []promremote.TimeSeries
-	now := time.Now()
+func (p *MetricsPusher) convertToTimeSeries(metricFamilies []*dto.MetricFamily) []prompb.TimeSeries {
+	var timeSeries []prompb.TimeSeries
+	now := time.Now().UnixMilli()
 
 	for _, mf := range metricFamilies {
 		metricName := mf.GetName()
 		metricType := mf.GetType()
 
 		for _, m := range mf.GetMetric() {
-			labels := []promremote.Label{
+			labels := []prompb.Label{
 				{
 					Name:  "__name__",
 					Value: metricName,
@@ -140,7 +143,7 @@ func (p *MetricsPusher) convertToTimeSeries(metricFamilies []*dto.MetricFamily) 
 			}
 
 			for _, l := range m.GetLabel() {
-				labels = append(labels, promremote.Label{
+				labels = append(labels, prompb.Label{
 					Name:  l.GetName(),
 					Value: l.GetValue(),
 				})
@@ -167,38 +170,47 @@ func (p *MetricsPusher) convertToTimeSeries(metricFamilies []*dto.MetricFamily) 
 				}
 			case dto.MetricType_HISTOGRAM:
 				if m.Histogram != nil {
-					countLabels := append([]promremote.Label{}, labels...)
+					countLabels := make([]prompb.Label, len(labels))
+					copy(countLabels, labels)
 					countLabels[0].Value = metricName + "_count"
-					timeSeries = append(timeSeries, promremote.TimeSeries{
+					timeSeries = append(timeSeries, prompb.TimeSeries{
 						Labels: countLabels,
-						Datapoint: promremote.Datapoint{
-							Timestamp: now,
-							Value:     float64(m.Histogram.GetSampleCount()),
+						Samples: []prompb.Sample{
+							{
+								Timestamp: now,
+								Value:     float64(m.Histogram.GetSampleCount()),
+							},
 						},
 					})
 
-					sumLabels := append([]promremote.Label{}, labels...)
+					sumLabels := make([]prompb.Label, len(labels))
+					copy(sumLabels, labels)
 					sumLabels[0].Value = metricName + "_sum"
-					timeSeries = append(timeSeries, promremote.TimeSeries{
+					timeSeries = append(timeSeries, prompb.TimeSeries{
 						Labels: sumLabels,
-						Datapoint: promremote.Datapoint{
-							Timestamp: now,
-							Value:     m.Histogram.GetSampleSum(),
+						Samples: []prompb.Sample{
+							{
+								Timestamp: now,
+								Value:     m.Histogram.GetSampleSum(),
+							},
 						},
 					})
 
 					for _, bucket := range m.Histogram.GetBucket() {
-						bucketLabels := append([]promremote.Label{}, labels...)
+						bucketLabels := make([]prompb.Label, len(labels)+1)
+						copy(bucketLabels, labels)
 						bucketLabels[0].Value = metricName + "_bucket"
-						bucketLabels = append(bucketLabels, promremote.Label{
+						bucketLabels[len(bucketLabels)-1] = prompb.Label{
 							Name:  "le",
 							Value: fmt.Sprintf("%v", bucket.GetUpperBound()),
-						})
-						timeSeries = append(timeSeries, promremote.TimeSeries{
+						}
+						timeSeries = append(timeSeries, prompb.TimeSeries{
 							Labels: bucketLabels,
-							Datapoint: promremote.Datapoint{
-								Timestamp: now,
-								Value:     float64(bucket.GetCumulativeCount()),
+							Samples: []prompb.Sample{
+								{
+									Timestamp: now,
+									Value:     float64(bucket.GetCumulativeCount()),
+								},
 							},
 						})
 					}
@@ -206,37 +218,46 @@ func (p *MetricsPusher) convertToTimeSeries(metricFamilies []*dto.MetricFamily) 
 				continue
 			case dto.MetricType_SUMMARY:
 				if m.Summary != nil {
-					countLabels := append([]promremote.Label{}, labels...)
+					countLabels := make([]prompb.Label, len(labels))
+					copy(countLabels, labels)
 					countLabels[0].Value = metricName + "_count"
-					timeSeries = append(timeSeries, promremote.TimeSeries{
+					timeSeries = append(timeSeries, prompb.TimeSeries{
 						Labels: countLabels,
-						Datapoint: promremote.Datapoint{
-							Timestamp: now,
-							Value:     float64(m.Summary.GetSampleCount()),
+						Samples: []prompb.Sample{
+							{
+								Timestamp: now,
+								Value:     float64(m.Summary.GetSampleCount()),
+							},
 						},
 					})
 
-					sumLabels := append([]promremote.Label{}, labels...)
+					sumLabels := make([]prompb.Label, len(labels))
+					copy(sumLabels, labels)
 					sumLabels[0].Value = metricName + "_sum"
-					timeSeries = append(timeSeries, promremote.TimeSeries{
+					timeSeries = append(timeSeries, prompb.TimeSeries{
 						Labels: sumLabels,
-						Datapoint: promremote.Datapoint{
-							Timestamp: now,
-							Value:     m.Summary.GetSampleSum(),
+						Samples: []prompb.Sample{
+							{
+								Timestamp: now,
+								Value:     m.Summary.GetSampleSum(),
+							},
 						},
 					})
 
 					for _, quantile := range m.Summary.GetQuantile() {
-						quantileLabels := append([]promremote.Label{}, labels...)
-						quantileLabels = append(quantileLabels, promremote.Label{
+						quantileLabels := make([]prompb.Label, len(labels)+1)
+						copy(quantileLabels, labels)
+						quantileLabels[len(quantileLabels)-1] = prompb.Label{
 							Name:  "quantile",
 							Value: fmt.Sprintf("%v", quantile.GetQuantile()),
-						})
-						timeSeries = append(timeSeries, promremote.TimeSeries{
+						}
+						timeSeries = append(timeSeries, prompb.TimeSeries{
 							Labels: quantileLabels,
-							Datapoint: promremote.Datapoint{
-								Timestamp: now,
-								Value:     quantile.GetValue(),
+							Samples: []prompb.Sample{
+								{
+									Timestamp: now,
+									Value:     quantile.GetValue(),
+								},
 							},
 						})
 					}
@@ -245,11 +266,13 @@ func (p *MetricsPusher) convertToTimeSeries(metricFamilies []*dto.MetricFamily) 
 			}
 
 			if hasValue {
-				timeSeries = append(timeSeries, promremote.TimeSeries{
+				timeSeries = append(timeSeries, prompb.TimeSeries{
 					Labels: labels,
-					Datapoint: promremote.Datapoint{
-						Timestamp: now,
-						Value:     value,
+					Samples: []prompb.Sample{
+						{
+							Timestamp: now,
+							Value:     value,
+						},
 					},
 				})
 			}

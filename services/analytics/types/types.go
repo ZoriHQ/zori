@@ -231,30 +231,6 @@ type CohortData struct {
 	Month3Retention float64   `json:"month_3_retention,omitempty"`
 }
 
-type ActiveUsersResponse struct {
-	DAU uint64 `json:"dau"`
-	WAU uint64 `json:"wau"`
-	MAU uint64 `json:"mau"`
-}
-
-type DashboardMetricsResponse struct {
-	DAU uint64 `json:"dau"`
-	WAU uint64 `json:"wau"`
-	MAU uint64 `json:"mau"`
-
-	SessionsToday         uint64  `json:"sessions_today"`
-	TotalSessionsInPeriod uint64  `json:"total_sessions_in_period"`
-	AvgSessionDuration    float64 `json:"avg_session_duration_seconds"`
-	AvgPagesPerSession    float64 `json:"avg_pages_per_session"`
-
-	BounceRate float64 `json:"bounce_rate"`
-	ReturnRate float64 `json:"return_rate"`
-
-	TotalEvents    uint64 `json:"total_events"`
-	UniqueVisitors uint64 `json:"unique_visitors"`
-	UniqueSessions uint64 `json:"unique_sessions"`
-}
-
 type ManualIdentifyRequest struct {
 	ProjectID            string                 `json:"project_id" validate:"required"`
 	VisitorID            string                 `json:"visitor_id" validate:"required"`

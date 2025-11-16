@@ -8,27 +8,21 @@ import (
 	"zori/services/analytics/services"
 )
 
-const (
-	highFrequencyTTL   = 1 * time.Minute
-	mediumFrequencyTTL = 2 * time.Minute
-	lowFrequencyTTL    = 5 * time.Minute
-
-	cachePrefix = string(cache.AnalyticsCacheKey)
-)
+const cachePrefix = string(cache.AnalyticsCacheKey)
 
 var (
 	lowFreqTTLCache = middlewares.CacheConfig{
-		TTL:       lowFrequencyTTL,
+		TTL:       5 * time.Minute,
 		KeyPrefix: cachePrefix,
 	}
 
 	mediumFreqTTLCache = middlewares.CacheConfig{
-		TTL:       mediumFrequencyTTL,
+		TTL:       2 * time.Minute,
 		KeyPrefix: cachePrefix,
 	}
 
 	highFreqTTLCache = middlewares.CacheConfig{
-		TTL:       highFrequencyTTL,
+		TTL:       1 * time.Minute,
 		KeyPrefix: cachePrefix,
 	}
 )
@@ -36,6 +30,8 @@ var (
 func RegisterRoutes(
 	s *server.Server,
 	analyticsService *services.AnalyticsService,
+	tilesService *services.TilesService,
+	visitorsService *services.VisitorsService,
 	authMiddleware middlewares.AuthMiddleware,
 	cacheMiddleware *middlewares.CacheMiddleware,
 ) {
@@ -46,19 +42,32 @@ func RegisterRoutes(
 	hfMiddleware := cacheMiddleware.Middleware(highFreqTTLCache)
 	lfMiddleware := cacheMiddleware.Middleware(lowFreqTTLCache)
 
+	// TODO:: move to tiles service
 	server.GroupGetWithFilter(analyticsRouteGroup, "/visitors/device", analyticsService.GetVisitorsByDevice, mfMiddleware)
-	server.GroupGetWithFilter(analyticsRouteGroup, "/visitors/origin", analyticsService.GetUniqueVisitorsByOrigin, lfMiddleware)
-	server.GroupGetWithFilter(analyticsRouteGroup, "/visitors/country", analyticsService.GetUniqueVisitorsByCountry, lfMiddleware)
+
+	// TODO:: potential refactor
 	server.GroupGetWithFilter(analyticsRouteGroup, "/visitors/top", analyticsService.GetTopVisitors, mfMiddleware)
 
-	server.GroupGetWithFilter(analyticsRouteGroup, "/visitors/profile", analyticsService.GetVisitorProfile)
-	server.GroupPOST(analyticsRouteGroup, "/visitors/identify", analyticsService.IdentifyVisitor)
+	server.GroupGetWithFilter(analyticsRouteGroup, "/visitors/profile", visitorsService.GetVisitorProfile)
+	server.GroupPOST(analyticsRouteGroup, "/visitors/identify", visitorsService.IdentifyVisitor)
 
-	server.GroupGetWithFilter(analyticsRouteGroup, "/visitors/timeline", analyticsService.GetUniqueVisitorsTimeline, hfMiddleware)
+	// Tiles endpoints
+	server.GroupGetWithFilter(analyticsRouteGroup, "/timeline", tilesService.GetTimelineTile, hfMiddleware)
+	server.GroupGetWithFilter(analyticsRouteGroup, "/tiles/unique-visitors", tilesService.GetUniqueVisitorsTile, hfMiddleware)
+	server.GroupGetWithFilter(analyticsRouteGroup, "/tiles/unique-sessions", tilesService.GetUniqueSessionsTile, hfMiddleware)
+	server.GroupGetWithFilter(analyticsRouteGroup, "/tiles/bounce-rate", tilesService.GetBounceRateTile, hfMiddleware)
+	server.GroupGetWithFilter(analyticsRouteGroup, "/tiles/session-duration", tilesService.GetSessionDurationTile, hfMiddleware)
+	server.GroupGetWithFilter(analyticsRouteGroup, "/tiles/pages-per-session", tilesService.GetPagesPerSessionTile, hfMiddleware)
+	server.GroupGetWithFilter(analyticsRouteGroup, "/tiles/dau", tilesService.GetDAUTile, hfMiddleware)
+	server.GroupGetWithFilter(analyticsRouteGroup, "/tiles/wau", tilesService.GetWAUTile, hfMiddleware)
+	server.GroupGetWithFilter(analyticsRouteGroup, "/tiles/mau", tilesService.GetMAUTile, hfMiddleware)
+	server.GroupGetWithFilter(analyticsRouteGroup, "/tiles/return-rate", tilesService.GetReturnRateTile, hfMiddleware)
+	server.GroupGetWithFilter(analyticsRouteGroup, "/tiles/time-between-visits", tilesService.GetTimeBetweenVisitsTile, hfMiddleware)
+	server.GroupGetWithFilter(analyticsRouteGroup, "/tiles/traffic-by-country", tilesService.GetTrafficSourceCountriesTile, lfMiddleware)
+	server.GroupGetWithFilter(analyticsRouteGroup, "/tiles/traffic-by-referer", tilesService.GetTrafficSourceRefererTile, lfMiddleware)
+	server.GroupGetWithFilter(analyticsRouteGroup, "/tiles/traffic-by-utm", tilesService.GetTrafficSourceUTMTile, lfMiddleware)
 
 	// Events page endpoints
 	server.GroupGetWithFilter(analyticsRouteGroup, "/events/recent", analyticsService.GetRecentEvents)
 	server.GroupGetWithFilter(analyticsRouteGroup, "/events/filter-options", analyticsService.GetEventFilterOptions, mfMiddleware)
-
-	server.GroupGetWithFilter(analyticsRouteGroup, "/dashboard", analyticsService.GetDashboardMetrics, hfMiddleware)
 }
