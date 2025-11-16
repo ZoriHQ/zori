@@ -8,7 +8,7 @@ import (
 )
 
 type VisitorsByOSData struct {
-	BrowserName   string `json:"browser_name" ch:"browser_name"`
+	BrowserName   string `json:"os_name" ch:"os_name"`
 	Count         uint64 `json:"count" ch:"count"`
 	PreviousCount uint64 `json:"previous_count" ch:"previous_count"`
 }
