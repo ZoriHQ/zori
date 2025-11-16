@@ -1722,6 +1722,218 @@ paths:
         Get unique visitor count for current period compared to the previous
         period
       summary: Get unique visitors tile
+  /api/v1/analytics/tiles/visitors-by-browser:
+    get:
+      parameters:
+        - example: cus_xyz789
+          in: query
+          name: customer_id
+          schema:
+            type: string
+        - example: 50
+          in: query
+          name: limit
+          schema:
+            default: 50
+            maximum: 100
+            minimum: 1
+            type: integer
+        - example: 0
+          in: query
+          name: offset
+          schema:
+            default: 0
+            minimum: 0
+            type: integer
+        - example: proj_123
+          in: query
+          name: project_id
+          required: true
+          schema:
+            type: string
+        - example: 'https://google.com'
+          in: query
+          name: referrer
+          schema:
+            type: string
+        - example: last_7_days
+          in: query
+          name: time_range
+          required: true
+          schema:
+            default: last_7_days
+            enum:
+              - last_hour
+              - today
+              - yesterday
+              - last_7_days
+              - last_30_days
+              - last_90_days
+            type: string
+          x-enum-varnames:
+            - TimeBoundariesHour
+            - TimeBoundariesToday
+            - TimeBoundariesYesterday
+            - TimeBoundariesLastWeek
+            - TimeBoundariesLastMonth
+            - TimeBoundariesLast90Days
+        - example: utm_source
+          in: query
+          name: utmtag
+          schema:
+            type: string
+        - example: google
+          in: query
+          name: utmtagValue
+          schema:
+            type: string
+        - example: visitor_abc123
+          in: query
+          name: visitor_id
+          schema:
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/tiles.VisitorsByBrowserResponse'
+          description: Visitors by browser with period comparison
+        '400':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Invalid request parameters
+        '401':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Unauthorized - Invalid or missing JWT token
+        '500':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Internal server error
+      security:
+        - ApiKeyAuth: []
+      tags:
+        - Analytics
+      description: >-
+        Get number of visitors by browser for current period compared to the
+        previous period
+      summary: Get visitors by browser tile
+  /api/v1/analytics/tiles/visitors-by-os:
+    get:
+      parameters:
+        - example: cus_xyz789
+          in: query
+          name: customer_id
+          schema:
+            type: string
+        - example: 50
+          in: query
+          name: limit
+          schema:
+            default: 50
+            maximum: 100
+            minimum: 1
+            type: integer
+        - example: 0
+          in: query
+          name: offset
+          schema:
+            default: 0
+            minimum: 0
+            type: integer
+        - example: proj_123
+          in: query
+          name: project_id
+          required: true
+          schema:
+            type: string
+        - example: 'https://google.com'
+          in: query
+          name: referrer
+          schema:
+            type: string
+        - example: last_7_days
+          in: query
+          name: time_range
+          required: true
+          schema:
+            default: last_7_days
+            enum:
+              - last_hour
+              - today
+              - yesterday
+              - last_7_days
+              - last_30_days
+              - last_90_days
+            type: string
+          x-enum-varnames:
+            - TimeBoundariesHour
+            - TimeBoundariesToday
+            - TimeBoundariesYesterday
+            - TimeBoundariesLastWeek
+            - TimeBoundariesLastMonth
+            - TimeBoundariesLast90Days
+        - example: utm_source
+          in: query
+          name: utmtag
+          schema:
+            type: string
+        - example: google
+          in: query
+          name: utmtagValue
+          schema:
+            type: string
+        - example: visitor_abc123
+          in: query
+          name: visitor_id
+          schema:
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/tiles.VisitorsByOSResponse'
+          description: Visitors by OS with period comparison
+        '400':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Invalid request parameters
+        '401':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Unauthorized - Invalid or missing JWT token
+        '500':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Internal server error
+      security:
+        - ApiKeyAuth: []
+      tags:
+        - Analytics
+      description: >-
+        Get number of visitors by OS for current period compared to the previous
+        period
+      summary: Get visitors by OS tile
   /api/v1/analytics/tiles/wau:
     get:
       parameters:
@@ -3560,6 +3772,38 @@ components:
           type: integer
         previous_count:
           type: integer
+      type: object
+    tiles.VisitorsByBrowserData:
+      properties:
+        browser_name:
+          type: string
+        count:
+          type: integer
+        previous_count:
+          type: integer
+      type: object
+    tiles.VisitorsByBrowserResponse:
+      properties:
+        data:
+          items:
+            $ref: '#/components/schemas/tiles.VisitorsByBrowserData'
+          type: array
+      type: object
+    tiles.VisitorsByOSData:
+      properties:
+        browser_name:
+          type: string
+        count:
+          type: integer
+        previous_count:
+          type: integer
+      type: object
+    tiles.VisitorsByOSResponse:
+      properties:
+        data:
+          items:
+            $ref: '#/components/schemas/tiles.VisitorsByOSData'
+          type: array
       type: object
     tiles.WAUResponse:
       properties:
