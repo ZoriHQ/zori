@@ -24,135 +24,6 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/api/v1/analytics/dashboard": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "Get combined key metrics including sessions, active users, bounce rate, and retention for dashboard display",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Analytics"
-                ],
-                "summary": "Get dashboard metrics",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "example": "cus_xyz789",
-                        "name": "customer_id",
-                        "in": "query"
-                    },
-                    {
-                        "maximum": 100,
-                        "minimum": 1,
-                        "type": "integer",
-                        "default": 50,
-                        "example": 50,
-                        "name": "limit",
-                        "in": "query"
-                    },
-                    {
-                        "minimum": 0,
-                        "type": "integer",
-                        "default": 0,
-                        "example": 0,
-                        "name": "offset",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "example": "proj_123",
-                        "name": "project_id",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "example": "https://google.com",
-                        "name": "referrer",
-                        "in": "query"
-                    },
-                    {
-                        "enum": [
-                            "last_hour",
-                            "today",
-                            "yesterday",
-                            "last_7_days",
-                            "last_30_days",
-                            "last_90_days"
-                        ],
-                        "type": "string",
-                        "default": "last_7_days",
-                        "example": "last_7_days",
-                        "x-enum-varnames": [
-                            "TimeBoundariesHour",
-                            "TimeBoundariesToday",
-                            "TimeBoundariesYesterday",
-                            "TimeBoundariesLastWeek",
-                            "TimeBoundariesLastMonth",
-                            "TimeBoundariesLast90Days"
-                        ],
-                        "name": "time_range",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "example": "utm_source",
-                        "name": "utmtag",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "example": "google",
-                        "name": "utmtagValue",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "example": "visitor_abc123",
-                        "name": "visitor_id",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Dashboard metrics",
-                        "schema": {
-                            "$ref": "#/definitions/types.DashboardMetricsResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid request parameters",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized - Invalid or missing JWT token",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
         "/api/v1/analytics/events/filter-options": {
             "get": {
                 "security": [
@@ -699,14 +570,14 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/analytics/retention/return-rate": {
+        "/api/v1/analytics/tiles/bounce-rate": {
             "get": {
                 "security": [
                     {
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "Get metrics about user return rate and time between sessions",
+                "description": "Get bounce rate percentage for current period compared to the previous period",
                 "consumes": [
                     "application/json"
                 ],
@@ -716,7 +587,7 @@ const docTemplate = `{
                 "tags": [
                     "Analytics"
                 ],
-                "summary": "Get return rate",
+                "summary": "Get bounce rate tile",
                 "parameters": [
                     {
                         "type": "string",
@@ -799,9 +670,9 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "Return rate metrics",
+                        "description": "Bounce rate with period comparison",
                         "schema": {
-                            "$ref": "#/definitions/types.ReturnRateResponse"
+                            "$ref": "#/definitions/tiles.BounceRateResponse"
                         }
                     },
                     "400": {
@@ -828,14 +699,14 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/analytics/sessions/bounce-rate": {
+        "/api/v1/analytics/tiles/dau": {
             "get": {
                 "security": [
                     {
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "Get bounce rate metrics including overall bounce rate and per-page breakdown",
+                "description": "Get daily active user count (last 24h) compared to the previous day",
                 "consumes": [
                     "application/json"
                 ],
@@ -845,7 +716,7 @@ const docTemplate = `{
                 "tags": [
                     "Analytics"
                 ],
-                "summary": "Get bounce rate",
+                "summary": "Get daily active users tile",
                 "parameters": [
                     {
                         "type": "string",
@@ -928,9 +799,9 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "Bounce rate metrics",
+                        "description": "Daily active users with period comparison",
                         "schema": {
-                            "$ref": "#/definitions/types.BounceRateResponse"
+                            "$ref": "#/definitions/tiles.DAUResponse"
                         }
                     },
                     "400": {
@@ -957,14 +828,14 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/analytics/sessions/metrics": {
+        "/api/v1/analytics/tiles/mau": {
             "get": {
                 "security": [
                     {
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "Get session metrics including average duration and pages per session",
+                "description": "Get monthly active user count (last 30 days) compared to the previous month",
                 "consumes": [
                     "application/json"
                 ],
@@ -974,7 +845,7 @@ const docTemplate = `{
                 "tags": [
                     "Analytics"
                 ],
-                "summary": "Get session metrics",
+                "summary": "Get monthly active users tile",
                 "parameters": [
                     {
                         "type": "string",
@@ -1057,9 +928,9 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "Session metrics",
+                        "description": "Monthly active users with period comparison",
                         "schema": {
-                            "$ref": "#/definitions/types.SessionMetricsResponse"
+                            "$ref": "#/definitions/tiles.MAUResponse"
                         }
                     },
                     "400": {
@@ -1086,14 +957,14 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/analytics/users/active": {
+        "/api/v1/analytics/tiles/pages-per-session": {
             "get": {
                 "security": [
                     {
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "Get daily, weekly, and monthly active user counts",
+                "description": "Get average number of pages viewed per session for current period compared to the previous period",
                 "consumes": [
                     "application/json"
                 ],
@@ -1103,7 +974,7 @@ const docTemplate = `{
                 "tags": [
                     "Analytics"
                 ],
-                "summary": "Get active users",
+                "summary": "Get pages per session tile",
                 "parameters": [
                     {
                         "type": "string",
@@ -1186,9 +1057,9 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "Active user metrics",
+                        "description": "Pages per session with period comparison",
                         "schema": {
-                            "$ref": "#/definitions/types.ActiveUsersResponse"
+                            "$ref": "#/definitions/tiles.PagesPerSessionResponse"
                         }
                     },
                     "400": {
@@ -1215,7 +1086,394 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/analytics/visitors/country": {
+        "/api/v1/analytics/tiles/return-rate": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Get percentage of visitors with more than one session for current period compared to the previous period",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Analytics"
+                ],
+                "summary": "Get return rate tile",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "cus_xyz789",
+                        "name": "customer_id",
+                        "in": "query"
+                    },
+                    {
+                        "maximum": 100,
+                        "minimum": 1,
+                        "type": "integer",
+                        "default": 50,
+                        "example": 50,
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "minimum": 0,
+                        "type": "integer",
+                        "default": 0,
+                        "example": 0,
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "proj_123",
+                        "name": "project_id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "https://google.com",
+                        "name": "referrer",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "last_hour",
+                            "today",
+                            "yesterday",
+                            "last_7_days",
+                            "last_30_days",
+                            "last_90_days"
+                        ],
+                        "type": "string",
+                        "default": "last_7_days",
+                        "example": "last_7_days",
+                        "x-enum-varnames": [
+                            "TimeBoundariesHour",
+                            "TimeBoundariesToday",
+                            "TimeBoundariesYesterday",
+                            "TimeBoundariesLastWeek",
+                            "TimeBoundariesLastMonth",
+                            "TimeBoundariesLast90Days"
+                        ],
+                        "name": "time_range",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "utm_source",
+                        "name": "utmtag",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "google",
+                        "name": "utmtagValue",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "visitor_abc123",
+                        "name": "visitor_id",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Return rate with period comparison",
+                        "schema": {
+                            "$ref": "#/definitions/tiles.ReturnRateResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request parameters",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - Invalid or missing JWT token",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/analytics/tiles/session-duration": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Get average session duration in seconds for current period compared to the previous period",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Analytics"
+                ],
+                "summary": "Get session duration tile",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "cus_xyz789",
+                        "name": "customer_id",
+                        "in": "query"
+                    },
+                    {
+                        "maximum": 100,
+                        "minimum": 1,
+                        "type": "integer",
+                        "default": 50,
+                        "example": 50,
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "minimum": 0,
+                        "type": "integer",
+                        "default": 0,
+                        "example": 0,
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "proj_123",
+                        "name": "project_id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "https://google.com",
+                        "name": "referrer",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "last_hour",
+                            "today",
+                            "yesterday",
+                            "last_7_days",
+                            "last_30_days",
+                            "last_90_days"
+                        ],
+                        "type": "string",
+                        "default": "last_7_days",
+                        "example": "last_7_days",
+                        "x-enum-varnames": [
+                            "TimeBoundariesHour",
+                            "TimeBoundariesToday",
+                            "TimeBoundariesYesterday",
+                            "TimeBoundariesLastWeek",
+                            "TimeBoundariesLastMonth",
+                            "TimeBoundariesLast90Days"
+                        ],
+                        "name": "time_range",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "utm_source",
+                        "name": "utmtag",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "google",
+                        "name": "utmtagValue",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "visitor_abc123",
+                        "name": "visitor_id",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Session duration with period comparison",
+                        "schema": {
+                            "$ref": "#/definitions/tiles.SessionDurationResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request parameters",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - Invalid or missing JWT token",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/analytics/tiles/time-between-visits": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Get average hours between consecutive visits per visitor for current period compared to the previous period",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Analytics"
+                ],
+                "summary": "Get time between visits tile",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "cus_xyz789",
+                        "name": "customer_id",
+                        "in": "query"
+                    },
+                    {
+                        "maximum": 100,
+                        "minimum": 1,
+                        "type": "integer",
+                        "default": 50,
+                        "example": 50,
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "minimum": 0,
+                        "type": "integer",
+                        "default": 0,
+                        "example": 0,
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "proj_123",
+                        "name": "project_id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "https://google.com",
+                        "name": "referrer",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "last_hour",
+                            "today",
+                            "yesterday",
+                            "last_7_days",
+                            "last_30_days",
+                            "last_90_days"
+                        ],
+                        "type": "string",
+                        "default": "last_7_days",
+                        "example": "last_7_days",
+                        "x-enum-varnames": [
+                            "TimeBoundariesHour",
+                            "TimeBoundariesToday",
+                            "TimeBoundariesYesterday",
+                            "TimeBoundariesLastWeek",
+                            "TimeBoundariesLastMonth",
+                            "TimeBoundariesLast90Days"
+                        ],
+                        "name": "time_range",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "utm_source",
+                        "name": "utmtag",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "google",
+                        "name": "utmtagValue",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "visitor_abc123",
+                        "name": "visitor_id",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Time between visits with period comparison",
+                        "schema": {
+                            "$ref": "#/definitions/tiles.TimeBetweenVisitsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request parameters",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - Invalid or missing JWT token",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/analytics/tiles/traffic-by-country": {
             "get": {
                 "security": [
                     {
@@ -1232,7 +1490,7 @@ const docTemplate = `{
                 "tags": [
                     "Analytics"
                 ],
-                "summary": "Get unique visitors by country",
+                "summary": "Get traffic by country",
                 "parameters": [
                     {
                         "type": "string",
@@ -1317,7 +1575,781 @@ const docTemplate = `{
                     "200": {
                         "description": "Unique visitors grouped by country",
                         "schema": {
-                            "$ref": "#/definitions/types.VisitorsByCountryResponse"
+                            "$ref": "#/definitions/tiles.CountryTrafficSourceResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request parameters",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - Invalid or missing JWT token",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/analytics/tiles/traffic-by-referer": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Get unique visitor counts grouped by referrer domain (traffic source)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Analytics"
+                ],
+                "summary": "Get traffic by referer",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "cus_xyz789",
+                        "name": "customer_id",
+                        "in": "query"
+                    },
+                    {
+                        "maximum": 100,
+                        "minimum": 1,
+                        "type": "integer",
+                        "default": 50,
+                        "example": 50,
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "minimum": 0,
+                        "type": "integer",
+                        "default": 0,
+                        "example": 0,
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "proj_123",
+                        "name": "project_id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "https://google.com",
+                        "name": "referrer",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "last_hour",
+                            "today",
+                            "yesterday",
+                            "last_7_days",
+                            "last_30_days",
+                            "last_90_days"
+                        ],
+                        "type": "string",
+                        "default": "last_7_days",
+                        "example": "last_7_days",
+                        "x-enum-varnames": [
+                            "TimeBoundariesHour",
+                            "TimeBoundariesToday",
+                            "TimeBoundariesYesterday",
+                            "TimeBoundariesLastWeek",
+                            "TimeBoundariesLastMonth",
+                            "TimeBoundariesLast90Days"
+                        ],
+                        "name": "time_range",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "utm_source",
+                        "name": "utmtag",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "google",
+                        "name": "utmtagValue",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "visitor_abc123",
+                        "name": "visitor_id",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Unique visitors grouped by referer",
+                        "schema": {
+                            "$ref": "#/definitions/tiles.RefererTrafficSourceResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request parameters",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - Invalid or missing JWT token",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/analytics/tiles/traffic-by-utm": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Get unique visitor counts grouped by UTM source, medium, and campaign",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Analytics"
+                ],
+                "summary": "Get traffic by UTM parameters",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "cus_xyz789",
+                        "name": "customer_id",
+                        "in": "query"
+                    },
+                    {
+                        "maximum": 100,
+                        "minimum": 1,
+                        "type": "integer",
+                        "default": 50,
+                        "example": 50,
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "minimum": 0,
+                        "type": "integer",
+                        "default": 0,
+                        "example": 0,
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "proj_123",
+                        "name": "project_id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "https://google.com",
+                        "name": "referrer",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "last_hour",
+                            "today",
+                            "yesterday",
+                            "last_7_days",
+                            "last_30_days",
+                            "last_90_days"
+                        ],
+                        "type": "string",
+                        "default": "last_7_days",
+                        "example": "last_7_days",
+                        "x-enum-varnames": [
+                            "TimeBoundariesHour",
+                            "TimeBoundariesToday",
+                            "TimeBoundariesYesterday",
+                            "TimeBoundariesLastWeek",
+                            "TimeBoundariesLastMonth",
+                            "TimeBoundariesLast90Days"
+                        ],
+                        "name": "time_range",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "utm_source",
+                        "name": "utmtag",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "google",
+                        "name": "utmtagValue",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "visitor_abc123",
+                        "name": "visitor_id",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Unique visitors grouped by UTM parameters",
+                        "schema": {
+                            "$ref": "#/definitions/tiles.UTMTrafficSourceResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request parameters",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - Invalid or missing JWT token",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/analytics/tiles/unique-sessions": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Get unique session count for current period compared to the previous period",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Analytics"
+                ],
+                "summary": "Get unique sessions tile",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "cus_xyz789",
+                        "name": "customer_id",
+                        "in": "query"
+                    },
+                    {
+                        "maximum": 100,
+                        "minimum": 1,
+                        "type": "integer",
+                        "default": 50,
+                        "example": 50,
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "minimum": 0,
+                        "type": "integer",
+                        "default": 0,
+                        "example": 0,
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "proj_123",
+                        "name": "project_id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "https://google.com",
+                        "name": "referrer",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "last_hour",
+                            "today",
+                            "yesterday",
+                            "last_7_days",
+                            "last_30_days",
+                            "last_90_days"
+                        ],
+                        "type": "string",
+                        "default": "last_7_days",
+                        "example": "last_7_days",
+                        "x-enum-varnames": [
+                            "TimeBoundariesHour",
+                            "TimeBoundariesToday",
+                            "TimeBoundariesYesterday",
+                            "TimeBoundariesLastWeek",
+                            "TimeBoundariesLastMonth",
+                            "TimeBoundariesLast90Days"
+                        ],
+                        "name": "time_range",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "utm_source",
+                        "name": "utmtag",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "google",
+                        "name": "utmtagValue",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "visitor_abc123",
+                        "name": "visitor_id",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Unique sessions count with period comparison",
+                        "schema": {
+                            "$ref": "#/definitions/tiles.UniqueSessionsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request parameters",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - Invalid or missing JWT token",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/analytics/tiles/unique-visitors": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Get unique visitor count for current period compared to the previous period",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Analytics"
+                ],
+                "summary": "Get unique visitors tile",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "cus_xyz789",
+                        "name": "customer_id",
+                        "in": "query"
+                    },
+                    {
+                        "maximum": 100,
+                        "minimum": 1,
+                        "type": "integer",
+                        "default": 50,
+                        "example": 50,
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "minimum": 0,
+                        "type": "integer",
+                        "default": 0,
+                        "example": 0,
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "proj_123",
+                        "name": "project_id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "https://google.com",
+                        "name": "referrer",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "last_hour",
+                            "today",
+                            "yesterday",
+                            "last_7_days",
+                            "last_30_days",
+                            "last_90_days"
+                        ],
+                        "type": "string",
+                        "default": "last_7_days",
+                        "example": "last_7_days",
+                        "x-enum-varnames": [
+                            "TimeBoundariesHour",
+                            "TimeBoundariesToday",
+                            "TimeBoundariesYesterday",
+                            "TimeBoundariesLastWeek",
+                            "TimeBoundariesLastMonth",
+                            "TimeBoundariesLast90Days"
+                        ],
+                        "name": "time_range",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "utm_source",
+                        "name": "utmtag",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "google",
+                        "name": "utmtagValue",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "visitor_abc123",
+                        "name": "visitor_id",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Unique visitors count with period comparison",
+                        "schema": {
+                            "$ref": "#/definitions/tiles.UniqueVisitorsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request parameters",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - Invalid or missing JWT token",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/analytics/tiles/wau": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Get weekly active user count (last 7 days) compared to the previous week",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Analytics"
+                ],
+                "summary": "Get weekly active users tile",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "cus_xyz789",
+                        "name": "customer_id",
+                        "in": "query"
+                    },
+                    {
+                        "maximum": 100,
+                        "minimum": 1,
+                        "type": "integer",
+                        "default": 50,
+                        "example": 50,
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "minimum": 0,
+                        "type": "integer",
+                        "default": 0,
+                        "example": 0,
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "proj_123",
+                        "name": "project_id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "https://google.com",
+                        "name": "referrer",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "last_hour",
+                            "today",
+                            "yesterday",
+                            "last_7_days",
+                            "last_30_days",
+                            "last_90_days"
+                        ],
+                        "type": "string",
+                        "default": "last_7_days",
+                        "example": "last_7_days",
+                        "x-enum-varnames": [
+                            "TimeBoundariesHour",
+                            "TimeBoundariesToday",
+                            "TimeBoundariesYesterday",
+                            "TimeBoundariesLastWeek",
+                            "TimeBoundariesLastMonth",
+                            "TimeBoundariesLast90Days"
+                        ],
+                        "name": "time_range",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "utm_source",
+                        "name": "utmtag",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "google",
+                        "name": "utmtagValue",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "visitor_abc123",
+                        "name": "visitor_id",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Weekly active users with period comparison",
+                        "schema": {
+                            "$ref": "#/definitions/tiles.WAUResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request parameters",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - Invalid or missing JWT token",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/analytics/timeline": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Get unique visitor counts over time, split by mobile and desktop devices for chart visualization",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Analytics"
+                ],
+                "summary": "Get unique visitors timeline",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "cus_xyz789",
+                        "name": "customer_id",
+                        "in": "query"
+                    },
+                    {
+                        "maximum": 100,
+                        "minimum": 1,
+                        "type": "integer",
+                        "default": 50,
+                        "example": 50,
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "minimum": 0,
+                        "type": "integer",
+                        "default": 0,
+                        "example": 0,
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "proj_123",
+                        "name": "project_id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "https://google.com",
+                        "name": "referrer",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "last_hour",
+                            "today",
+                            "yesterday",
+                            "last_7_days",
+                            "last_30_days",
+                            "last_90_days"
+                        ],
+                        "type": "string",
+                        "default": "last_7_days",
+                        "example": "last_7_days",
+                        "x-enum-varnames": [
+                            "TimeBoundariesHour",
+                            "TimeBoundariesToday",
+                            "TimeBoundariesYesterday",
+                            "TimeBoundariesLastWeek",
+                            "TimeBoundariesLastMonth",
+                            "TimeBoundariesLast90Days"
+                        ],
+                        "name": "time_range",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "utm_source",
+                        "name": "utmtag",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "google",
+                        "name": "utmtagValue",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "visitor_abc123",
+                        "name": "visitor_id",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Unique visitors timeline data",
+                        "schema": {
+                            "$ref": "#/definitions/tiles.TimelineTileResponse"
                         }
                     },
                     "400": {
@@ -1533,135 +2565,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/analytics/visitors/origin": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "Get unique visitor counts grouped by referrer domain (traffic source)",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Analytics"
-                ],
-                "summary": "Get unique visitors by traffic origin",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "example": "cus_xyz789",
-                        "name": "customer_id",
-                        "in": "query"
-                    },
-                    {
-                        "maximum": 100,
-                        "minimum": 1,
-                        "type": "integer",
-                        "default": 50,
-                        "example": 50,
-                        "name": "limit",
-                        "in": "query"
-                    },
-                    {
-                        "minimum": 0,
-                        "type": "integer",
-                        "default": 0,
-                        "example": 0,
-                        "name": "offset",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "example": "proj_123",
-                        "name": "project_id",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "example": "https://google.com",
-                        "name": "referrer",
-                        "in": "query"
-                    },
-                    {
-                        "enum": [
-                            "last_hour",
-                            "today",
-                            "yesterday",
-                            "last_7_days",
-                            "last_30_days",
-                            "last_90_days"
-                        ],
-                        "type": "string",
-                        "default": "last_7_days",
-                        "example": "last_7_days",
-                        "x-enum-varnames": [
-                            "TimeBoundariesHour",
-                            "TimeBoundariesToday",
-                            "TimeBoundariesYesterday",
-                            "TimeBoundariesLastWeek",
-                            "TimeBoundariesLastMonth",
-                            "TimeBoundariesLast90Days"
-                        ],
-                        "name": "time_range",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "example": "utm_source",
-                        "name": "utmtag",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "example": "google",
-                        "name": "utmtagValue",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "example": "visitor_abc123",
-                        "name": "visitor_id",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Unique visitors grouped by origin",
-                        "schema": {
-                            "$ref": "#/definitions/types.VisitorsByOriginResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid request parameters",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized - Invalid or missing JWT token",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
         "/api/v1/analytics/visitors/profile": {
             "get": {
                 "security": [
@@ -1724,135 +2627,6 @@ const docTemplate = `{
                     },
                     "404": {
                         "description": "Visitor not found",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/analytics/visitors/timeline": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "Get unique visitor counts over time, split by mobile and desktop devices for chart visualization",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Analytics"
-                ],
-                "summary": "Get unique visitors timeline",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "example": "cus_xyz789",
-                        "name": "customer_id",
-                        "in": "query"
-                    },
-                    {
-                        "maximum": 100,
-                        "minimum": 1,
-                        "type": "integer",
-                        "default": 50,
-                        "example": 50,
-                        "name": "limit",
-                        "in": "query"
-                    },
-                    {
-                        "minimum": 0,
-                        "type": "integer",
-                        "default": 0,
-                        "example": 0,
-                        "name": "offset",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "example": "proj_123",
-                        "name": "project_id",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "example": "https://google.com",
-                        "name": "referrer",
-                        "in": "query"
-                    },
-                    {
-                        "enum": [
-                            "last_hour",
-                            "today",
-                            "yesterday",
-                            "last_7_days",
-                            "last_30_days",
-                            "last_90_days"
-                        ],
-                        "type": "string",
-                        "default": "last_7_days",
-                        "example": "last_7_days",
-                        "x-enum-varnames": [
-                            "TimeBoundariesHour",
-                            "TimeBoundariesToday",
-                            "TimeBoundariesYesterday",
-                            "TimeBoundariesLastWeek",
-                            "TimeBoundariesLastMonth",
-                            "TimeBoundariesLast90Days"
-                        ],
-                        "name": "time_range",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "example": "utm_source",
-                        "name": "utmtag",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "example": "google",
-                        "name": "utmtagValue",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "example": "visitor_abc123",
-                        "name": "visitor_id",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Unique visitors timeline data",
-                        "schema": {
-                            "$ref": "#/definitions/types.UniqueVisitorsTimelineResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid request parameters",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized - Invalid or missing JWT token",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -3495,16 +4269,259 @@ const docTemplate = `{
                 }
             }
         },
-        "types.ActiveUsersResponse": {
+        "tiles.BounceRateResponse": {
             "type": "object",
             "properties": {
-                "dau": {
+                "previous_rate": {
+                    "type": "number"
+                },
+                "rate": {
+                    "type": "number"
+                }
+            }
+        },
+        "tiles.CardPrecision": {
+            "type": "string",
+            "enum": [
+                "minutes",
+                "hourly",
+                "daily",
+                "weekly",
+                "monthly"
+            ],
+            "x-enum-varnames": [
+                "CardPrecisionMinutes",
+                "CardPrecisionHourly",
+                "CardPrecisionDaily",
+                "CardPrecisionWeekly",
+                "CardPrecisionMonthly"
+            ]
+        },
+        "tiles.CountryTrafficSourceData": {
+            "type": "object",
+            "properties": {
+                "count": {
                     "type": "integer"
                 },
-                "mau": {
+                "country": {
+                    "type": "string"
+                },
+                "previous_count": {
+                    "type": "integer"
+                }
+            }
+        },
+        "tiles.CountryTrafficSourceResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/tiles.CountryTrafficSourceData"
+                    }
+                }
+            }
+        },
+        "tiles.DAUResponse": {
+            "type": "object",
+            "properties": {
+                "count": {
                     "type": "integer"
                 },
-                "wau": {
+                "previous_count": {
+                    "type": "integer"
+                }
+            }
+        },
+        "tiles.MAUResponse": {
+            "type": "object",
+            "properties": {
+                "count": {
+                    "type": "integer"
+                },
+                "previous_count": {
+                    "type": "integer"
+                }
+            }
+        },
+        "tiles.PagesPerSessionResponse": {
+            "type": "object",
+            "properties": {
+                "avg_pages": {
+                    "type": "number"
+                },
+                "previous_avg_pages": {
+                    "type": "number"
+                }
+            }
+        },
+        "tiles.RefererTrafficSourceData": {
+            "type": "object",
+            "properties": {
+                "count": {
+                    "type": "integer"
+                },
+                "previous_count": {
+                    "type": "integer"
+                },
+                "previous_revenue": {
+                    "type": "integer"
+                },
+                "referer_url": {
+                    "type": "string"
+                },
+                "revenue": {
+                    "type": "integer"
+                }
+            }
+        },
+        "tiles.RefererTrafficSourceResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/tiles.RefererTrafficSourceData"
+                    }
+                }
+            }
+        },
+        "tiles.ReturnRateResponse": {
+            "type": "object",
+            "properties": {
+                "previous_rate": {
+                    "type": "number"
+                },
+                "rate": {
+                    "type": "number"
+                }
+            }
+        },
+        "tiles.SessionDurationResponse": {
+            "type": "object",
+            "properties": {
+                "avg_duration": {
+                    "type": "number"
+                },
+                "previous_avg_duration": {
+                    "type": "number"
+                }
+            }
+        },
+        "tiles.TimeBetweenVisitsResponse": {
+            "type": "object",
+            "properties": {
+                "avg_hours": {
+                    "type": "number"
+                },
+                "previous_avg_hours": {
+                    "type": "number"
+                }
+            }
+        },
+        "tiles.TimelineTileData": {
+            "type": "object",
+            "properties": {
+                "num_desktop_visits": {
+                    "type": "integer"
+                },
+                "num_mobile_visits": {
+                    "type": "integer"
+                },
+                "num_revenue": {
+                    "type": "integer"
+                },
+                "num_unknown_visits": {
+                    "type": "integer"
+                },
+                "time_bucket": {
+                    "type": "string"
+                }
+            }
+        },
+        "tiles.TimelineTileResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/tiles.TimelineTileData"
+                    }
+                },
+                "precision": {
+                    "$ref": "#/definitions/tiles.CardPrecision"
+                },
+                "total_visits": {
+                    "type": "integer"
+                }
+            }
+        },
+        "tiles.UTMTrafficSourceData": {
+            "type": "object",
+            "properties": {
+                "count": {
+                    "type": "integer"
+                },
+                "previous_count": {
+                    "type": "integer"
+                },
+                "previous_revenue": {
+                    "type": "integer"
+                },
+                "revenue": {
+                    "type": "integer"
+                },
+                "utm_campaign": {
+                    "type": "string"
+                },
+                "utm_medium": {
+                    "type": "string"
+                },
+                "utm_source": {
+                    "type": "string"
+                }
+            }
+        },
+        "tiles.UTMTrafficSourceResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/tiles.UTMTrafficSourceData"
+                    }
+                }
+            }
+        },
+        "tiles.UniqueSessionsResponse": {
+            "type": "object",
+            "properties": {
+                "count": {
+                    "type": "integer"
+                },
+                "previous_count": {
+                    "type": "integer"
+                }
+            }
+        },
+        "tiles.UniqueVisitorsResponse": {
+            "type": "object",
+            "properties": {
+                "count": {
+                    "type": "integer"
+                },
+                "previous_count": {
+                    "type": "integer"
+                }
+            }
+        },
+        "tiles.WAUResponse": {
+            "type": "object",
+            "properties": {
+                "count": {
+                    "type": "integer"
+                },
+                "previous_count": {
                     "type": "integer"
                 }
             }
@@ -3528,34 +4545,6 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/types.UTMAttributionDataPoint"
                     }
-                }
-            }
-        },
-        "types.BounceRateByPageMetric": {
-            "type": "object",
-            "properties": {
-                "bounce_rate": {
-                    "type": "number"
-                },
-                "page": {
-                    "type": "string"
-                },
-                "sessions": {
-                    "type": "integer"
-                }
-            }
-        },
-        "types.BounceRateResponse": {
-            "type": "object",
-            "properties": {
-                "by_page": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/types.BounceRateByPageMetric"
-                    }
-                },
-                "overall_bounce_rate": {
-                    "type": "number"
                 }
             }
         },
@@ -3720,20 +4709,6 @@ const docTemplate = `{
                 }
             }
         },
-        "types.CountryDataPoint": {
-            "type": "object",
-            "properties": {
-                "country_code": {
-                    "type": "string"
-                },
-                "percentage": {
-                    "type": "number"
-                },
-                "unique_visitors": {
-                    "type": "integer"
-                }
-            }
-        },
         "types.CreatePaymentProviderRequest": {
             "type": "object",
             "required": [
@@ -3854,47 +4829,6 @@ const docTemplate = `{
                 },
                 "visitor_id": {
                     "type": "string"
-                }
-            }
-        },
-        "types.DashboardMetricsResponse": {
-            "type": "object",
-            "properties": {
-                "avg_pages_per_session": {
-                    "type": "number"
-                },
-                "avg_session_duration_seconds": {
-                    "type": "number"
-                },
-                "bounce_rate": {
-                    "type": "number"
-                },
-                "dau": {
-                    "type": "integer"
-                },
-                "mau": {
-                    "type": "integer"
-                },
-                "return_rate": {
-                    "type": "number"
-                },
-                "sessions_today": {
-                    "type": "integer"
-                },
-                "total_events": {
-                    "type": "integer"
-                },
-                "total_sessions_in_period": {
-                    "type": "integer"
-                },
-                "unique_sessions": {
-                    "type": "integer"
-                },
-                "unique_visitors": {
-                    "type": "integer"
-                },
-                "wau": {
-                    "type": "integer"
                 }
             }
         },
@@ -4085,20 +5019,6 @@ const docTemplate = `{
                 },
                 "total_revenue": {
                     "type": "integer"
-                },
-                "unique_visitors": {
-                    "type": "integer"
-                }
-            }
-        },
-        "types.OriginDataPoint": {
-            "type": "object",
-            "properties": {
-                "origin": {
-                    "type": "string"
-                },
-                "percentage": {
-                    "type": "number"
                 },
                 "unique_visitors": {
                     "type": "integer"
@@ -4341,23 +5261,6 @@ const docTemplate = `{
                 }
             }
         },
-        "types.ReturnRateResponse": {
-            "type": "object",
-            "properties": {
-                "avg_time_between_sessions_hours": {
-                    "type": "number"
-                },
-                "return_rate_percent": {
-                    "type": "number"
-                },
-                "returning_users": {
-                    "type": "integer"
-                },
-                "total_users": {
-                    "type": "integer"
-                }
-            }
-        },
         "types.RevenueOverTimeDataPoint": {
             "type": "object",
             "properties": {
@@ -4368,20 +5271,6 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "total_revenue": {
-                    "type": "integer"
-                }
-            }
-        },
-        "types.SessionMetricsResponse": {
-            "type": "object",
-            "properties": {
-                "average_pages_per_session": {
-                    "type": "number"
-                },
-                "average_session_duration_seconds": {
-                    "type": "number"
-                },
-                "total_sessions": {
                     "type": "integer"
                 }
             }
@@ -4626,31 +5515,6 @@ const docTemplate = `{
                 }
             }
         },
-        "types.UniqueVisitorsDataPoint": {
-            "type": "object",
-            "properties": {
-                "desktop": {
-                    "type": "integer"
-                },
-                "mobile": {
-                    "type": "integer"
-                },
-                "timestamp": {
-                    "type": "string"
-                }
-            }
-        },
-        "types.UniqueVisitorsTimelineResponse": {
-            "type": "object",
-            "properties": {
-                "data": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/types.UniqueVisitorsDataPoint"
-                    }
-                }
-            }
-        },
         "types.UpdatePaymentProviderRequest": {
             "type": "object",
             "properties": {
@@ -4838,17 +5702,6 @@ const docTemplate = `{
                 }
             }
         },
-        "types.VisitorsByCountryResponse": {
-            "type": "object",
-            "properties": {
-                "data": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/types.CountryDataPoint"
-                    }
-                }
-            }
-        },
         "types.VisitorsByDeviceResponse": {
             "type": "object",
             "properties": {
@@ -4856,17 +5709,6 @@ const docTemplate = `{
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/types.VisitorDataPoint"
-                    }
-                }
-            }
-        },
-        "types.VisitorsByOriginResponse": {
-            "type": "object",
-            "properties": {
-                "data": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/types.OriginDataPoint"
                     }
                 }
             }

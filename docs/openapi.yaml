@@ -13,112 +13,6 @@ info:
 servers:
   - url: /api/v1
 paths:
-  /api/v1/analytics/dashboard:
-    get:
-      parameters:
-        - example: cus_xyz789
-          in: query
-          name: customer_id
-          schema:
-            type: string
-        - example: 50
-          in: query
-          name: limit
-          schema:
-            default: 50
-            maximum: 100
-            minimum: 1
-            type: integer
-        - example: 0
-          in: query
-          name: offset
-          schema:
-            default: 0
-            minimum: 0
-            type: integer
-        - example: proj_123
-          in: query
-          name: project_id
-          required: true
-          schema:
-            type: string
-        - example: 'https://google.com'
-          in: query
-          name: referrer
-          schema:
-            type: string
-        - example: last_7_days
-          in: query
-          name: time_range
-          required: true
-          schema:
-            default: last_7_days
-            enum:
-              - last_hour
-              - today
-              - yesterday
-              - last_7_days
-              - last_30_days
-              - last_90_days
-            type: string
-          x-enum-varnames:
-            - TimeBoundariesHour
-            - TimeBoundariesToday
-            - TimeBoundariesYesterday
-            - TimeBoundariesLastWeek
-            - TimeBoundariesLastMonth
-            - TimeBoundariesLast90Days
-        - example: utm_source
-          in: query
-          name: utmtag
-          schema:
-            type: string
-        - example: google
-          in: query
-          name: utmtagValue
-          schema:
-            type: string
-        - example: visitor_abc123
-          in: query
-          name: visitor_id
-          schema:
-            type: string
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/types.DashboardMetricsResponse'
-          description: Dashboard metrics
-        '400':
-          content:
-            application/json:
-              schema:
-                additionalProperties: true
-                type: object
-          description: Invalid request parameters
-        '401':
-          content:
-            application/json:
-              schema:
-                additionalProperties: true
-                type: object
-          description: Unauthorized - Invalid or missing JWT token
-        '500':
-          content:
-            application/json:
-              schema:
-                additionalProperties: true
-                type: object
-          description: Internal server error
-      security:
-        - ApiKeyAuth: []
-      tags:
-        - Analytics
-      description: >-
-        Get combined key metrics including sessions, active users, bounce rate,
-        and retention for dashboard display
-      summary: Get dashboard metrics
   /api/v1/analytics/events/filter-options:
     get:
       parameters:
@@ -564,7 +458,7 @@ paths:
         - Analytics
       description: Get cohort retention analysis showing how user groups retain over time
       summary: Get cohort analysis
-  /api/v1/analytics/retention/return-rate:
+  /api/v1/analytics/tiles/bounce-rate:
     get:
       parameters:
         - example: cus_xyz789
@@ -639,112 +533,8 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/types.ReturnRateResponse'
-          description: Return rate metrics
-        '400':
-          content:
-            application/json:
-              schema:
-                additionalProperties: true
-                type: object
-          description: Invalid request parameters
-        '401':
-          content:
-            application/json:
-              schema:
-                additionalProperties: true
-                type: object
-          description: Unauthorized - Invalid or missing JWT token
-        '500':
-          content:
-            application/json:
-              schema:
-                additionalProperties: true
-                type: object
-          description: Internal server error
-      security:
-        - ApiKeyAuth: []
-      tags:
-        - Analytics
-      description: Get metrics about user return rate and time between sessions
-      summary: Get return rate
-  /api/v1/analytics/sessions/bounce-rate:
-    get:
-      parameters:
-        - example: cus_xyz789
-          in: query
-          name: customer_id
-          schema:
-            type: string
-        - example: 50
-          in: query
-          name: limit
-          schema:
-            default: 50
-            maximum: 100
-            minimum: 1
-            type: integer
-        - example: 0
-          in: query
-          name: offset
-          schema:
-            default: 0
-            minimum: 0
-            type: integer
-        - example: proj_123
-          in: query
-          name: project_id
-          required: true
-          schema:
-            type: string
-        - example: 'https://google.com'
-          in: query
-          name: referrer
-          schema:
-            type: string
-        - example: last_7_days
-          in: query
-          name: time_range
-          required: true
-          schema:
-            default: last_7_days
-            enum:
-              - last_hour
-              - today
-              - yesterday
-              - last_7_days
-              - last_30_days
-              - last_90_days
-            type: string
-          x-enum-varnames:
-            - TimeBoundariesHour
-            - TimeBoundariesToday
-            - TimeBoundariesYesterday
-            - TimeBoundariesLastWeek
-            - TimeBoundariesLastMonth
-            - TimeBoundariesLast90Days
-        - example: utm_source
-          in: query
-          name: utmtag
-          schema:
-            type: string
-        - example: google
-          in: query
-          name: utmtagValue
-          schema:
-            type: string
-        - example: visitor_abc123
-          in: query
-          name: visitor_id
-          schema:
-            type: string
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/types.BounceRateResponse'
-          description: Bounce rate metrics
+                $ref: '#/components/schemas/tiles.BounceRateResponse'
+          description: Bounce rate with period comparison
         '400':
           content:
             application/json:
@@ -771,10 +561,10 @@ paths:
       tags:
         - Analytics
       description: >-
-        Get bounce rate metrics including overall bounce rate and per-page
-        breakdown
-      summary: Get bounce rate
-  /api/v1/analytics/sessions/metrics:
+        Get bounce rate percentage for current period compared to the previous
+        period
+      summary: Get bounce rate tile
+  /api/v1/analytics/tiles/dau:
     get:
       parameters:
         - example: cus_xyz789
@@ -849,8 +639,8 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/types.SessionMetricsResponse'
-          description: Session metrics
+                $ref: '#/components/schemas/tiles.DAUResponse'
+          description: Daily active users with period comparison
         '400':
           content:
             application/json:
@@ -876,9 +666,9 @@ paths:
         - ApiKeyAuth: []
       tags:
         - Analytics
-      description: Get session metrics including average duration and pages per session
-      summary: Get session metrics
-  /api/v1/analytics/users/active:
+      description: Get daily active user count (last 24h) compared to the previous day
+      summary: Get daily active users tile
+  /api/v1/analytics/tiles/mau:
     get:
       parameters:
         - example: cus_xyz789
@@ -953,8 +743,8 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/types.ActiveUsersResponse'
-          description: Active user metrics
+                $ref: '#/components/schemas/tiles.MAUResponse'
+          description: Monthly active users with period comparison
         '400':
           content:
             application/json:
@@ -980,9 +770,11 @@ paths:
         - ApiKeyAuth: []
       tags:
         - Analytics
-      description: 'Get daily, weekly, and monthly active user counts'
-      summary: Get active users
-  /api/v1/analytics/visitors/country:
+      description: >-
+        Get monthly active user count (last 30 days) compared to the previous
+        month
+      summary: Get monthly active users tile
+  /api/v1/analytics/tiles/pages-per-session:
     get:
       parameters:
         - example: cus_xyz789
@@ -1057,7 +849,431 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/types.VisitorsByCountryResponse'
+                $ref: '#/components/schemas/tiles.PagesPerSessionResponse'
+          description: Pages per session with period comparison
+        '400':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Invalid request parameters
+        '401':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Unauthorized - Invalid or missing JWT token
+        '500':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Internal server error
+      security:
+        - ApiKeyAuth: []
+      tags:
+        - Analytics
+      description: >-
+        Get average number of pages viewed per session for current period
+        compared to the previous period
+      summary: Get pages per session tile
+  /api/v1/analytics/tiles/return-rate:
+    get:
+      parameters:
+        - example: cus_xyz789
+          in: query
+          name: customer_id
+          schema:
+            type: string
+        - example: 50
+          in: query
+          name: limit
+          schema:
+            default: 50
+            maximum: 100
+            minimum: 1
+            type: integer
+        - example: 0
+          in: query
+          name: offset
+          schema:
+            default: 0
+            minimum: 0
+            type: integer
+        - example: proj_123
+          in: query
+          name: project_id
+          required: true
+          schema:
+            type: string
+        - example: 'https://google.com'
+          in: query
+          name: referrer
+          schema:
+            type: string
+        - example: last_7_days
+          in: query
+          name: time_range
+          required: true
+          schema:
+            default: last_7_days
+            enum:
+              - last_hour
+              - today
+              - yesterday
+              - last_7_days
+              - last_30_days
+              - last_90_days
+            type: string
+          x-enum-varnames:
+            - TimeBoundariesHour
+            - TimeBoundariesToday
+            - TimeBoundariesYesterday
+            - TimeBoundariesLastWeek
+            - TimeBoundariesLastMonth
+            - TimeBoundariesLast90Days
+        - example: utm_source
+          in: query
+          name: utmtag
+          schema:
+            type: string
+        - example: google
+          in: query
+          name: utmtagValue
+          schema:
+            type: string
+        - example: visitor_abc123
+          in: query
+          name: visitor_id
+          schema:
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/tiles.ReturnRateResponse'
+          description: Return rate with period comparison
+        '400':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Invalid request parameters
+        '401':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Unauthorized - Invalid or missing JWT token
+        '500':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Internal server error
+      security:
+        - ApiKeyAuth: []
+      tags:
+        - Analytics
+      description: >-
+        Get percentage of visitors with more than one session for current period
+        compared to the previous period
+      summary: Get return rate tile
+  /api/v1/analytics/tiles/session-duration:
+    get:
+      parameters:
+        - example: cus_xyz789
+          in: query
+          name: customer_id
+          schema:
+            type: string
+        - example: 50
+          in: query
+          name: limit
+          schema:
+            default: 50
+            maximum: 100
+            minimum: 1
+            type: integer
+        - example: 0
+          in: query
+          name: offset
+          schema:
+            default: 0
+            minimum: 0
+            type: integer
+        - example: proj_123
+          in: query
+          name: project_id
+          required: true
+          schema:
+            type: string
+        - example: 'https://google.com'
+          in: query
+          name: referrer
+          schema:
+            type: string
+        - example: last_7_days
+          in: query
+          name: time_range
+          required: true
+          schema:
+            default: last_7_days
+            enum:
+              - last_hour
+              - today
+              - yesterday
+              - last_7_days
+              - last_30_days
+              - last_90_days
+            type: string
+          x-enum-varnames:
+            - TimeBoundariesHour
+            - TimeBoundariesToday
+            - TimeBoundariesYesterday
+            - TimeBoundariesLastWeek
+            - TimeBoundariesLastMonth
+            - TimeBoundariesLast90Days
+        - example: utm_source
+          in: query
+          name: utmtag
+          schema:
+            type: string
+        - example: google
+          in: query
+          name: utmtagValue
+          schema:
+            type: string
+        - example: visitor_abc123
+          in: query
+          name: visitor_id
+          schema:
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/tiles.SessionDurationResponse'
+          description: Session duration with period comparison
+        '400':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Invalid request parameters
+        '401':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Unauthorized - Invalid or missing JWT token
+        '500':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Internal server error
+      security:
+        - ApiKeyAuth: []
+      tags:
+        - Analytics
+      description: >-
+        Get average session duration in seconds for current period compared to
+        the previous period
+      summary: Get session duration tile
+  /api/v1/analytics/tiles/time-between-visits:
+    get:
+      parameters:
+        - example: cus_xyz789
+          in: query
+          name: customer_id
+          schema:
+            type: string
+        - example: 50
+          in: query
+          name: limit
+          schema:
+            default: 50
+            maximum: 100
+            minimum: 1
+            type: integer
+        - example: 0
+          in: query
+          name: offset
+          schema:
+            default: 0
+            minimum: 0
+            type: integer
+        - example: proj_123
+          in: query
+          name: project_id
+          required: true
+          schema:
+            type: string
+        - example: 'https://google.com'
+          in: query
+          name: referrer
+          schema:
+            type: string
+        - example: last_7_days
+          in: query
+          name: time_range
+          required: true
+          schema:
+            default: last_7_days
+            enum:
+              - last_hour
+              - today
+              - yesterday
+              - last_7_days
+              - last_30_days
+              - last_90_days
+            type: string
+          x-enum-varnames:
+            - TimeBoundariesHour
+            - TimeBoundariesToday
+            - TimeBoundariesYesterday
+            - TimeBoundariesLastWeek
+            - TimeBoundariesLastMonth
+            - TimeBoundariesLast90Days
+        - example: utm_source
+          in: query
+          name: utmtag
+          schema:
+            type: string
+        - example: google
+          in: query
+          name: utmtagValue
+          schema:
+            type: string
+        - example: visitor_abc123
+          in: query
+          name: visitor_id
+          schema:
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/tiles.TimeBetweenVisitsResponse'
+          description: Time between visits with period comparison
+        '400':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Invalid request parameters
+        '401':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Unauthorized - Invalid or missing JWT token
+        '500':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Internal server error
+      security:
+        - ApiKeyAuth: []
+      tags:
+        - Analytics
+      description: >-
+        Get average hours between consecutive visits per visitor for current
+        period compared to the previous period
+      summary: Get time between visits tile
+  /api/v1/analytics/tiles/traffic-by-country:
+    get:
+      parameters:
+        - example: cus_xyz789
+          in: query
+          name: customer_id
+          schema:
+            type: string
+        - example: 50
+          in: query
+          name: limit
+          schema:
+            default: 50
+            maximum: 100
+            minimum: 1
+            type: integer
+        - example: 0
+          in: query
+          name: offset
+          schema:
+            default: 0
+            minimum: 0
+            type: integer
+        - example: proj_123
+          in: query
+          name: project_id
+          required: true
+          schema:
+            type: string
+        - example: 'https://google.com'
+          in: query
+          name: referrer
+          schema:
+            type: string
+        - example: last_7_days
+          in: query
+          name: time_range
+          required: true
+          schema:
+            default: last_7_days
+            enum:
+              - last_hour
+              - today
+              - yesterday
+              - last_7_days
+              - last_30_days
+              - last_90_days
+            type: string
+          x-enum-varnames:
+            - TimeBoundariesHour
+            - TimeBoundariesToday
+            - TimeBoundariesYesterday
+            - TimeBoundariesLastWeek
+            - TimeBoundariesLastMonth
+            - TimeBoundariesLast90Days
+        - example: utm_source
+          in: query
+          name: utmtag
+          schema:
+            type: string
+        - example: google
+          in: query
+          name: utmtagValue
+          schema:
+            type: string
+        - example: visitor_abc123
+          in: query
+          name: visitor_id
+          schema:
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/tiles.CountryTrafficSourceResponse'
           description: Unique visitors grouped by country
         '400':
           content:
@@ -1085,7 +1301,637 @@ paths:
       tags:
         - Analytics
       description: Get unique visitor counts grouped by country code
-      summary: Get unique visitors by country
+      summary: Get traffic by country
+  /api/v1/analytics/tiles/traffic-by-referer:
+    get:
+      parameters:
+        - example: cus_xyz789
+          in: query
+          name: customer_id
+          schema:
+            type: string
+        - example: 50
+          in: query
+          name: limit
+          schema:
+            default: 50
+            maximum: 100
+            minimum: 1
+            type: integer
+        - example: 0
+          in: query
+          name: offset
+          schema:
+            default: 0
+            minimum: 0
+            type: integer
+        - example: proj_123
+          in: query
+          name: project_id
+          required: true
+          schema:
+            type: string
+        - example: 'https://google.com'
+          in: query
+          name: referrer
+          schema:
+            type: string
+        - example: last_7_days
+          in: query
+          name: time_range
+          required: true
+          schema:
+            default: last_7_days
+            enum:
+              - last_hour
+              - today
+              - yesterday
+              - last_7_days
+              - last_30_days
+              - last_90_days
+            type: string
+          x-enum-varnames:
+            - TimeBoundariesHour
+            - TimeBoundariesToday
+            - TimeBoundariesYesterday
+            - TimeBoundariesLastWeek
+            - TimeBoundariesLastMonth
+            - TimeBoundariesLast90Days
+        - example: utm_source
+          in: query
+          name: utmtag
+          schema:
+            type: string
+        - example: google
+          in: query
+          name: utmtagValue
+          schema:
+            type: string
+        - example: visitor_abc123
+          in: query
+          name: visitor_id
+          schema:
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/tiles.RefererTrafficSourceResponse'
+          description: Unique visitors grouped by referer
+        '400':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Invalid request parameters
+        '401':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Unauthorized - Invalid or missing JWT token
+        '500':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Internal server error
+      security:
+        - ApiKeyAuth: []
+      tags:
+        - Analytics
+      description: Get unique visitor counts grouped by referrer domain (traffic source)
+      summary: Get traffic by referer
+  /api/v1/analytics/tiles/traffic-by-utm:
+    get:
+      parameters:
+        - example: cus_xyz789
+          in: query
+          name: customer_id
+          schema:
+            type: string
+        - example: 50
+          in: query
+          name: limit
+          schema:
+            default: 50
+            maximum: 100
+            minimum: 1
+            type: integer
+        - example: 0
+          in: query
+          name: offset
+          schema:
+            default: 0
+            minimum: 0
+            type: integer
+        - example: proj_123
+          in: query
+          name: project_id
+          required: true
+          schema:
+            type: string
+        - example: 'https://google.com'
+          in: query
+          name: referrer
+          schema:
+            type: string
+        - example: last_7_days
+          in: query
+          name: time_range
+          required: true
+          schema:
+            default: last_7_days
+            enum:
+              - last_hour
+              - today
+              - yesterday
+              - last_7_days
+              - last_30_days
+              - last_90_days
+            type: string
+          x-enum-varnames:
+            - TimeBoundariesHour
+            - TimeBoundariesToday
+            - TimeBoundariesYesterday
+            - TimeBoundariesLastWeek
+            - TimeBoundariesLastMonth
+            - TimeBoundariesLast90Days
+        - example: utm_source
+          in: query
+          name: utmtag
+          schema:
+            type: string
+        - example: google
+          in: query
+          name: utmtagValue
+          schema:
+            type: string
+        - example: visitor_abc123
+          in: query
+          name: visitor_id
+          schema:
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/tiles.UTMTrafficSourceResponse'
+          description: Unique visitors grouped by UTM parameters
+        '400':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Invalid request parameters
+        '401':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Unauthorized - Invalid or missing JWT token
+        '500':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Internal server error
+      security:
+        - ApiKeyAuth: []
+      tags:
+        - Analytics
+      description: 'Get unique visitor counts grouped by UTM source, medium, and campaign'
+      summary: Get traffic by UTM parameters
+  /api/v1/analytics/tiles/unique-sessions:
+    get:
+      parameters:
+        - example: cus_xyz789
+          in: query
+          name: customer_id
+          schema:
+            type: string
+        - example: 50
+          in: query
+          name: limit
+          schema:
+            default: 50
+            maximum: 100
+            minimum: 1
+            type: integer
+        - example: 0
+          in: query
+          name: offset
+          schema:
+            default: 0
+            minimum: 0
+            type: integer
+        - example: proj_123
+          in: query
+          name: project_id
+          required: true
+          schema:
+            type: string
+        - example: 'https://google.com'
+          in: query
+          name: referrer
+          schema:
+            type: string
+        - example: last_7_days
+          in: query
+          name: time_range
+          required: true
+          schema:
+            default: last_7_days
+            enum:
+              - last_hour
+              - today
+              - yesterday
+              - last_7_days
+              - last_30_days
+              - last_90_days
+            type: string
+          x-enum-varnames:
+            - TimeBoundariesHour
+            - TimeBoundariesToday
+            - TimeBoundariesYesterday
+            - TimeBoundariesLastWeek
+            - TimeBoundariesLastMonth
+            - TimeBoundariesLast90Days
+        - example: utm_source
+          in: query
+          name: utmtag
+          schema:
+            type: string
+        - example: google
+          in: query
+          name: utmtagValue
+          schema:
+            type: string
+        - example: visitor_abc123
+          in: query
+          name: visitor_id
+          schema:
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/tiles.UniqueSessionsResponse'
+          description: Unique sessions count with period comparison
+        '400':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Invalid request parameters
+        '401':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Unauthorized - Invalid or missing JWT token
+        '500':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Internal server error
+      security:
+        - ApiKeyAuth: []
+      tags:
+        - Analytics
+      description: >-
+        Get unique session count for current period compared to the previous
+        period
+      summary: Get unique sessions tile
+  /api/v1/analytics/tiles/unique-visitors:
+    get:
+      parameters:
+        - example: cus_xyz789
+          in: query
+          name: customer_id
+          schema:
+            type: string
+        - example: 50
+          in: query
+          name: limit
+          schema:
+            default: 50
+            maximum: 100
+            minimum: 1
+            type: integer
+        - example: 0
+          in: query
+          name: offset
+          schema:
+            default: 0
+            minimum: 0
+            type: integer
+        - example: proj_123
+          in: query
+          name: project_id
+          required: true
+          schema:
+            type: string
+        - example: 'https://google.com'
+          in: query
+          name: referrer
+          schema:
+            type: string
+        - example: last_7_days
+          in: query
+          name: time_range
+          required: true
+          schema:
+            default: last_7_days
+            enum:
+              - last_hour
+              - today
+              - yesterday
+              - last_7_days
+              - last_30_days
+              - last_90_days
+            type: string
+          x-enum-varnames:
+            - TimeBoundariesHour
+            - TimeBoundariesToday
+            - TimeBoundariesYesterday
+            - TimeBoundariesLastWeek
+            - TimeBoundariesLastMonth
+            - TimeBoundariesLast90Days
+        - example: utm_source
+          in: query
+          name: utmtag
+          schema:
+            type: string
+        - example: google
+          in: query
+          name: utmtagValue
+          schema:
+            type: string
+        - example: visitor_abc123
+          in: query
+          name: visitor_id
+          schema:
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/tiles.UniqueVisitorsResponse'
+          description: Unique visitors count with period comparison
+        '400':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Invalid request parameters
+        '401':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Unauthorized - Invalid or missing JWT token
+        '500':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Internal server error
+      security:
+        - ApiKeyAuth: []
+      tags:
+        - Analytics
+      description: >-
+        Get unique visitor count for current period compared to the previous
+        period
+      summary: Get unique visitors tile
+  /api/v1/analytics/tiles/wau:
+    get:
+      parameters:
+        - example: cus_xyz789
+          in: query
+          name: customer_id
+          schema:
+            type: string
+        - example: 50
+          in: query
+          name: limit
+          schema:
+            default: 50
+            maximum: 100
+            minimum: 1
+            type: integer
+        - example: 0
+          in: query
+          name: offset
+          schema:
+            default: 0
+            minimum: 0
+            type: integer
+        - example: proj_123
+          in: query
+          name: project_id
+          required: true
+          schema:
+            type: string
+        - example: 'https://google.com'
+          in: query
+          name: referrer
+          schema:
+            type: string
+        - example: last_7_days
+          in: query
+          name: time_range
+          required: true
+          schema:
+            default: last_7_days
+            enum:
+              - last_hour
+              - today
+              - yesterday
+              - last_7_days
+              - last_30_days
+              - last_90_days
+            type: string
+          x-enum-varnames:
+            - TimeBoundariesHour
+            - TimeBoundariesToday
+            - TimeBoundariesYesterday
+            - TimeBoundariesLastWeek
+            - TimeBoundariesLastMonth
+            - TimeBoundariesLast90Days
+        - example: utm_source
+          in: query
+          name: utmtag
+          schema:
+            type: string
+        - example: google
+          in: query
+          name: utmtagValue
+          schema:
+            type: string
+        - example: visitor_abc123
+          in: query
+          name: visitor_id
+          schema:
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/tiles.WAUResponse'
+          description: Weekly active users with period comparison
+        '400':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Invalid request parameters
+        '401':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Unauthorized - Invalid or missing JWT token
+        '500':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Internal server error
+      security:
+        - ApiKeyAuth: []
+      tags:
+        - Analytics
+      description: Get weekly active user count (last 7 days) compared to the previous week
+      summary: Get weekly active users tile
+  /api/v1/analytics/timeline:
+    get:
+      parameters:
+        - example: cus_xyz789
+          in: query
+          name: customer_id
+          schema:
+            type: string
+        - example: 50
+          in: query
+          name: limit
+          schema:
+            default: 50
+            maximum: 100
+            minimum: 1
+            type: integer
+        - example: 0
+          in: query
+          name: offset
+          schema:
+            default: 0
+            minimum: 0
+            type: integer
+        - example: proj_123
+          in: query
+          name: project_id
+          required: true
+          schema:
+            type: string
+        - example: 'https://google.com'
+          in: query
+          name: referrer
+          schema:
+            type: string
+        - example: last_7_days
+          in: query
+          name: time_range
+          required: true
+          schema:
+            default: last_7_days
+            enum:
+              - last_hour
+              - today
+              - yesterday
+              - last_7_days
+              - last_30_days
+              - last_90_days
+            type: string
+          x-enum-varnames:
+            - TimeBoundariesHour
+            - TimeBoundariesToday
+            - TimeBoundariesYesterday
+            - TimeBoundariesLastWeek
+            - TimeBoundariesLastMonth
+            - TimeBoundariesLast90Days
+        - example: utm_source
+          in: query
+          name: utmtag
+          schema:
+            type: string
+        - example: google
+          in: query
+          name: utmtagValue
+          schema:
+            type: string
+        - example: visitor_abc123
+          in: query
+          name: visitor_id
+          schema:
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/tiles.TimelineTileResponse'
+          description: Unique visitors timeline data
+        '400':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Invalid request parameters
+        '401':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Unauthorized - Invalid or missing JWT token
+        '500':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Internal server error
+      security:
+        - ApiKeyAuth: []
+      tags:
+        - Analytics
+      description: >-
+        Get unique visitor counts over time, split by mobile and desktop devices
+        for chart visualization
+      summary: Get unique visitors timeline
   /api/v1/analytics/visitors/device:
     get:
       parameters:
@@ -1237,110 +2083,6 @@ paths:
         description: Identification details
         required: true
       summary: Manually identify a visitor
-  /api/v1/analytics/visitors/origin:
-    get:
-      parameters:
-        - example: cus_xyz789
-          in: query
-          name: customer_id
-          schema:
-            type: string
-        - example: 50
-          in: query
-          name: limit
-          schema:
-            default: 50
-            maximum: 100
-            minimum: 1
-            type: integer
-        - example: 0
-          in: query
-          name: offset
-          schema:
-            default: 0
-            minimum: 0
-            type: integer
-        - example: proj_123
-          in: query
-          name: project_id
-          required: true
-          schema:
-            type: string
-        - example: 'https://google.com'
-          in: query
-          name: referrer
-          schema:
-            type: string
-        - example: last_7_days
-          in: query
-          name: time_range
-          required: true
-          schema:
-            default: last_7_days
-            enum:
-              - last_hour
-              - today
-              - yesterday
-              - last_7_days
-              - last_30_days
-              - last_90_days
-            type: string
-          x-enum-varnames:
-            - TimeBoundariesHour
-            - TimeBoundariesToday
-            - TimeBoundariesYesterday
-            - TimeBoundariesLastWeek
-            - TimeBoundariesLastMonth
-            - TimeBoundariesLast90Days
-        - example: utm_source
-          in: query
-          name: utmtag
-          schema:
-            type: string
-        - example: google
-          in: query
-          name: utmtagValue
-          schema:
-            type: string
-        - example: visitor_abc123
-          in: query
-          name: visitor_id
-          schema:
-            type: string
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/types.VisitorsByOriginResponse'
-          description: Unique visitors grouped by origin
-        '400':
-          content:
-            application/json:
-              schema:
-                additionalProperties: true
-                type: object
-          description: Invalid request parameters
-        '401':
-          content:
-            application/json:
-              schema:
-                additionalProperties: true
-                type: object
-          description: Unauthorized - Invalid or missing JWT token
-        '500':
-          content:
-            application/json:
-              schema:
-                additionalProperties: true
-                type: object
-          description: Internal server error
-      security:
-        - ApiKeyAuth: []
-      tags:
-        - Analytics
-      description: Get unique visitor counts grouped by referrer domain (traffic source)
-      summary: Get unique visitors by traffic origin
   /api/v1/analytics/visitors/profile:
     get:
       parameters:
@@ -1403,112 +2145,6 @@ paths:
         Get detailed information about a specific visitor including their event
         history and aggregated statistics
       summary: Get visitor profile
-  /api/v1/analytics/visitors/timeline:
-    get:
-      parameters:
-        - example: cus_xyz789
-          in: query
-          name: customer_id
-          schema:
-            type: string
-        - example: 50
-          in: query
-          name: limit
-          schema:
-            default: 50
-            maximum: 100
-            minimum: 1
-            type: integer
-        - example: 0
-          in: query
-          name: offset
-          schema:
-            default: 0
-            minimum: 0
-            type: integer
-        - example: proj_123
-          in: query
-          name: project_id
-          required: true
-          schema:
-            type: string
-        - example: 'https://google.com'
-          in: query
-          name: referrer
-          schema:
-            type: string
-        - example: last_7_days
-          in: query
-          name: time_range
-          required: true
-          schema:
-            default: last_7_days
-            enum:
-              - last_hour
-              - today
-              - yesterday
-              - last_7_days
-              - last_30_days
-              - last_90_days
-            type: string
-          x-enum-varnames:
-            - TimeBoundariesHour
-            - TimeBoundariesToday
-            - TimeBoundariesYesterday
-            - TimeBoundariesLastWeek
-            - TimeBoundariesLastMonth
-            - TimeBoundariesLast90Days
-        - example: utm_source
-          in: query
-          name: utmtag
-          schema:
-            type: string
-        - example: google
-          in: query
-          name: utmtagValue
-          schema:
-            type: string
-        - example: visitor_abc123
-          in: query
-          name: visitor_id
-          schema:
-            type: string
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/types.UniqueVisitorsTimelineResponse'
-          description: Unique visitors timeline data
-        '400':
-          content:
-            application/json:
-              schema:
-                additionalProperties: true
-                type: object
-          description: Invalid request parameters
-        '401':
-          content:
-            application/json:
-              schema:
-                additionalProperties: true
-                type: object
-          description: Unauthorized - Invalid or missing JWT token
-        '500':
-          content:
-            application/json:
-              schema:
-                additionalProperties: true
-                type: object
-          description: Internal server error
-      security:
-        - ApiKeyAuth: []
-      tags:
-        - Analytics
-      description: >-
-        Get unique visitor counts over time, split by mobile and desktop devices
-        for chart visualization
-      summary: Get unique visitors timeline
   /api/v1/analytics/visitors/top:
     get:
       parameters:
@@ -2764,13 +3400,172 @@ components:
           example: '2024-01-15T10:30:00Z'
           type: string
       type: object
-    types.ActiveUsersResponse:
+    tiles.BounceRateResponse:
       properties:
-        dau:
+        previous_rate:
+          type: number
+        rate:
+          type: number
+      type: object
+    tiles.CardPrecision:
+      enum:
+        - minutes
+        - hourly
+        - daily
+        - weekly
+        - monthly
+      type: string
+      x-enum-varnames:
+        - CardPrecisionMinutes
+        - CardPrecisionHourly
+        - CardPrecisionDaily
+        - CardPrecisionWeekly
+        - CardPrecisionMonthly
+    tiles.CountryTrafficSourceData:
+      properties:
+        count:
           type: integer
-        mau:
+        country:
+          type: string
+        previous_count:
           type: integer
-        wau:
+      type: object
+    tiles.CountryTrafficSourceResponse:
+      properties:
+        data:
+          items:
+            $ref: '#/components/schemas/tiles.CountryTrafficSourceData'
+          type: array
+      type: object
+    tiles.DAUResponse:
+      properties:
+        count:
+          type: integer
+        previous_count:
+          type: integer
+      type: object
+    tiles.MAUResponse:
+      properties:
+        count:
+          type: integer
+        previous_count:
+          type: integer
+      type: object
+    tiles.PagesPerSessionResponse:
+      properties:
+        avg_pages:
+          type: number
+        previous_avg_pages:
+          type: number
+      type: object
+    tiles.RefererTrafficSourceData:
+      properties:
+        count:
+          type: integer
+        previous_count:
+          type: integer
+        previous_revenue:
+          type: integer
+        referer_url:
+          type: string
+        revenue:
+          type: integer
+      type: object
+    tiles.RefererTrafficSourceResponse:
+      properties:
+        data:
+          items:
+            $ref: '#/components/schemas/tiles.RefererTrafficSourceData'
+          type: array
+      type: object
+    tiles.ReturnRateResponse:
+      properties:
+        previous_rate:
+          type: number
+        rate:
+          type: number
+      type: object
+    tiles.SessionDurationResponse:
+      properties:
+        avg_duration:
+          type: number
+        previous_avg_duration:
+          type: number
+      type: object
+    tiles.TimeBetweenVisitsResponse:
+      properties:
+        avg_hours:
+          type: number
+        previous_avg_hours:
+          type: number
+      type: object
+    tiles.TimelineTileData:
+      properties:
+        num_desktop_visits:
+          type: integer
+        num_mobile_visits:
+          type: integer
+        num_revenue:
+          type: integer
+        num_unknown_visits:
+          type: integer
+        time_bucket:
+          type: string
+      type: object
+    tiles.TimelineTileResponse:
+      properties:
+        data:
+          items:
+            $ref: '#/components/schemas/tiles.TimelineTileData'
+          type: array
+        precision:
+          $ref: '#/components/schemas/tiles.CardPrecision'
+        total_visits:
+          type: integer
+      type: object
+    tiles.UTMTrafficSourceData:
+      properties:
+        count:
+          type: integer
+        previous_count:
+          type: integer
+        previous_revenue:
+          type: integer
+        revenue:
+          type: integer
+        utm_campaign:
+          type: string
+        utm_medium:
+          type: string
+        utm_source:
+          type: string
+      type: object
+    tiles.UTMTrafficSourceResponse:
+      properties:
+        data:
+          items:
+            $ref: '#/components/schemas/tiles.UTMTrafficSourceData'
+          type: array
+      type: object
+    tiles.UniqueSessionsResponse:
+      properties:
+        count:
+          type: integer
+        previous_count:
+          type: integer
+      type: object
+    tiles.UniqueVisitorsResponse:
+      properties:
+        count:
+          type: integer
+        previous_count:
+          type: integer
+      type: object
+    tiles.WAUResponse:
+      properties:
+        count:
+          type: integer
+        previous_count:
           type: integer
       type: object
     types.AttributionByOriginResponse:
@@ -2786,24 +3581,6 @@ components:
           items:
             $ref: '#/components/schemas/types.UTMAttributionDataPoint'
           type: array
-      type: object
-    types.BounceRateByPageMetric:
-      properties:
-        bounce_rate:
-          type: number
-        page:
-          type: string
-        sessions:
-          type: integer
-      type: object
-    types.BounceRateResponse:
-      properties:
-        by_page:
-          items:
-            $ref: '#/components/schemas/types.BounceRateByPageMetric'
-          type: array
-        overall_bounce_rate:
-          type: number
       type: object
     types.ChurnRateResponse:
       properties:
@@ -2911,15 +3688,6 @@ components:
         total_visitors:
           type: integer
       type: object
-    types.CountryDataPoint:
-      properties:
-        country_code:
-          type: string
-        percentage:
-          type: number
-        unique_visitors:
-          type: integer
-      type: object
     types.CreatePaymentProviderRequest:
       properties:
         api_key:
@@ -3004,33 +3772,6 @@ components:
           type: string
         visitor_id:
           type: string
-      type: object
-    types.DashboardMetricsResponse:
-      properties:
-        avg_pages_per_session:
-          type: number
-        avg_session_duration_seconds:
-          type: number
-        bounce_rate:
-          type: number
-        dau:
-          type: integer
-        mau:
-          type: integer
-        return_rate:
-          type: number
-        sessions_today:
-          type: integer
-        total_events:
-          type: integer
-        total_sessions_in_period:
-          type: integer
-        unique_sessions:
-          type: integer
-        unique_visitors:
-          type: integer
-        wau:
-          type: integer
       type: object
     types.DashboardResponse:
       properties:
@@ -3156,15 +3897,6 @@ components:
           type: number
         total_revenue:
           type: integer
-        unique_visitors:
-          type: integer
-      type: object
-    types.OriginDataPoint:
-      properties:
-        origin:
-          type: string
-        percentage:
-          type: number
         unique_visitors:
           type: integer
       type: object
@@ -3326,17 +4058,6 @@ components:
         total:
           type: integer
       type: object
-    types.ReturnRateResponse:
-      properties:
-        avg_time_between_sessions_hours:
-          type: number
-        return_rate_percent:
-          type: number
-        returning_users:
-          type: integer
-        total_users:
-          type: integer
-      type: object
     types.RevenueOverTimeDataPoint:
       properties:
         payment_count:
@@ -3344,15 +4065,6 @@ components:
         timestamp:
           type: string
         total_revenue:
-          type: integer
-      type: object
-    types.SessionMetricsResponse:
-      properties:
-        average_pages_per_session:
-          type: number
-        average_session_duration_seconds:
-          type: number
-        total_sessions:
           type: integer
       type: object
     types.StripeConnectCallbackResponse:
@@ -3516,22 +4228,6 @@ components:
         utm_value:
           type: string
       type: object
-    types.UniqueVisitorsDataPoint:
-      properties:
-        desktop:
-          type: integer
-        mobile:
-          type: integer
-        timestamp:
-          type: string
-      type: object
-    types.UniqueVisitorsTimelineResponse:
-      properties:
-        data:
-          items:
-            $ref: '#/components/schemas/types.UniqueVisitorsDataPoint'
-          type: array
-      type: object
     types.UpdatePaymentProviderRequest:
       properties:
         api_key:
@@ -3658,25 +4354,11 @@ components:
         visitor_id:
           type: string
       type: object
-    types.VisitorsByCountryResponse:
-      properties:
-        data:
-          items:
-            $ref: '#/components/schemas/types.CountryDataPoint'
-          type: array
-      type: object
     types.VisitorsByDeviceResponse:
       properties:
         data:
           items:
             $ref: '#/components/schemas/types.VisitorDataPoint'
-          type: array
-      type: object
-    types.VisitorsByOriginResponse:
-      properties:
-        data:
-          items:
-            $ref: '#/components/schemas/types.OriginDataPoint'
           type: array
       type: object
   securitySchemes:
