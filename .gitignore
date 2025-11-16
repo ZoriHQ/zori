@@ -10,3 +10,6 @@
 # This is where we store generated SDKs for different languages
 # We ignore this folder to keep the repository clean
 sdks/
+
+# Test coverage files
+coverage.out
