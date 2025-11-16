@@ -10,6 +10,7 @@ import (
 	"zori/internal/natsstream"
 	"zori/internal/server"
 	"zori/internal/storage/postgres"
+	"zori/internal/telemetry"
 	"zori/services/ingestion"
 	"zori/services/ingestion/web"
 	"zori/services/organizations"
@@ -24,8 +25,23 @@ func NewIngestionApplication() *fx.App {
 	return fx.New(
 		fx.Provide(
 			config.NewConfig,
+			func(cfg *config.Config) *telemetry.Provider {
+				provider, err := telemetry.NewProvider(telemetry.Config{
+					ServiceName:           cfg.OTelServiceName + "-ingestion",
+					ServiceVersion:        cfg.OTelServiceVersion,
+					Environment:           cfg.OTelEnvironment,
+					OTLPEndpoint:          cfg.OTelEndpoint,
+					Enabled:               cfg.OTelEnabled,
+					HTTPSamplingRate:      1.0,
+					IngestionSamplingRate: cfg.OTelIngestSamplingRate,
+				})
+				if err != nil {
+					panic(err)
+				}
+
+				return provider
+			},
 			postgres.NewPostgresDB,
-			NewTelemetryProvider,
 			NewLogger,
 			server.New,
 		),

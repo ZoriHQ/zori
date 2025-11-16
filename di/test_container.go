@@ -10,6 +10,7 @@ import (
 
 	"zori/internal/cache"
 	"zori/internal/config"
+	"zori/internal/logger"
 	"zori/internal/metrics"
 	"zori/internal/natsstream"
 	"zori/internal/server"
@@ -17,6 +18,7 @@ import (
 	"zori/internal/storage/clickhouse"
 	"zori/internal/storage/postgres"
 	"zori/internal/storage/postgres/models"
+	"zori/internal/telemetry"
 	"zori/services/events"
 	eventsServices "zori/services/events/services"
 	"zori/services/ingestion"
@@ -82,6 +84,24 @@ func NewTestContainer(t *testing.T) *TestContainer {
 			config.NewConfig,
 			func(cfg *config.Config) (*postgres.PostgresDB, error) {
 				return NewTestPostgresDB(cfg)
+			},
+			func(cfg *config.Config) *telemetry.Provider {
+				provider, _ := telemetry.NewProvider(telemetry.Config{
+					ServiceName:           "zori-test",
+					ServiceVersion:        "test",
+					Environment:           "test",
+					OTLPEndpoint:          cfg.OTelEndpoint,
+					Enabled:               false,
+					HTTPSamplingRate:      1.0,
+					IngestionSamplingRate: 1.0,
+				})
+				return provider
+			},
+			func(cfg *config.Config) *logger.Logger {
+				return logger.NewLogger(logger.Config{
+					Level:  "error",
+					Format: "json",
+				})
 			},
 			clickhouse.NewClickhouseDB,
 			natsstream.NewStream,

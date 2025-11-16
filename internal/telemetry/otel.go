@@ -17,7 +17,6 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-// Config holds OpenTelemetry configuration
 type Config struct {
 	ServiceName           string
 	ServiceVersion        string
@@ -28,13 +27,11 @@ type Config struct {
 	IngestionSamplingRate float64
 }
 
-// Provider wraps the OpenTelemetry trace provider
 type Provider struct {
 	tracerProvider *sdktrace.TracerProvider
 	config         Config
 }
 
-// NewProvider creates a new OpenTelemetry provider
 func NewProvider(cfg Config) (*Provider, error) {
 	if !cfg.Enabled {
 		return &Provider{
@@ -95,12 +92,10 @@ func NewProvider(cfg Config) (*Provider, error) {
 	}, nil
 }
 
-// Tracer returns a tracer for the given name
 func (p *Provider) Tracer(name string) trace.Tracer {
 	return p.tracerProvider.Tracer(name)
 }
 
-// Shutdown shuts down the provider
 func (p *Provider) Shutdown(ctx context.Context) error {
 	if p.tracerProvider == nil {
 		return nil
@@ -108,17 +103,14 @@ func (p *Provider) Shutdown(ctx context.Context) error {
 	return p.tracerProvider.Shutdown(ctx)
 }
 
-// HTTPSampler returns a sampler for HTTP traces (full sampling)
 func (p *Provider) HTTPSampler() sdktrace.Sampler {
 	return sdktrace.TraceIDRatioBased(p.config.HTTPSamplingRate)
 }
 
-// IngestionSampler returns a sampler for ingestion traces (lower sampling)
 func (p *Provider) IngestionSampler() sdktrace.Sampler {
 	return sdktrace.TraceIDRatioBased(p.config.IngestionSamplingRate)
 }
 
-// ShouldSampleIngestion returns true if an ingestion event should be sampled
 func (p *Provider) ShouldSampleIngestion(traceID trace.TraceID) bool {
 	if !p.config.Enabled {
 		return false
@@ -141,12 +133,10 @@ const (
 	AttrUserID    = attribute.Key("zori.user_id")
 )
 
-// StartSpan is a helper to start a span with common options
 func StartSpan(ctx context.Context, tracer trace.Tracer, name string, opts ...trace.SpanStartOption) (context.Context, trace.Span) {
 	return tracer.Start(ctx, name, opts...)
 }
 
-// StartIngestionSpan starts a span for ingestion operations with minimal attributes
 func StartIngestionSpan(ctx context.Context, tracer trace.Tracer, name, orgID, projectID string) (context.Context, trace.Span) {
 	return tracer.Start(ctx, name,
 		trace.WithSpanKind(trace.SpanKindServer),
@@ -157,7 +147,6 @@ func StartIngestionSpan(ctx context.Context, tracer trace.Tracer, name, orgID, p
 	)
 }
 
-// StartHTTPSpan starts a span for HTTP operations with full attributes
 func StartHTTPSpan(ctx context.Context, tracer trace.Tracer, name string, attrs ...attribute.KeyValue) (context.Context, trace.Span) {
 	opts := []trace.SpanStartOption{
 		trace.WithSpanKind(trace.SpanKindServer),
@@ -170,14 +159,12 @@ func StartHTTPSpan(ctx context.Context, tracer trace.Tracer, name string, attrs 
 	return tracer.Start(ctx, name, opts...)
 }
 
-// RecordError records an error on a span
 func RecordError(span trace.Span, err error) {
 	if err != nil && span != nil {
 		span.RecordError(err)
 	}
 }
 
-// SetStatus sets the span status based on error
 func SetStatus(span trace.Span, err error) {
 	if span == nil {
 		return

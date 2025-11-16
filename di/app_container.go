@@ -15,6 +15,7 @@ import (
 	"zori/internal/server/middlewares"
 	"zori/internal/storage/clickhouse"
 	"zori/internal/storage/postgres"
+	"zori/internal/telemetry"
 	"zori/services/analytics"
 	"zori/services/auth"
 	"zori/services/events"
@@ -46,9 +47,24 @@ func NewApplication() *fx.App {
 	return fx.New(
 		fx.Provide(
 			config.NewConfig,
+			func(cfg *config.Config) *telemetry.Provider {
+				provider, err := telemetry.NewProvider(telemetry.Config{
+					ServiceName:           cfg.OTelServiceName + "-api",
+					ServiceVersion:        cfg.OTelServiceVersion,
+					Environment:           cfg.OTelEnvironment,
+					OTLPEndpoint:          cfg.OTelEndpoint,
+					Enabled:               cfg.OTelEnabled,
+					HTTPSamplingRate:      1.0,
+					IngestionSamplingRate: cfg.OTelIngestSamplingRate,
+				})
+				if err != nil {
+					panic(err)
+				}
+
+				return provider
+			},
 			postgres.NewPostgresDB,
 			clickhouse.NewClickhouseDB,
-			NewTelemetryProvider,
 			NewLogger,
 			server.New,
 		),
