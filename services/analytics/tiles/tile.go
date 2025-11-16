@@ -1,4 +1,4 @@
-package cards
+package tiles
 
 import (
 	"zori/internal/ctx"
@@ -19,7 +19,7 @@ type AnalyticCard[T any] interface {
 	Fetch(ctx *ctx.Ctx, filter filters.SectionFilter) (*T, error)
 }
 
-func FilterToTimePrecision(filter filters.SectionFilter) CardPrecision {
+func FilterToTimePrecision(filter *filters.SectionFilter) CardPrecision {
 	switch filter.TimeBoundaries {
 	case filters.TimeBoundariesHour:
 		return CardPrecisionMinutes

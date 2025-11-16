@@ -44,8 +44,25 @@ type UTMFilter struct {
 }
 
 type TimeRange struct {
-	Start            time.Time
-	IntervalFunction string
+	// Start is a start time we want to count or data from
+	Start time.Time
+	// DeltaOffset is a offset twice as big as Start, but in the past
+	// It's used to calculate a difference in data change within a given range
+	// So if the start time is 1h ago, DeltaOffset will be 2h ago
+	DeltaOffset time.Time
+	// TimeBucketFunction is a function that will be used to bucketize time to specific granularity
+	// based on the given time boundaries
+	TimeBucketFunction string
+
+	// IntervalValue will represent a interval value for ClickHouse queries
+	// based on the given time boundaries
+	IntervalValue string
+	// IntervalValueDelta will represent a interval value for ClickHouse queries
+	// based on the given time boundaries twice as big as IntervalValue
+	// So if IntervalValue is INTERVAL - 1 HOUR, IntervalValueDelta will be INTERVAL - 2 HOUR
+	IntervalValueDelta string
+
+	ToIntervalStepFunction string
 }
 
 func ValidateTimeRange(tb TimeBoundaries) (*TimeRange, error) {
@@ -54,28 +71,48 @@ func ValidateTimeRange(tb TimeBoundaries) (*TimeRange, error) {
 	switch tb {
 	case TimeBoundariesHour:
 		return &TimeRange{
-			Start:            now.Add(-1 * time.Hour),
-			IntervalFunction: "toStartOfMinute",
+			Start:                  now.Add(-1 * time.Hour),
+			DeltaOffset:            now.Add(-2 * time.Hour),
+			IntervalValue:          "INTERVAL 1 HOUR",
+			IntervalValueDelta:     "INTERVAL 2 HOUR",
+			TimeBucketFunction:     "toStartOfMinute",
+			ToIntervalStepFunction: "toIntervalMinute",
 		}, nil
 	case TimeBoundariesToday:
 		return &TimeRange{
-			Start:            time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC),
-			IntervalFunction: "toStartOfHour",
+			Start:                  time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC),
+			DeltaOffset:            time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC).Add(-24 * time.Hour),
+			IntervalValue:          "INTERVAL 1 DAY",
+			IntervalValueDelta:     "INTERVAL 2 DAY",
+			TimeBucketFunction:     "toStartOfHour",
+			ToIntervalStepFunction: "toIntervalHour",
 		}, nil
 	case TimeBoundariesLastWeek:
 		return &TimeRange{
-			Start:            now.AddDate(0, 0, -7),
-			IntervalFunction: "toStartOfHour",
+			Start:                  now.AddDate(0, 0, -7),
+			DeltaOffset:            now.AddDate(0, 0, -14),
+			IntervalValue:          "INTERVAL 7 DAY",
+			IntervalValueDelta:     "INTERVAL 14 DAY",
+			TimeBucketFunction:     "toStartOfDay",
+			ToIntervalStepFunction: "toIntervalDay",
 		}, nil
 	case TimeBoundariesLastMonth:
 		return &TimeRange{
-			Start:            now.AddDate(0, 0, -30),
-			IntervalFunction: "toStartOfDay",
+			Start:                  now.AddDate(0, 0, -30),
+			DeltaOffset:            now.AddDate(0, 0, -60),
+			IntervalValue:          "INTERVAL 30 DAY",
+			IntervalValueDelta:     "INTERVAL 60 DAY",
+			TimeBucketFunction:     "toStartOfDay",
+			ToIntervalStepFunction: "toIntervalDay",
 		}, nil
 	case TimeBoundariesLast90Days:
 		return &TimeRange{
-			Start:            now.AddDate(0, 0, -90),
-			IntervalFunction: "toStartOfDay",
+			Start:                  now.AddDate(0, 0, -90),
+			DeltaOffset:            now.AddDate(0, 0, -180),
+			IntervalValue:          "INTERVAL 90 DAY",
+			IntervalValueDelta:     "INTERVAL 180 DAY",
+			TimeBucketFunction:     "toStartOfDay",
+			ToIntervalStepFunction: "toIntervalDay",
 		}, nil
 	default:
 		return nil, fmt.Errorf("invalid time range: %s", tb)

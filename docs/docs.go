@@ -1086,6 +1086,135 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/analytics/timeline": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Get unique visitor counts over time, split by mobile and desktop devices for chart visualization",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Analytics"
+                ],
+                "summary": "Get unique visitors timeline",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "cus_xyz789",
+                        "name": "customer_id",
+                        "in": "query"
+                    },
+                    {
+                        "maximum": 100,
+                        "minimum": 1,
+                        "type": "integer",
+                        "default": 50,
+                        "example": 50,
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "minimum": 0,
+                        "type": "integer",
+                        "default": 0,
+                        "example": 0,
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "proj_123",
+                        "name": "project_id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "https://google.com",
+                        "name": "referrer",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "last_hour",
+                            "today",
+                            "yesterday",
+                            "last_7_days",
+                            "last_30_days",
+                            "last_90_days"
+                        ],
+                        "type": "string",
+                        "default": "last_7_days",
+                        "example": "last_7_days",
+                        "x-enum-varnames": [
+                            "TimeBoundariesHour",
+                            "TimeBoundariesToday",
+                            "TimeBoundariesYesterday",
+                            "TimeBoundariesLastWeek",
+                            "TimeBoundariesLastMonth",
+                            "TimeBoundariesLast90Days"
+                        ],
+                        "name": "time_range",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "utm_source",
+                        "name": "utmtag",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "google",
+                        "name": "utmtagValue",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "visitor_abc123",
+                        "name": "visitor_id",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Unique visitors timeline data",
+                        "schema": {
+                            "$ref": "#/definitions/tiles.TimelineTileResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request parameters",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - Invalid or missing JWT token",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/analytics/users/active": {
             "get": {
                 "security": [
@@ -1317,7 +1446,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Unique visitors grouped by country",
                         "schema": {
-                            "$ref": "#/definitions/types.VisitorsByCountryResponse"
+                            "$ref": "#/definitions/tiles.CountryTrafficSourceResponse"
                         }
                     },
                     "400": {
@@ -1633,9 +1762,9 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "Unique visitors grouped by origin",
+                        "description": "Unique visitors grouped by referer",
                         "schema": {
-                            "$ref": "#/definitions/types.VisitorsByOriginResponse"
+                            "$ref": "#/definitions/tiles.RefererTrafficSourceResponse"
                         }
                     },
                     "400": {
@@ -1724,135 +1853,6 @@ const docTemplate = `{
                     },
                     "404": {
                         "description": "Visitor not found",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/analytics/visitors/timeline": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "Get unique visitor counts over time, split by mobile and desktop devices for chart visualization",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Analytics"
-                ],
-                "summary": "Get unique visitors timeline",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "example": "cus_xyz789",
-                        "name": "customer_id",
-                        "in": "query"
-                    },
-                    {
-                        "maximum": 100,
-                        "minimum": 1,
-                        "type": "integer",
-                        "default": 50,
-                        "example": 50,
-                        "name": "limit",
-                        "in": "query"
-                    },
-                    {
-                        "minimum": 0,
-                        "type": "integer",
-                        "default": 0,
-                        "example": 0,
-                        "name": "offset",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "example": "proj_123",
-                        "name": "project_id",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "example": "https://google.com",
-                        "name": "referrer",
-                        "in": "query"
-                    },
-                    {
-                        "enum": [
-                            "last_hour",
-                            "today",
-                            "yesterday",
-                            "last_7_days",
-                            "last_30_days",
-                            "last_90_days"
-                        ],
-                        "type": "string",
-                        "default": "last_7_days",
-                        "example": "last_7_days",
-                        "x-enum-varnames": [
-                            "TimeBoundariesHour",
-                            "TimeBoundariesToday",
-                            "TimeBoundariesYesterday",
-                            "TimeBoundariesLastWeek",
-                            "TimeBoundariesLastMonth",
-                            "TimeBoundariesLast90Days"
-                        ],
-                        "name": "time_range",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "example": "utm_source",
-                        "name": "utmtag",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "example": "google",
-                        "name": "utmtagValue",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "example": "visitor_abc123",
-                        "name": "visitor_id",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Unique visitors timeline data",
-                        "schema": {
-                            "$ref": "#/definitions/types.UniqueVisitorsTimelineResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid request parameters",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized - Invalid or missing JWT token",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -3495,6 +3495,119 @@ const docTemplate = `{
                 }
             }
         },
+        "tiles.CardPrecision": {
+            "type": "string",
+            "enum": [
+                "minutes",
+                "hourly",
+                "daily",
+                "weekly",
+                "monthly"
+            ],
+            "x-enum-varnames": [
+                "CardPrecisionMinutes",
+                "CardPrecisionHourly",
+                "CardPrecisionDaily",
+                "CardPrecisionWeekly",
+                "CardPrecisionMonthly"
+            ]
+        },
+        "tiles.CountryTrafficSourceData": {
+            "type": "object",
+            "properties": {
+                "count": {
+                    "type": "integer"
+                },
+                "country": {
+                    "type": "string"
+                },
+                "previous_count": {
+                    "type": "integer"
+                },
+                "time_bucket": {
+                    "type": "string"
+                }
+            }
+        },
+        "tiles.CountryTrafficSourceResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/tiles.CountryTrafficSourceData"
+                    }
+                }
+            }
+        },
+        "tiles.RefererTrafficSourceData": {
+            "type": "object",
+            "properties": {
+                "count": {
+                    "type": "integer"
+                },
+                "previous_count": {
+                    "type": "integer"
+                },
+                "previous_revenue": {
+                    "type": "integer"
+                },
+                "referer_url": {
+                    "type": "string"
+                },
+                "revenue": {
+                    "type": "integer"
+                }
+            }
+        },
+        "tiles.RefererTrafficSourceResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/tiles.RefererTrafficSourceData"
+                    }
+                }
+            }
+        },
+        "tiles.TimelineTileData": {
+            "type": "object",
+            "properties": {
+                "num_desktop_visits": {
+                    "type": "integer"
+                },
+                "num_mobile_visits": {
+                    "type": "integer"
+                },
+                "num_revenue": {
+                    "type": "integer"
+                },
+                "num_unknown_visits": {
+                    "type": "integer"
+                },
+                "time_bucket": {
+                    "type": "string"
+                }
+            }
+        },
+        "tiles.TimelineTileResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/tiles.TimelineTileData"
+                    }
+                },
+                "precision": {
+                    "$ref": "#/definitions/tiles.CardPrecision"
+                },
+                "total_visits": {
+                    "type": "integer"
+                }
+            }
+        },
         "types.ActiveUsersResponse": {
             "type": "object",
             "properties": {
@@ -3716,20 +3829,6 @@ const docTemplate = `{
                     "type": "number"
                 },
                 "total_visitors": {
-                    "type": "integer"
-                }
-            }
-        },
-        "types.CountryDataPoint": {
-            "type": "object",
-            "properties": {
-                "country_code": {
-                    "type": "string"
-                },
-                "percentage": {
-                    "type": "number"
-                },
-                "unique_visitors": {
                     "type": "integer"
                 }
             }
@@ -4085,20 +4184,6 @@ const docTemplate = `{
                 },
                 "total_revenue": {
                     "type": "integer"
-                },
-                "unique_visitors": {
-                    "type": "integer"
-                }
-            }
-        },
-        "types.OriginDataPoint": {
-            "type": "object",
-            "properties": {
-                "origin": {
-                    "type": "string"
-                },
-                "percentage": {
-                    "type": "number"
                 },
                 "unique_visitors": {
                     "type": "integer"
@@ -4626,31 +4711,6 @@ const docTemplate = `{
                 }
             }
         },
-        "types.UniqueVisitorsDataPoint": {
-            "type": "object",
-            "properties": {
-                "desktop": {
-                    "type": "integer"
-                },
-                "mobile": {
-                    "type": "integer"
-                },
-                "timestamp": {
-                    "type": "string"
-                }
-            }
-        },
-        "types.UniqueVisitorsTimelineResponse": {
-            "type": "object",
-            "properties": {
-                "data": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/types.UniqueVisitorsDataPoint"
-                    }
-                }
-            }
-        },
         "types.UpdatePaymentProviderRequest": {
             "type": "object",
             "properties": {
@@ -4838,17 +4898,6 @@ const docTemplate = `{
                 }
             }
         },
-        "types.VisitorsByCountryResponse": {
-            "type": "object",
-            "properties": {
-                "data": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/types.CountryDataPoint"
-                    }
-                }
-            }
-        },
         "types.VisitorsByDeviceResponse": {
             "type": "object",
             "properties": {
@@ -4856,17 +4905,6 @@ const docTemplate = `{
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/types.VisitorDataPoint"
-                    }
-                }
-            }
-        },
-        "types.VisitorsByOriginResponse": {
-            "type": "object",
-            "properties": {
-                "data": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/types.OriginDataPoint"
                     }
                 }
             }

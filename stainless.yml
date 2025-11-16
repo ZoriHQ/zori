@@ -41,10 +41,6 @@ resources:
         models:
           visitor_data_point: "#/components/schemas/types.VisitorDataPoint"
           visitors_by_device_response: "#/components/schemas/types.VisitorsByDeviceResponse"
-          origin_data_point: "#/components/schemas/types.OriginDataPoint"
-          visitors_by_origin_response: "#/components/schemas/types.VisitorsByOriginResponse"
-          country_data_point: "#/components/schemas/types.CountryDataPoint"
-          visitors_by_country_response: "#/components/schemas/types.VisitorsByCountryResponse"
           recent_event: "#/components/schemas/types.RecentEvent"
           recent_events_response: "#/components/schemas/types.RecentEventsResponse"
           event_filter_options_response: "#/components/schemas/types.EventFilterOptionsResponse"
@@ -53,8 +49,6 @@ resources:
           visitor_profile_response: "#/components/schemas/types.VisitorProfileResponse"
           visitor_event: "#/components/schemas/types.VisitorEvent"
           events_over_time_data_point: "#/components/schemas/types.EventsOverTimeDataPoint"
-          unique_visitors_data_point: "#/components/schemas/types.UniqueVisitorsDataPoint"
-          unique_visitors_timeline_response: "#/components/schemas/types.UniqueVisitorsTimelineResponse"
           dashboard_metrics_response: "#/components/schemas/types.DashboardMetricsResponse"
           session_metrics_response: "#/components/schemas/types.SessionMetricsResponse"
           bounce_rate_response: "#/components/schemas/types.BounceRateResponse"
@@ -66,8 +60,16 @@ resources:
           cohort_data: "#/components/schemas/types.CohortData"
           manual_identify_request: "#/components/schemas/types.ManualIdentifyRequest"
           manual_identify_response: "#/components/schemas/types.ManualIdentifyResponse"
+          card_precision: "#/components/schemas/tiles.CardPrecision"
+          timeline_tile_data: "#/components/schemas/tiles.TimelineTileData"
+          timeline_tile_response: "#/components/schemas/tiles.TimelineTileResponse"
+          country_traffic_source_data: "#/components/schemas/tiles.CountryTrafficSourceData"
+          country_traffic_source_response: "#/components/schemas/tiles.CountryTrafficSourceResponse"
+          referer_traffic_source_data: "#/components/schemas/tiles.RefererTrafficSourceData"
+          referer_traffic_source_response: "#/components/schemas/tiles.RefererTrafficSourceResponse"
         methods:
           dashboard: get /api/v1/analytics/dashboard
+          timeline: get /api/v1/analytics/timeline
         subresources:
           visitors:
             methods:
@@ -76,7 +78,6 @@ resources:
               by_country: get /api/v1/analytics/visitors/country
               top: get /api/v1/analytics/visitors/top
               profile: get /api/v1/analytics/visitors/profile
-              timeline: get /api/v1/analytics/visitors/timeline
               identify: post /api/v1/analytics/visitors/identify
           events:
             methods:

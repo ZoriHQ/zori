@@ -2,6 +2,7 @@ package clickhouse
 
 import (
 	"context"
+	"os"
 
 	"zori/internal/config"
 
@@ -17,6 +18,11 @@ func NewClickhouseDB(cfg *config.Config) *ClickhouseDB {
 		panic("CLICKHOUSE_URL is required")
 	}
 
+	debug := false
+	if os.Getenv("CLICKHOUSE_DEBUG") == "true" {
+		debug = true
+	}
+
 	clickDbConn, err := goclick.Open(&goclick.Options{
 		Addr: []string{cfg.ClickHouseURL},
 		Auth: goclick.Auth{
@@ -25,7 +31,7 @@ func NewClickhouseDB(cfg *config.Config) *ClickhouseDB {
 			Password: cfg.ClickHousePassword,
 		},
 		Protocol: goclick.Native,
-		Debug:    false,
+		Debug:    debug,
 	})
 
 	if err != nil {

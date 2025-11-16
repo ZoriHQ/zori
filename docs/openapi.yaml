@@ -878,6 +878,112 @@ paths:
         - Analytics
       description: Get session metrics including average duration and pages per session
       summary: Get session metrics
+  /api/v1/analytics/timeline:
+    get:
+      parameters:
+        - example: cus_xyz789
+          in: query
+          name: customer_id
+          schema:
+            type: string
+        - example: 50
+          in: query
+          name: limit
+          schema:
+            default: 50
+            maximum: 100
+            minimum: 1
+            type: integer
+        - example: 0
+          in: query
+          name: offset
+          schema:
+            default: 0
+            minimum: 0
+            type: integer
+        - example: proj_123
+          in: query
+          name: project_id
+          required: true
+          schema:
+            type: string
+        - example: 'https://google.com'
+          in: query
+          name: referrer
+          schema:
+            type: string
+        - example: last_7_days
+          in: query
+          name: time_range
+          required: true
+          schema:
+            default: last_7_days
+            enum:
+              - last_hour
+              - today
+              - yesterday
+              - last_7_days
+              - last_30_days
+              - last_90_days
+            type: string
+          x-enum-varnames:
+            - TimeBoundariesHour
+            - TimeBoundariesToday
+            - TimeBoundariesYesterday
+            - TimeBoundariesLastWeek
+            - TimeBoundariesLastMonth
+            - TimeBoundariesLast90Days
+        - example: utm_source
+          in: query
+          name: utmtag
+          schema:
+            type: string
+        - example: google
+          in: query
+          name: utmtagValue
+          schema:
+            type: string
+        - example: visitor_abc123
+          in: query
+          name: visitor_id
+          schema:
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/tiles.TimelineTileResponse'
+          description: Unique visitors timeline data
+        '400':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Invalid request parameters
+        '401':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Unauthorized - Invalid or missing JWT token
+        '500':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Internal server error
+      security:
+        - ApiKeyAuth: []
+      tags:
+        - Analytics
+      description: >-
+        Get unique visitor counts over time, split by mobile and desktop devices
+        for chart visualization
+      summary: Get unique visitors timeline
   /api/v1/analytics/users/active:
     get:
       parameters:
@@ -1057,7 +1163,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/types.VisitorsByCountryResponse'
+                $ref: '#/components/schemas/tiles.CountryTrafficSourceResponse'
           description: Unique visitors grouped by country
         '400':
           content:
@@ -1312,8 +1418,8 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/types.VisitorsByOriginResponse'
-          description: Unique visitors grouped by origin
+                $ref: '#/components/schemas/tiles.RefererTrafficSourceResponse'
+          description: Unique visitors grouped by referer
         '400':
           content:
             application/json:
@@ -1403,112 +1509,6 @@ paths:
         Get detailed information about a specific visitor including their event
         history and aggregated statistics
       summary: Get visitor profile
-  /api/v1/analytics/visitors/timeline:
-    get:
-      parameters:
-        - example: cus_xyz789
-          in: query
-          name: customer_id
-          schema:
-            type: string
-        - example: 50
-          in: query
-          name: limit
-          schema:
-            default: 50
-            maximum: 100
-            minimum: 1
-            type: integer
-        - example: 0
-          in: query
-          name: offset
-          schema:
-            default: 0
-            minimum: 0
-            type: integer
-        - example: proj_123
-          in: query
-          name: project_id
-          required: true
-          schema:
-            type: string
-        - example: 'https://google.com'
-          in: query
-          name: referrer
-          schema:
-            type: string
-        - example: last_7_days
-          in: query
-          name: time_range
-          required: true
-          schema:
-            default: last_7_days
-            enum:
-              - last_hour
-              - today
-              - yesterday
-              - last_7_days
-              - last_30_days
-              - last_90_days
-            type: string
-          x-enum-varnames:
-            - TimeBoundariesHour
-            - TimeBoundariesToday
-            - TimeBoundariesYesterday
-            - TimeBoundariesLastWeek
-            - TimeBoundariesLastMonth
-            - TimeBoundariesLast90Days
-        - example: utm_source
-          in: query
-          name: utmtag
-          schema:
-            type: string
-        - example: google
-          in: query
-          name: utmtagValue
-          schema:
-            type: string
-        - example: visitor_abc123
-          in: query
-          name: visitor_id
-          schema:
-            type: string
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/types.UniqueVisitorsTimelineResponse'
-          description: Unique visitors timeline data
-        '400':
-          content:
-            application/json:
-              schema:
-                additionalProperties: true
-                type: object
-          description: Invalid request parameters
-        '401':
-          content:
-            application/json:
-              schema:
-                additionalProperties: true
-                type: object
-          description: Unauthorized - Invalid or missing JWT token
-        '500':
-          content:
-            application/json:
-              schema:
-                additionalProperties: true
-                type: object
-          description: Internal server error
-      security:
-        - ApiKeyAuth: []
-      tags:
-        - Analytics
-      description: >-
-        Get unique visitor counts over time, split by mobile and desktop devices
-        for chart visualization
-      summary: Get unique visitors timeline
   /api/v1/analytics/visitors/top:
     get:
       parameters:
@@ -2764,6 +2764,82 @@ components:
           example: '2024-01-15T10:30:00Z'
           type: string
       type: object
+    tiles.CardPrecision:
+      enum:
+        - minutes
+        - hourly
+        - daily
+        - weekly
+        - monthly
+      type: string
+      x-enum-varnames:
+        - CardPrecisionMinutes
+        - CardPrecisionHourly
+        - CardPrecisionDaily
+        - CardPrecisionWeekly
+        - CardPrecisionMonthly
+    tiles.CountryTrafficSourceData:
+      properties:
+        count:
+          type: integer
+        country:
+          type: string
+        previous_count:
+          type: integer
+        time_bucket:
+          type: string
+      type: object
+    tiles.CountryTrafficSourceResponse:
+      properties:
+        data:
+          items:
+            $ref: '#/components/schemas/tiles.CountryTrafficSourceData'
+          type: array
+      type: object
+    tiles.RefererTrafficSourceData:
+      properties:
+        count:
+          type: integer
+        previous_count:
+          type: integer
+        previous_revenue:
+          type: integer
+        referer_url:
+          type: string
+        revenue:
+          type: integer
+      type: object
+    tiles.RefererTrafficSourceResponse:
+      properties:
+        data:
+          items:
+            $ref: '#/components/schemas/tiles.RefererTrafficSourceData'
+          type: array
+      type: object
+    tiles.TimelineTileData:
+      properties:
+        num_desktop_visits:
+          type: integer
+        num_mobile_visits:
+          type: integer
+        num_revenue:
+          type: integer
+        num_unknown_visits:
+          type: integer
+        time_bucket:
+          type: string
+      type: object
+    tiles.TimelineTileResponse:
+      properties:
+        data:
+          items:
+            $ref: '#/components/schemas/tiles.TimelineTileData'
+          type: array
+        precision:
+          $ref: '#/components/schemas/tiles.CardPrecision'
+        total_visits:
+          type: integer
+      type: object
     types.ActiveUsersResponse:
       properties:
         dau:
@@ -2909,15 +2985,6 @@ components:
         repeat_purchase_rate:
           type: number
         total_visitors:
-          type: integer
-      type: object
-    types.CountryDataPoint:
-      properties:
-        country_code:
-          type: string
-        percentage:
-          type: number
-        unique_visitors:
           type: integer
       type: object
     types.CreatePaymentProviderRequest:
@@ -3156,15 +3223,6 @@ components:
           type: number
         total_revenue:
           type: integer
-        unique_visitors:
-          type: integer
-      type: object
-    types.OriginDataPoint:
-      properties:
-        origin:
-          type: string
-        percentage:
-          type: number
         unique_visitors:
           type: integer
       type: object
@@ -3516,22 +3574,6 @@ components:
         utm_value:
           type: string
       type: object
-    types.UniqueVisitorsDataPoint:
-      properties:
-        desktop:
-          type: integer
-        mobile:
-          type: integer
-        timestamp:
-          type: string
-      type: object
-    types.UniqueVisitorsTimelineResponse:
-      properties:
-        data:
-          items:
-            $ref: '#/components/schemas/types.UniqueVisitorsDataPoint'
-          type: array
-      type: object
     types.UpdatePaymentProviderRequest:
       properties:
         api_key:
@@ -3658,25 +3700,11 @@ components:
         visitor_id:
           type: string
       type: object
-    types.VisitorsByCountryResponse:
-      properties:
-        data:
-          items:
-            $ref: '#/components/schemas/types.CountryDataPoint'
-          type: array
-      type: object
     types.VisitorsByDeviceResponse:
       properties:
         data:
           items:
             $ref: '#/components/schemas/types.VisitorDataPoint'
-          type: array
-      type: object
-    types.VisitorsByOriginResponse:
-      properties:
-        data:
-          items:
-            $ref: '#/components/schemas/types.OriginDataPoint'
           type: array
       type: object
   securitySchemes:

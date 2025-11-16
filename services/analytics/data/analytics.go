@@ -40,7 +40,7 @@ func (a *AnalyticsData) GetVisitorsByDevice(ctx *ctx.Ctx, filter *filters.Sectio
 			AND client_timestamp_utc <= now()
 		GROUP BY time_bucket
 		ORDER BY time_bucket ASC
-	`, filter.TimeRange.IntervalFunction)
+	`, filter.TimeRange.TimeBucketFunction)
 
 	rows, err := a.clickDb.Db().Query(ctx, query, filter.ProjectID, filter.TimeRange.Start)
 	if err != nil {
@@ -863,46 +863,6 @@ func (a *AnalyticsData) GetVisitorProfile(ctx *ctx.Ctx, filter *filters.VisitorP
 	}
 
 	return &profile, nil
-}
-
-func (a *AnalyticsData) GetUniqueVisitorsTimeline(ctx *ctx.Ctx, filter *filters.SectionFilter) ([]types.UniqueVisitorsDataPoint, error) {
-	query := fmt.Sprintf(`
-		SELECT
-			%s(client_timestamp_utc) as time_bucket,
-			uniqIf(visitor_id, device_type = 'Mobile') as mobile,
-			uniqIf(visitor_id, device_type = 'Desktop') as desktop
-		FROM events
-		WHERE project_id = ?
-			AND client_timestamp_utc >= ?
-			AND client_timestamp_utc <= now()
-		GROUP BY time_bucket
-		ORDER BY time_bucket ASC
-	`, filter.TimeRange.IntervalFunction)
-
-	rows, err := a.clickDb.Db().Query(ctx, query, filter.ProjectID, filter.TimeRange.Start)
-	if err != nil {
-		return nil, fmt.Errorf("failed to query unique visitors timeline: %w", err)
-	}
-	defer rows.Close()
-
-	var dataPoints []types.UniqueVisitorsDataPoint
-	for rows.Next() {
-		var dp types.UniqueVisitorsDataPoint
-		if err := rows.Scan(&dp.Timestamp, &dp.Mobile, &dp.Desktop); err != nil {
-			return nil, fmt.Errorf("failed to scan row: %w", err)
-		}
-		dataPoints = append(dataPoints, dp)
-	}
-
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("error iterating rows: %w", err)
-	}
-
-	if dataPoints == nil {
-		dataPoints = []types.UniqueVisitorsDataPoint{}
-	}
-
-	return dataPoints, nil
 }
 
 func (a *AnalyticsData) GetSessionMetrics(ctx *ctx.Ctx, filter *filters.SectionFilter) (*types.SessionMetricsResponse, error) {

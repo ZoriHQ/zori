@@ -66,13 +66,13 @@ tasks:
       - docker rm postgres-test clickhouse-test nats-test redis-test || true
 
   test:
-    desc: Run all tests
+    desc: "Run tests (usage: task test -- ./path/to/tests or task test -- -v -run TestName ./path)"
     dotenv: [".env.test"]
     deps:
       - test:migrate
     cmds:
       # - defer: { task: test-cleanup }
-      - go test ./... {{.CLI_ARGS}}
+      - go test {{if .CLI_ARGS}}{{.CLI_ARGS}}{{else}}./...{{end}}
 
   test:verbose:
     desc: Run all tests with verbose output
