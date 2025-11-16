@@ -15,7 +15,6 @@ import (
 	projectsServices "zori/services/projects/services"
 
 	"github.com/valyala/fasthttp"
-	"go.opentelemetry.io/otel/attribute"
 	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -156,7 +155,7 @@ func (h *IngestionServer) Injest(ctx *fasthttp.RequestCtx) {
 		}
 	}
 
-	telemetry.AddIngestionAttributes(span, project.OrgID, project.ID, clientEvent.VisitorID, "ingest")
+	telemetry.AddIngestionAttributes(span, project.OrganizationID, project.ID, clientEvent.VisitorID, "ingest")
 
 	if project.FirstEventReceivedAt == nil {
 		go func() {
@@ -203,7 +202,7 @@ func (h *IngestionServer) Injest(ctx *fasthttp.RequestCtx) {
 	telemetry.SetStatus(span, nil)
 	h.logger.WithContext(spanCtx).Debug("Event ingested successfully",
 		"project_id", project.ID,
-		"org_id", project.OrgID,
+		"org_id", project.OrganizationID,
 		"visitor_id", clientEvent.VisitorID)
 
 	fmt.Fprintf(ctx, "ACCEPTED %d", len(ctx.PostBody()))

@@ -33,11 +33,11 @@ type Processor struct {
 
 	clickDb *clickhouse.ClickhouseDB
 
-	stages          []ProcessorStage
-	natsMetrics     *metrics.NatsMetrics
-	tracerProvider  *telemetry.Provider
-	tracer          trace.Tracer
-	logger          *logger.Logger
+	stages         []ProcessorStage
+	natsMetrics    *metrics.NatsMetrics
+	tracerProvider *telemetry.Provider
+	tracer         trace.Tracer
+	logger         *logger.Logger
 }
 
 func NewProcessor(
@@ -119,13 +119,13 @@ func (p *Processor) Start() error {
 			return
 		}
 
-		telemetry.AddIngestionAttributes(span, eventFrame.OrgID, eventFrame.ProjectID, eventFrame.VisitorID, "process")
+		telemetry.AddIngestionAttributes(span, eventFrame.OrganizationID, eventFrame.ProjectID, eventFrame.VisitorID, "process")
 
 		if err := p.processEvent(ctx, &eventFrame); err != nil {
 			telemetry.RecordError(span, err)
 			p.logger.WithContext(ctx).Error("Failed to process event",
 				"error", err,
-				"org_id", eventFrame.OrgID,
+				"org_id", eventFrame.OrganizationID,
 				"project_id", eventFrame.ProjectID)
 			p.natsMetrics.RecordMessageProcessed(rawEventsStream, "event-enricher", "process_error", time.Since(startTime))
 			p.natsMetrics.RecordMessageAck(rawEventsStream, "event-enricher", "nak")
@@ -235,7 +235,7 @@ func (p *Processor) Start() error {
 
 		telemetry.SetStatus(span, nil)
 		p.logger.WithContext(ctx).Debug("Event processed successfully",
-			"org_id", eventFrame.OrgID,
+			"org_id", eventFrame.OrganizationID,
 			"project_id", eventFrame.ProjectID,
 			"visitor_id", eventFrame.VisitorID)
 	})
