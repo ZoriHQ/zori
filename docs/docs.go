@@ -3523,9 +3523,6 @@ const docTemplate = `{
                 },
                 "previous_count": {
                     "type": "integer"
-                },
-                "time_bucket": {
-                    "type": "string"
                 }
             }
         },
