@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.5](https://github.com/ZoriHQ/zori/compare/v0.2.4...v0.2.5) (2025-11-16)
+
+
+### Bug Fixes
+
+* **sdk:** disabled required api key ([27e194a](https://github.com/ZoriHQ/zori/commit/27e194aa07a494a9d3b0f73981f85a9a68f3f380))
+
 ## [0.2.4](https://github.com/ZoriHQ/zori/compare/v0.2.3...v0.2.4) (2025-11-16)
 
 
