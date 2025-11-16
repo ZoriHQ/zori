@@ -21,12 +21,10 @@ type Config struct {
 	ServiceName    string
 	ServiceVersion string
 	Environment    string
-	OTLPEndpoint   string // Grafana Tempo/OTLP endpoint (e.g., "tempo:4317")
-	Enabled        bool
-
-	// Sampling rates
-	HTTPSamplingRate      float64 // 1.0 = 100%, 0.1 = 10%
-	IngestionSamplingRate float64 // Lower rate for high-volume ingestion
+	OTLPEndpoint          string
+	Enabled               bool
+	HTTPSamplingRate      float64
+	IngestionSamplingRate float64
 }
 
 // Provider wraps the OpenTelemetry trace provider
@@ -38,22 +36,19 @@ type Provider struct {
 // NewProvider creates a new OpenTelemetry provider
 func NewProvider(cfg Config) (*Provider, error) {
 	if !cfg.Enabled {
-		// Return a no-op provider
 		return &Provider{
 			tracerProvider: sdktrace.NewTracerProvider(),
 			config:         cfg,
 		}, nil
 	}
 
-	// Set defaults
 	if cfg.HTTPSamplingRate == 0 {
-		cfg.HTTPSamplingRate = 1.0 // 100% for HTTP
+		cfg.HTTPSamplingRate = 1.0
 	}
 	if cfg.IngestionSamplingRate == 0 {
-		cfg.IngestionSamplingRate = 0.1 // 10% for ingestion
+		cfg.IngestionSamplingRate = 0.1
 	}
 
-	// Create resource with service information
 	res, err := resource.Merge(
 		resource.Default(),
 		resource.NewWithAttributes(
@@ -67,7 +62,6 @@ func NewProvider(cfg Config) (*Provider, error) {
 		return nil, fmt.Errorf("failed to create resource: %w", err)
 	}
 
-	// Create OTLP exporter
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
@@ -75,21 +69,19 @@ func NewProvider(cfg Config) (*Provider, error) {
 		ctx,
 		otlptracegrpc.NewClient(
 			otlptracegrpc.WithEndpoint(cfg.OTLPEndpoint),
-			otlptracegrpc.WithInsecure(), // Use TLS in production
+			otlptracegrpc.WithInsecure(),
 		),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create OTLP exporter: %w", err)
 	}
 
-	// Create tracer provider with batch span processor
 	tp := sdktrace.NewTracerProvider(
 		sdktrace.WithBatcher(exporter),
 		sdktrace.WithResource(res),
 		sdktrace.WithSampler(sdktrace.AlwaysSample()),
 	)
 
-	// Set global provider
 	otel.SetTracerProvider(tp)
 	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(
 		propagation.TraceContext{},
@@ -140,7 +132,6 @@ func (p *Provider) ShouldSampleIngestion(traceID trace.TraceID) bool {
 	return result.Decision == sdktrace.RecordAndSample
 }
 
-// Common attribute keys for Zori
 const (
 	AttrOrgID     = attribute.Key("zori.org_id")
 	AttrProjectID = attribute.Key("zori.project_id")

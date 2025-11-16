@@ -23,7 +23,6 @@ type Server struct {
 func New(tracerProvider *telemetry.Provider) *Server {
 	e := echo.New()
 
-	// Add OpenTelemetry middleware first (before logger)
 	var tracer trace.Tracer
 	if tracerProvider != nil {
 		tracer = tracerProvider.Tracer("zori.api")

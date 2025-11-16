@@ -39,14 +39,12 @@ type Config struct {
 	ZoriStripeAppInstallLink   string `env:"ZORI_STRIPE_APP_INSTALL_LINK"`
 	ZoriStripeAppWebhookSecret string `env:"ZORI_STRIPE_APP_WEBHOOK_SECRET"`
 
-	// Metrics Configuration (for Grafana Cloud)
 	MetricsEnabled         bool   `env:"METRICS_ENABLED" envDefault:"false"`
 	MetricsPort            string `env:"METRICS_PORT" envDefault:"9090"`
 	GrafanaCloudRemoteURL  string `env:"GRAFANA_CLOUD_REMOTE_WRITE_URL"`
 	GrafanaCloudUsername   string `env:"GRAFANA_CLOUD_USERNAME"`
 	GrafanaCloudAPIKey     string `env:"GRAFANA_CLOUD_API_KEY"`
 
-	// OpenTelemetry Configuration (for Grafana Tempo)
 	OTelEnabled            bool    `env:"OTEL_ENABLED" envDefault:"true"`
 	OTelEndpoint           string  `env:"OTEL_ENDPOINT" envDefault:"localhost:4317"`
 	OTelServiceName        string  `env:"OTEL_SERVICE_NAME" envDefault:"zori"`
@@ -55,7 +53,6 @@ type Config struct {
 	OTelHTTPSamplingRate   float64 `env:"OTEL_HTTP_SAMPLING_RATE" envDefault:"1.0"`
 	OTelIngestSamplingRate float64 `env:"OTEL_INGEST_SAMPLING_RATE" envDefault:"0.1"`
 
-	// Logging Configuration (for Grafana Loki)
 	LogLevel  string `env:"LOG_LEVEL" envDefault:"info"`
 	LogFormat string `env:"LOG_FORMAT" envDefault:"json"`
 	LokiURL   string `env:"LOKI_URL"`

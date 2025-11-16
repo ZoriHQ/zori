@@ -158,7 +158,6 @@ func registerOSSInitializer(lc fx.Lifecycle, initializer *ossInit.OSSInitializer
 	})
 }
 
-// NewTelemetryProvider creates an OpenTelemetry provider from config
 func NewTelemetryProvider(cfg *config.Config, lc fx.Lifecycle) (*telemetry.Provider, error) {
 	provider, err := telemetry.NewProvider(telemetry.Config{
 		ServiceName:           cfg.OTelServiceName,
@@ -173,7 +172,6 @@ func NewTelemetryProvider(cfg *config.Config, lc fx.Lifecycle) (*telemetry.Provi
 		return nil, err
 	}
 
-	// Register shutdown hook
 	lc.Append(fx.Hook{
 		OnStop: func(ctx context.Context) error {
 			return provider.Shutdown(ctx)
@@ -183,7 +181,6 @@ func NewTelemetryProvider(cfg *config.Config, lc fx.Lifecycle) (*telemetry.Provi
 	return provider, nil
 }
 
-// NewLogger creates a logger from config
 func NewLogger(cfg *config.Config) *logger.Logger {
 	log := logger.NewLogger(logger.Config{
 		Level:     cfg.LogLevel,
@@ -192,7 +189,6 @@ func NewLogger(cfg *config.Config) *logger.Logger {
 		AddSource: true,
 	})
 
-	// Set as default logger
 	logger.SetDefault(log)
 
 	return log

@@ -87,7 +87,6 @@ func (h *IngestionServer) Injest(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	// Start span for ingestion (will be sampled based on config)
 	spanCtx, span := h.startSpan(ctx, "ingestion.ingest")
 	defer span.End()
 
@@ -157,7 +156,6 @@ func (h *IngestionServer) Injest(ctx *fasthttp.RequestCtx) {
 		}
 	}
 
-	// Add minimal attributes for ingestion (org and project IDs only)
 	telemetry.AddIngestionAttributes(span, project.OrgID, project.ID, clientEvent.VisitorID, "ingest")
 
 	if project.FirstEventReceivedAt == nil {
@@ -217,7 +215,6 @@ func (h *IngestionServer) Identify(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	// Start span for identify (will be sampled based on config)
 	spanCtx, span := h.startSpan(ctx, "ingestion.identify")
 	defer span.End()
 

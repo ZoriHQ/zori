@@ -106,7 +106,6 @@ func (p *Processor) Start() error {
 	_, err := p.consumer.Consume(func(msg jetstream.Msg) {
 		startTime := time.Now()
 
-		// Start a trace span for this message processing
 		ctx, span := p.startProcessingSpan(msg)
 		defer span.End()
 
@@ -120,7 +119,6 @@ func (p *Processor) Start() error {
 			return
 		}
 
-		// Add ingestion attributes (minimal for high-volume)
 		telemetry.AddIngestionAttributes(span, eventFrame.OrgID, eventFrame.ProjectID, eventFrame.VisitorID, "process")
 
 		if err := p.processEvent(ctx, &eventFrame); err != nil {

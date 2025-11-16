@@ -81,7 +81,6 @@ func NewIngestionApplication() *fx.App {
 	)
 }
 
-// NewTelemetryProvider creates an OpenTelemetry provider for ingestion server
 func NewTelemetryProvider(cfg *config.Config, lc fx.Lifecycle) (*telemetry.Provider, error) {
 	provider, err := telemetry.NewProvider(telemetry.Config{
 		ServiceName:           cfg.OTelServiceName + "-ingestion",
@@ -89,7 +88,7 @@ func NewTelemetryProvider(cfg *config.Config, lc fx.Lifecycle) (*telemetry.Provi
 		Environment:           cfg.OTelEnvironment,
 		OTLPEndpoint:          cfg.OTelEndpoint,
 		Enabled:               cfg.OTelEnabled,
-		HTTPSamplingRate:      1.0, // Always sample for ingestion HTTP layer
+		HTTPSamplingRate:      1.0,
 		IngestionSamplingRate: cfg.OTelIngestSamplingRate,
 	})
 	if err != nil {
@@ -105,7 +104,6 @@ func NewTelemetryProvider(cfg *config.Config, lc fx.Lifecycle) (*telemetry.Provi
 	return provider, nil
 }
 
-// NewLogger creates a logger for ingestion server
 func NewLogger(cfg *config.Config) *logger.Logger {
 	log := logger.NewLogger(logger.Config{
 		Level:     cfg.LogLevel,
