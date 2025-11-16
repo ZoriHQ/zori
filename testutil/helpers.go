@@ -63,9 +63,13 @@ func WaitForNATSReady(t *testing.T, tc *di.TestContainer, timeout time.Duration)
 	ctx := context.Background()
 
 	return WaitForCondition(ctx, timeout, 100*time.Millisecond, func() (bool, error) {
-		if tc.NATS == nil || tc.NATS.Conn == nil {
+		if tc.NATS == nil {
 			return false, nil
 		}
-		return tc.NATS.Conn.Status() == 1, nil
+		conn := tc.NATS.GetConnection()
+		if conn == nil {
+			return false, nil
+		}
+		return conn.Status() == 1, nil
 	})
 }

@@ -24,8 +24,6 @@ services:
     container_name: clickhouse-test
     environment:
       CLICKHOUSE_DB: default
-      CLICKHOUSE_USER: default
-      CLICKHOUSE_PASSWORD: default
     ports:
       - "9002:9000"
       - "8123:8123"
