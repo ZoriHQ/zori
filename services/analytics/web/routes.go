@@ -66,6 +66,8 @@ func RegisterRoutes(
 	server.GroupGetWithFilter(analyticsRouteGroup, "/tiles/traffic-by-country", tilesService.GetTrafficSourceCountriesTile, lfMiddleware)
 	server.GroupGetWithFilter(analyticsRouteGroup, "/tiles/traffic-by-referer", tilesService.GetTrafficSourceRefererTile, lfMiddleware)
 	server.GroupGetWithFilter(analyticsRouteGroup, "/tiles/traffic-by-utm", tilesService.GetTrafficSourceUTMTile, lfMiddleware)
+	server.GroupGetWithFilter(analyticsRouteGroup, "/tiles/visitors-by-browser", tilesService.GetVisitorsByBrowserTile, lfMiddleware)
+	server.GroupGetWithFilter(analyticsRouteGroup, "/tiles/visitors-by-os", tilesService.GetVisitorsByOSTile, lfMiddleware)
 
 	// Events page endpoints
 	server.GroupGetWithFilter(analyticsRouteGroup, "/events/recent", analyticsService.GetRecentEvents)

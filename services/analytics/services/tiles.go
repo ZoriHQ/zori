@@ -24,6 +24,8 @@ type TilesService struct {
 	mauTile                  *tiles.MAUTile
 	returnRateTile           *tiles.ReturnRateTile
 	timeBetweenVisitsTile    *tiles.TimeBetweenVisitsTile
+	visitorsByBrowserTile    *tiles.VisitorsByBrowserTile
+	visitorsByOSTile         *tiles.VisitorsByOSTile
 }
 
 func NewTilesService(
@@ -41,6 +43,8 @@ func NewTilesService(
 	mauTile *tiles.MAUTile,
 	returnRateTile *tiles.ReturnRateTile,
 	timeBetweenVisitsTile *tiles.TimeBetweenVisitsTile,
+	visitorsByBrowserTile *tiles.VisitorsByBrowserTile,
+	visitorsByOSTile *tiles.VisitorsByOSTile,
 ) *TilesService {
 	return &TilesService{
 		timelineTile:             timelineTile,
@@ -57,6 +61,8 @@ func NewTilesService(
 		mauTile:                  mauTile,
 		returnRateTile:           returnRateTile,
 		timeBetweenVisitsTile:    timeBetweenVisitsTile,
+		visitorsByOSTile:         visitorsByOSTile,
+		visitorsByBrowserTile:    visitorsByBrowserTile,
 	}
 }
 
@@ -296,4 +302,38 @@ func (s *TilesService) GetReturnRateTile(ctx *ctx.Ctx, filter *filters.SectionFi
 // @Router /api/v1/analytics/tiles/time-between-visits [get]
 func (s *TilesService) GetTimeBetweenVisitsTile(ctx *ctx.Ctx, filter *filters.SectionFilter) (*tiles.TimeBetweenVisitsResponse, error) {
 	return s.timeBetweenVisitsTile.Fetch(ctx, filter)
+}
+
+// GetVisitorsByBrowserTile returns the number of visitors by browser for current and previous periods
+// @Summary Get visitors by browser tile
+// @Description Get number of visitors by browser for current period compared to the previous period
+// @Tags Analytics
+// @Accept json
+// @Produce json
+// @Security ApiKeyAuth
+// @Param filter query filters.SectionFilter true "Filter parameters"
+// @Success 200 {object} tiles.VisitorsByBrowserResponse "Visitors by browser with period comparison"
+// @Failure 400 {object} map[string]interface{} "Invalid request parameters"
+// @Failure 401 {object} map[string]interface{} "Unauthorized - Invalid or missing JWT token"
+// @Failure 500 {object} map[string]interface{} "Internal server error"
+// @Router /api/v1/analytics/tiles/visitors-by-browser [get]
+func (s *TilesService) GetVisitorsByBrowserTile(ctx *ctx.Ctx, filter *filters.SectionFilter) (*tiles.VisitorsByBrowserResponse, error) {
+	return s.visitorsByBrowserTile.Fetch(ctx, filter)
+}
+
+// GetVisitorsByOSTile returns the number of visitors by OS for current and previous periods
+// @Summary Get visitors by OS tile
+// @Description Get number of visitors by OS for current period compared to the previous period
+// @Tags Analytics
+// @Accept json
+// @Produce json
+// @Security ApiKeyAuth
+// @Param filter query filters.SectionFilter true "Filter parameters"
+// @Success 200 {object} tiles.VisitorsByOSResponse "Visitors by OS with period comparison"
+// @Failure 400 {object} map[string]interface{} "Invalid request parameters"
+// @Failure 401 {object} map[string]interface{} "Unauthorized - Invalid or missing JWT token"
+// @Failure 500 {object} map[string]interface{} "Internal server error"
+// @Router /api/v1/analytics/tiles/visitors-by-os [get]
+func (s *TilesService) GetVisitorsByOSTile(ctx *ctx.Ctx, filter *filters.SectionFilter) (*tiles.VisitorsByOSResponse, error) {
+	return s.visitorsByOSTile.Fetch(ctx, filter)
 }
