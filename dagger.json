@@ -1,8 +1,0 @@
-{
-  "name": "zori",
-  "engineVersion": "v0.19.3",
-  "sdk": {
-    "source": "go"
-  },
-  "source": ".dagger"
-}

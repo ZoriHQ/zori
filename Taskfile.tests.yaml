@@ -5,26 +5,34 @@ vars:
 
 tasks:
   test:containers:
-    desc: Start test database containers
+    desc: Start test database containers using docker compose
     cmds:
-      - docker run --rm -d --name postgres-test -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=postgres -p 5434:5432 postgres:latest
-      - docker run --rm -d --name clickhouse-test -p 9002:9000 -v {{.ROOT_DIR}}/scripts/clickhouse-users-test.xml:/etc/clickhouse-server/users.d/test.xml clickhouse/clickhouse-server:latest
-      - docker run --rm -d --name nats-test -p 4222:4222 -p 8222:8222 nats:latest -js
-      - docker run --rm -d --name redis-test -p 6379:6379 redis:latest
-      - ./scripts/init-test-dbs.sh
+      - docker compose -f docker-compose.test.yaml up -d
+      - echo "Waiting for services to be healthy..."
+      - |
+        timeout 60s bash -c 'until docker compose -f docker-compose.test.yaml ps | grep -q "healthy.*healthy.*healthy.*healthy"; do
+          echo "Waiting for services...";
+          sleep 2;
+        done' || {
+          echo "Services failed to become healthy:"
+          docker compose -f docker-compose.test.yaml ps
+          exit 1
+        }
+      - echo "All services are healthy and ready!"
 
   test:migrate:
     desc: Run migrations for test databases
     dotenv: [".env.test"]
+    deps:
+      - test:containers
     cmds:
-      - goose -dir internal/storage/postgres/migrations postgres "postgres://postgres:postgres@localhost:5434/zori_test?sslmode=disable" up
-      - GOOSE_DRIVER=clickhouse GOOSE_DBSTRING="tcp://localhost:9002/zori_test" goose -dir internal/storage/clickhouse/migrations up
+      - goose -dir internal/storage/postgres/migrations postgres "postgres://postgres:postgres@localhost:5434/postgres?sslmode=disable" up
+      - GOOSE_DRIVER=clickhouse GOOSE_DBSTRING="tcp://localhost:9002/default" goose -dir internal/storage/clickhouse/migrations up
 
-  test-cleanup:
+  test:cleanup:
     desc: Stop and remove test database containers
     cmds:
-      - docker stop postgres-test clickhouse-test nats-test redis-test || true
-      - docker rm postgres-test clickhouse-test nats-test redis-test || true
+      - docker compose -f docker-compose.test.yaml down -v
 
   test:
     desc: "Run tests (usage: task test -- ./path/to/tests or task test -- -v -run TestName ./path)"
@@ -32,21 +40,40 @@ tasks:
     deps:
       - test:migrate
     cmds:
-      # - defer: { task: test-cleanup }
       - go test {{if .CLI_ARGS}}{{.CLI_ARGS}}{{else}}./...{{end}}
+
+  test:coverage:
+    desc: Run tests with coverage report
+    dotenv: [".env.test"]
+    deps:
+      - test:migrate
+    cmds:
+      - go test -v -race -coverprofile=coverage.out -covermode=atomic ./...
+      - go tool cover -html=coverage.out -o coverage.html
+      - echo "Coverage report generated at coverage.html"
+
   test:analytics:tiles:
     desc: Run all tiles tests
     dotenv: [".env.test"]
+    deps:
+      - test:migrate
     cmds:
       - go test -v ./services/analytics/tiles
 
   test:verbose:
     desc: Run all tests with verbose output
     dotenv: [".env.test"]
+    deps:
+      - test:migrate
     cmds:
       - go test -v ./...
 
-  # Clean tasks
+  test:watch:
+    desc: Run tests in watch mode (requires entr)
+    dotenv: [".env.test"]
+    cmds:
+      - find . -name "*.go" | entr -c go test ./...
+
   clean:
     desc: Clean build artifacts and temporary files
     cmds:

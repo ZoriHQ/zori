@@ -14,13 +14,47 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Dagger
-        uses: dagger/dagger-for-github@v7
+      - name: Set up Go
+        uses: actions/setup-go@v5
         with:
-          version: "latest"
+          go-version: '1.24'
+          cache: true
 
-      - name: Run tests with Dagger
-        run: dagger call test-with-coverage --source=. export --path=coverage.out
+      - name: Start test services
+        run: docker compose -f docker-compose.test.yaml up -d
+
+      - name: Wait for services to be healthy
+        run: |
+          echo "Waiting for all services to be healthy..."
+          timeout 60s bash -c 'until docker compose -f docker-compose.test.yaml ps | grep -q "healthy.*healthy.*healthy.*healthy"; do sleep 2; done' || {
+            echo "Services health check:"
+            docker compose -f docker-compose.test.yaml ps
+            exit 1
+          }
+
+      - name: Install goose
+        run: go install github.com/pressly/goose/v3/cmd/goose@latest
+
+      - name: Run database migrations
+        run: |
+          goose -dir internal/storage/postgres/migrations postgres "postgres://postgres:postgres@localhost:5434/postgres?sslmode=disable" up
+          GOOSE_DRIVER=clickhouse GOOSE_DBSTRING="tcp://localhost:9002/default" goose -dir internal/storage/clickhouse/migrations up
+
+      - name: Run tests with coverage
+        env:
+          POSTGRES_URL: "postgres://postgres:postgres@localhost:5434/postgres?sslmode=disable"
+          CLICKHOUSE_URL: "localhost:9000"
+          CLICKHOUSE_USERNAME: "default"
+          CLICKHOUSE_USER: "default"
+          CLICKHOUSE_PASSWORD: "default"
+          CLICKHOUSE_DATABASE: "default"
+          NATS_STREAM_URL: "nats://localhost:4222"
+          REDIS_ADDRS: "localhost:6379"
+          JWT_SECRET_KEY: "test-secret-key-for-testing-purposes-min-32-chars"
+          ENCRYPTION_KEY: "test-encryption-key-must-be-32-chars-long!"
+          ZORI_IS_OSS: "true"
+          LOG_LEVEL: "error"
+        run: go test -v -race -coverprofile=coverage.out -covermode=atomic ./...
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
@@ -29,3 +63,7 @@ jobs:
           flags: unittests
           name: codecov-umbrella
           fail_ci_if_error: false
+
+      - name: Cleanup test services
+        if: always()
+        run: docker compose -f docker-compose.test.yaml down -v
