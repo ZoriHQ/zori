@@ -15,6 +15,7 @@ services:
       interval: 2s
       timeout: 5s
       retries: 10
+      start_period: 10s
     volumes:
       - postgres-test-data:/var/lib/postgresql/data
 
@@ -45,10 +46,11 @@ services:
       - "4222:4222"
       - "8222:8222"
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "localhost:8222/healthz"]
+      test: ["CMD-SHELL", "ps aux | grep '[n]ats-server' || exit 1"]
       interval: 2s
       timeout: 5s
       retries: 10
+      start_period: 5s
 
   redis-test:
     image: redis:latest
