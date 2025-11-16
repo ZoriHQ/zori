@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.4](https://github.com/ZoriHQ/zori/compare/v0.2.3...v0.2.4) (2025-11-16)
+
+
+### Code Refactoring
+
+* **deps:** updated deps ([a755747](https://github.com/ZoriHQ/zori/commit/a75574791a7fc0ab343ee031046bd6993c2d7e90))
+
 ## [0.2.3](https://github.com/ZoriHQ/zori/compare/v0.2.2...v0.2.3) (2025-11-03)
 
 
