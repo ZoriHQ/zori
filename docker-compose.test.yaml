@@ -17,7 +17,7 @@ services:
       retries: 10
       start_period: 10s
     volumes:
-      - postgres-test-data:/var/lib/postgresql/data
+      - postgres-test-data:/var/lib/postgresql
 
   clickhouse-test:
     image: clickhouse/clickhouse-server:latest
