@@ -7,6 +7,7 @@ import (
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"go.opentelemetry.io/otel/propagation"
@@ -18,9 +19,9 @@ import (
 
 // Config holds OpenTelemetry configuration
 type Config struct {
-	ServiceName    string
-	ServiceVersion string
-	Environment    string
+	ServiceName           string
+	ServiceVersion        string
+	Environment           string
 	OTLPEndpoint          string
 	Enabled               bool
 	HTTPSamplingRate      float64
@@ -183,8 +184,8 @@ func SetStatus(span trace.Span, err error) {
 	}
 
 	if err != nil {
-		span.SetStatus(trace.StatusError, err.Error())
+		span.SetStatus(codes.Error, err.Error())
 	} else {
-		span.SetStatus(trace.StatusOK, "")
+		span.SetStatus(codes.Ok, "")
 	}
 }

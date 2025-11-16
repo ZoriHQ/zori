@@ -21,13 +21,13 @@ import (
 )
 
 type IngestionServer struct {
-	ingestor         *services.Ingestor
-	identifier       *services.Identifier
-	projectService   *projectsServices.ProjectService
-	cacheService     *cache.CacheService
-	tracerProvider   *telemetry.Provider
-	tracer           trace.Tracer
-	logger           *logger.Logger
+	ingestor       *services.Ingestor
+	identifier     *services.Identifier
+	projectService *projectsServices.ProjectService
+	cacheService   *cache.CacheService
+	tracerProvider *telemetry.Provider
+	tracer         trace.Tracer
+	logger         *logger.Logger
 }
 
 func NewIngestionServer(
@@ -318,12 +318,12 @@ func (h *IngestionServer) startSpan(ctx *fasthttp.RequestCtx, name string) (cont
 	spanCtx, span := h.tracer.Start(context.Background(), name,
 		trace.WithSpanKind(trace.SpanKindServer),
 		trace.WithAttributes(
-			semconv.HTTPMethod(string(ctx.Method())),
-			semconv.HTTPTarget(string(ctx.Path())),
-			semconv.HTTPScheme(string(ctx.URI().Scheme())),
-			semconv.NetHostName(string(ctx.Host())),
-			semconv.HTTPUserAgent(string(ctx.UserAgent())),
-			semconv.NetPeerIP(ctx.RemoteIP().String()),
+			semconv.HTTPRequestMethodKey.String(string(ctx.Method())),
+			semconv.URLPath(string(ctx.Path())),
+			semconv.URLScheme(string(ctx.URI().Scheme())),
+			semconv.ServerAddressKey.String(string(ctx.Host())),
+			semconv.UserAgentOriginal(string(ctx.UserAgent())),
+			semconv.ClientAddressKey.String(ctx.RemoteIP().String()),
 		),
 	)
 

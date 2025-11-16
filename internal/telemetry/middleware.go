@@ -27,13 +27,13 @@ func EchoMiddleware(tracer trace.Tracer) echo.MiddlewareFunc {
 			ctx, span := tracer.Start(ctx, spanName,
 				trace.WithSpanKind(trace.SpanKindServer),
 				trace.WithAttributes(
-					semconv.HTTPMethod(req.Method),
+					semconv.HTTPRequestMethodKey.String(req.Method),
 					semconv.HTTPRoute(c.Path()),
-					semconv.HTTPTarget(req.URL.Path),
-					semconv.HTTPScheme(req.URL.Scheme),
-					semconv.NetHostName(req.Host),
-					semconv.HTTPUserAgent(req.UserAgent()),
-					semconv.NetPeerIP(c.RealIP()),
+					semconv.URLPath(req.URL.Path),
+					semconv.URLScheme(req.URL.Scheme),
+					semconv.ServerAddressKey.String(req.Host),
+					semconv.UserAgentOriginal(req.UserAgent()),
+					semconv.ClientAddressKey.String(c.RealIP()),
 				),
 			)
 			defer span.End()
@@ -47,7 +47,7 @@ func EchoMiddleware(tracer trace.Tracer) echo.MiddlewareFunc {
 			// Set response attributes
 			status := c.Response().Status
 			span.SetAttributes(
-				semconv.HTTPStatusCode(status),
+				semconv.HTTPResponseStatusCode(status),
 			)
 
 			// Set span status based on HTTP status
