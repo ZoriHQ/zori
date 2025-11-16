@@ -1,219 +1,169 @@
-# Zori
+# zori.
 
-Open-source revenue attribution and customer analytics platform. Track where your revenue comes from, analyze conversion funnels, and understand customer behavior with first-touch attribution.
+revenue → attribution → clarity.
 
-## What is Zori?
+---
 
-Think of it as a bridge between your marketing analytics and revenue data. You probably know your traffic sources (Google Analytics, Plausible, etc.), but do you know which campaigns actually generate revenue? Zori connects visitor behavior to payment events, giving you clear attribution from first click to final purchase.
+## the problem?
+you know your traffic.
+you don't know your money.
+the gap between visitor and customer is dark.
 
-Built for SaaS companies and e-commerce businesses that need to answer questions like:
-- Which marketing campaign brings in the most revenue?
-- What's my actual conversion rate and customer lifetime value?
-- How long does it take visitors to convert?
-- Which traffic sources have the highest-value customers?
+## the answer.
+zori watches first touch.
+remembers everything.
+connects dots when stripe speaks.
 
-## Core Features
+---
 
-**Revenue Attribution**
-- First-touch attribution linking visitors to revenue
-- UTM parameter tracking (source, medium, campaign)
-- Referrer domain analysis
-- Customer journey timeline
-
-**Conversion Analytics**
-- Conversion rate tracking
-- Time-to-purchase metrics (average & median)
-- Customer lifetime value (LTV) calculations
-- Repeat purchase rate analysis
-
-**Event Tracking**
-- Page view tracking with metadata
-- Click event classification (buttons, links, CTAs)
-- Custom event properties
-- Real-time event ingestion
-
-**Payment Integration**
-- Stripe integration (via Stripe Apps or API keys)
-- Payment event processing via NATS
-- Revenue dashboard with MRR tracking
-- Customer profiles with purchase history
-
-## Architecture
-
-### Tech Stack
-- **Backend:** Go 1.24+ with Echo web framework
-- **Databases:**
-  - PostgreSQL for relational data (accounts, projects, orgs)
-  - ClickHouse for analytics (events, payments, aggregations)
-  - Redis for caching and session management
-- **Messaging:** NATS for event streaming
-- **Observability:** Prometheus metrics with Grafana Cloud support
-
-### System Design
-
-Zori runs two separate HTTP servers:
-
-1. **Main API Server** (`zori server`)
-   - REST API for analytics queries
-   - Authentication & authorization
-   - Project management
-   - Revenue metrics endpoints
-
-2. **Ingestion Server** (`zori ingestion`)
-   - High-throughput event ingestion
-   - Minimal processing overhead
-   - WebSocket support for real-time events
-   - Separated for independent scaling
-
-**Event Processing Pipeline:**
-```
-Client Event -> Ingestion Server -> NATS -> Event Processor -> ClickHouse
-
-                                        | Click Classification |
-                                        | UTM Extraction       |
-                                        | Geolocation (MaxMind)|
-```
-
-**Revenue Attribution Flow:**
-```
-Visit Event (UTM params)  First-Touch MV  Payment Event  Attribution Query
-                            (ClickHouse)         
-                                           Revenue Metrics
-```
-
-### Services
+## what lives inside
 
 ```
-services/
- - analytics/      Revenue dashboards & metrics aggregation
- -  auth/           Authentication (Clerk or OSS mode)
- -  events/         Event classification & processing
- -  ingestion/      High-throughput event collection
- -  organizations/  Multi-tenant organization management
- -  payments/       Stripe integration & payment processing
- -  projects/       Project configuration & tokens
- -  revenue/        Attribution logic & conversion metrics
+visitor arrives (utm_source=magic)
+     ↓
+zori remembers
+     ↓
+[... time passes ...]
+     ↓
+visitor → customer ($$$)
+     ↓
+"ah, magic brought money"
 ```
 
-### Data Storage Strategy
+**first touch.**
+where they came from first
+matters most
 
-**PostgreSQL:** User accounts, organizations, projects, payment provider configs
-**ClickHouse:** Time-series analytics data
-- `events` table: All visitor events with UTM parameters, clicks, page views
-- `payment_events` table: Stripe payment data linked to visitors
-- `visitor_first_touch_attribution` (MV): Aggregated first-touch attribution
-- `mrr_timeline_daily_mv` (MV): Monthly recurring revenue timeline
+**every click.**
+buttons. links. intentions.
+classified. understood.
 
-**Why ClickHouse?** Fast aggregations over billions of events, materialized views for real-time attribution, excellent compression for analytics workloads.
+**revenue flows.**
+mrr. ltv. conversion time.
+truth in numbers.
 
-## Quick Start
+---
 
-### Prerequisites
-- Go 1.24+
-- PostgreSQL 15+
-- ClickHouse 24+
-- Redis 7+
-- NATS Server
+## architecture (ascii version)
 
-### Installation
+```
+┌──────────┐     ┌──────────┐
+│ browser  │────▶│ingestion │──┐
+└──────────┘     └──────────┘  │
+                                ▼
+┌──────────┐     ┌──────────┐  NATS
+│  stripe  │────▶│processor │◀─┘
+└──────────┘     └──────────┘
+                       │
+        ┌──────────────┼──────────────┐
+        ▼              ▼              ▼
+   ┌─────────┐  ┌──────────┐  ┌─────────┐
+   │postgres │  │clickhouse│  │  redis  │
+   └─────────┘  └──────────┘  └─────────┘
+    (who you)    (what did)    (cache)
+```
 
+---
+
+## quickstart recipe
+
+**ingredients:**
+- go 1.24+ (fresh)
+- postgres 15+ (relational truth)
+- clickhouse 24+ (time series speed)
+- redis 7+ (memory)
+- nats (message river)
+
+**preparation:**
+
+1. clone the repository
 ```bash
-# Clone the repo
-git clone https://github.com/yourusername/zori.git
-cd zori
+git clone https://github.com/ZoriHQ/zori.git && cd zori
+```
 
-# Install dependencies
-go mod download
-
-# Set up environment
+2. season environment
+```bash
 cp example.env .env
-# Edit .env with your database credentials
-
-# Run migrations
-task migrate:up
-
-# Start the servers
-task server      # Main API server (port 8080)
-task ingestion   # Ingestion server
+# add your secrets to taste
 ```
 
-### Configuration
+3. rise the database
+```bash
+task migrate:up
+```
 
-Key environment variables:
+4. serve hot
+```bash
+task server      # port 1323
+task ingestion   # separate process port 1324
+```
+
+done. tracking begins.
+
+---
+
+## modes of being
+
+**oss mode**
+`ZORI_IS_OSS=true`
+single tenant. your auth. your stripe key.
+freedom.
+
+**cloud mode**
+multi-tenant. clerk auth. stripe oauth.
+scale.
+
+---
+
+## questions → answers
+
+**q: why track first touch only?**
+a: first impression brought them. credit where due.
+
+**q: visitor_id vs session_id?**
+a: visitor persists forever. session = one sitting.
+
+**q: why clickhouse?**
+a: billions of events. millisecond aggregations. compression.
+
+**q: what gets classified?**
+a: every click. button/link/form/nav. patterns emerge.
+
+---
+
+## environment whispers
 
 ```bash
-POSTGRES_URL=postgres://user:pass@localhost:5432/zori_db
+POSTGRES_URL=postgres://localhost:5432/zori
 CLICKHOUSE_URL=http://localhost:8123
 REDIS_ADDRS=localhost:6379
 NATS_STREAM_URL=nats://localhost:4222
 
-# For cloud version
-CLERK_SECRET_KEY=sk_test_...
-ZORI_STRIPE_APP=true
-
-# For OSS version
-ZORI_IS_OSS=true
+# choose your path
+ZORI_IS_OSS=true           # or
+CLERK_SECRET_KEY=sk_test_  # cloud
 ```
-
-## Key Concepts
-
-### First-Touch Attribution
-When a visitor first arrives on your site, Zori captures their UTM parameters, referrer, and other metadata. When that visitor eventually makes a purchase, the revenue is attributed back to their first traffic source. This helps you understand which marketing channels are actually driving revenue, not just traffic.
-
-### Visitor Tracking
-Each visitor gets a unique `visitor_id` that persists across sessions. Events are grouped into sessions with a `session_id`. This allows tracking the complete customer journey from first visit to purchase.
-
-### Event Classification
-The click classifier automatically categorizes clicks into types:
-- Buttons & CTAs (call-to-action elements)
-- Links (internal & external)
-- Form controls
-- Navigation elements
-
-This helps identify high-value interactions that lead to conversions.
-
-## Deployment Modes
-
-**OSS Mode** (`ZORI_IS_OSS=true`)
-- Self-hosted authentication
-- Manual Stripe API key configuration
-- Single organization mode
-- Perfect for personal projects or single-tenant deployments
-
-**Cloud Mode** (default)
-- Clerk authentication
-- Stripe Apps OAuth integration
-- Multi-tenant with organizations
-- Designed for SaaS offering
-
-## Development
-
-Run tests:
-```bash
-task test           # All tests
-task test:auth     # Auth service tests
-task test-migrate  # Migration tests
-```
-
-Generate API docs:
-```bash
-task docs
-```
-
-## API Documentation
-
-Once running, visit:
-- Swagger UI: `http://localhost:8080/swagger/index.html`
-- OpenAPI spec: `http://localhost:8080/api/v1/docs`
-
-## License
-
-Apache 2.0 - See LICENSE file
-
-## Contributing
-
-Contributions welcome! Please check the issues page for open tasks.
 
 ---
 
-Built with Go, ClickHouse, and PostgreSQL. Optimized for revenue attribution, conversion tracking, and marketing analytics.
+## dev commands
+
+```bash
+task test          # prove it works
+task docs          # swagger at :8080/swagger
+```
+
+---
+
+## license
+
+apache 2.0
+
+---
+
+built with go.
+sees through clickhouse.
+remembers in postgres.
+messages through nats.
+
+track money. not just traffic.
