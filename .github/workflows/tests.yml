@@ -17,29 +17,11 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.24'
+          go-version: "1.24"
           cache: true
 
       - name: Start test services
         run: docker compose -f docker-compose.test.yaml up -d
-
-      - name: Wait for services to be healthy
-        run: |
-          echo "Waiting for all services to be healthy..."
-          max_wait=60
-          elapsed=0
-          while [ $elapsed -lt $max_wait ]; do
-            if docker compose -f docker-compose.test.yaml ps | grep -q "healthy.*healthy.*healthy.*healthy"; then
-              echo "All services are healthy and ready!"
-              exit 0
-            fi
-            echo "Waiting for services... ($elapsed/$max_wait seconds)"
-            sleep 2
-            elapsed=$((elapsed + 2))
-          done
-          echo "Services failed to become healthy within ${max_wait} seconds:"
-          docker compose -f docker-compose.test.yaml ps
-          exit 1
 
       - name: Install goose
         run: go install github.com/pressly/goose/v3/cmd/goose@latest
