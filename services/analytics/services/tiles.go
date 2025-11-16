@@ -10,20 +10,20 @@ import (
 // It contains endpoints definition for various tiles available on the dashboard.
 // the tiles code is defined in /services/analytics/tiles/*.tile.view.go files
 type TilesService struct {
-	timelineTile              *tiles.TimelineTile
-	trafficRefererSourceTile  *tiles.TrafficRefererSourceTile
-	trafficCountrySourceTile  *tiles.TrafficCountrySourceTile
-	trafficUTMSourceTile      *tiles.TrafficUTMSourceTile
-	uniqueVisitorsTile        *tiles.UniqueVisitorsTile
-	uniqueSessionsTile        *tiles.UniqueSessionsTile
-	bounceRateTile            *tiles.BounceRateTile
-	sessionDurationTile       *tiles.SessionDurationTile
-	pagesPerSessionTile       *tiles.PagesPerSessionTile
-	dauTile                   *tiles.DAUTile
-	wauTile                   *tiles.WAUTile
-	mauTile                   *tiles.MAUTile
-	returnRateTile            *tiles.ReturnRateTile
-	timeBetweenVisitsTile     *tiles.TimeBetweenVisitsTile
+	timelineTile             *tiles.TimelineTile
+	trafficRefererSourceTile *tiles.TrafficRefererSourceTile
+	trafficCountrySourceTile *tiles.TrafficCountrySourceTile
+	trafficUTMSourceTile     *tiles.TrafficUTMSourceTile
+	uniqueVisitorsTile       *tiles.UniqueVisitorsTile
+	uniqueSessionsTile       *tiles.UniqueSessionsTile
+	bounceRateTile           *tiles.BounceRateTile
+	sessionDurationTile      *tiles.SessionDurationTile
+	pagesPerSessionTile      *tiles.PagesPerSessionTile
+	dauTile                  *tiles.DAUTile
+	wauTile                  *tiles.WAUTile
+	mauTile                  *tiles.MAUTile
+	returnRateTile           *tiles.ReturnRateTile
+	timeBetweenVisitsTile    *tiles.TimeBetweenVisitsTile
 }
 
 func NewTilesService(
@@ -43,20 +43,20 @@ func NewTilesService(
 	timeBetweenVisitsTile *tiles.TimeBetweenVisitsTile,
 ) *TilesService {
 	return &TilesService{
-		timelineTile:              timelineTile,
-		trafficRefererSourceTile:  trafficRefererSourceTile,
-		trafficCountrySourceTile:  trafficCountrySourceTile,
-		trafficUTMSourceTile:      trafficUTMSourceTile,
-		uniqueVisitorsTile:        uniqueVisitorsTile,
-		uniqueSessionsTile:        uniqueSessionsTile,
-		bounceRateTile:            bounceRateTile,
-		sessionDurationTile:       sessionDurationTile,
-		pagesPerSessionTile:       pagesPerSessionTile,
-		dauTile:                   dauTile,
-		wauTile:                   wauTile,
-		mauTile:                   mauTile,
-		returnRateTile:            returnRateTile,
-		timeBetweenVisitsTile:     timeBetweenVisitsTile,
+		timelineTile:             timelineTile,
+		trafficRefererSourceTile: trafficRefererSourceTile,
+		trafficCountrySourceTile: trafficCountrySourceTile,
+		trafficUTMSourceTile:     trafficUTMSourceTile,
+		uniqueVisitorsTile:       uniqueVisitorsTile,
+		uniqueSessionsTile:       uniqueSessionsTile,
+		bounceRateTile:           bounceRateTile,
+		sessionDurationTile:      sessionDurationTile,
+		pagesPerSessionTile:      pagesPerSessionTile,
+		dauTile:                  dauTile,
+		wauTile:                  wauTile,
+		mauTile:                  mauTile,
+		returnRateTile:           returnRateTile,
+		timeBetweenVisitsTile:    timeBetweenVisitsTile,
 	}
 }
 
