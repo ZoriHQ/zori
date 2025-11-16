@@ -47,7 +47,7 @@ jobs:
       - name: Run database migrations
         run: |
           goose -dir internal/storage/postgres/migrations postgres "postgres://postgres:postgres@localhost:5434/postgres?sslmode=disable" up
-          GOOSE_DRIVER=clickhouse GOOSE_DBSTRING="tcp://localhost:9002/default" goose -dir internal/storage/clickhouse/migrations up
+          GOOSE_DRIVER=clickhouse GOOSE_DBSTRING="tcp://default:default@localhost:9002/default" goose -dir internal/storage/clickhouse/migrations up
 
       - name: Run tests with coverage
         env:

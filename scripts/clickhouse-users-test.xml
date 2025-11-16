@@ -2,8 +2,8 @@
 <clickhouse>
     <users>
         <default>
-            <!-- No password authentication -->
-            <password></password>
+            <!-- Password: default (in plaintext for testing only) -->
+            <password>default</password>
             <networks>
                 <ip>::/0</ip>
             </networks>
