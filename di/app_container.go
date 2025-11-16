@@ -9,12 +9,14 @@ import (
 	"zori/internal/cache"
 	"zori/internal/config"
 	ossInit "zori/internal/init"
+	"zori/internal/logger"
 	"zori/internal/metrics"
 	"zori/internal/natsstream"
 	"zori/internal/server"
 	"zori/internal/server/middlewares"
 	"zori/internal/storage/clickhouse"
 	"zori/internal/storage/postgres"
+	"zori/internal/telemetry"
 	"zori/services/analytics"
 	"zori/services/auth"
 	"zori/services/events"
@@ -48,6 +50,8 @@ func NewApplication() *fx.App {
 			config.NewConfig,
 			postgres.NewPostgresDB,
 			clickhouse.NewClickhouseDB,
+			NewTelemetryProvider,
+			NewLogger,
 			server.New,
 		),
 		fx.Provide(natsstream.NewStream),
@@ -152,4 +156,44 @@ func registerOSSInitializer(lc fx.Lifecycle, initializer *ossInit.OSSInitializer
 			return initializer.InitializeOrReset(ctx, resetAuth)
 		},
 	})
+}
+
+// NewTelemetryProvider creates an OpenTelemetry provider from config
+func NewTelemetryProvider(cfg *config.Config, lc fx.Lifecycle) (*telemetry.Provider, error) {
+	provider, err := telemetry.NewProvider(telemetry.Config{
+		ServiceName:           cfg.OTelServiceName,
+		ServiceVersion:        cfg.OTelServiceVersion,
+		Environment:           cfg.OTelEnvironment,
+		OTLPEndpoint:          cfg.OTelEndpoint,
+		Enabled:               cfg.OTelEnabled,
+		HTTPSamplingRate:      cfg.OTelHTTPSamplingRate,
+		IngestionSamplingRate: cfg.OTelIngestSamplingRate,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// Register shutdown hook
+	lc.Append(fx.Hook{
+		OnStop: func(ctx context.Context) error {
+			return provider.Shutdown(ctx)
+		},
+	})
+
+	return provider, nil
+}
+
+// NewLogger creates a logger from config
+func NewLogger(cfg *config.Config) *logger.Logger {
+	log := logger.NewLogger(logger.Config{
+		Level:     cfg.LogLevel,
+		Format:    cfg.LogFormat,
+		LokiURL:   cfg.LokiURL,
+		AddSource: true,
+	})
+
+	// Set as default logger
+	logger.SetDefault(log)
+
+	return log
 }

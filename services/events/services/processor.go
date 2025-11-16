@@ -5,14 +5,16 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"time"
+	"zori/internal/logger"
 	"zori/internal/metrics"
 	"zori/internal/natsstream"
 	"zori/internal/storage/clickhouse"
+	"zori/internal/telemetry"
 	"zori/services/ingestion/types"
 
 	"github.com/nats-io/nats.go/jetstream"
+	"go.opentelemetry.io/otel/trace"
 )
 
 const (
@@ -31,11 +33,20 @@ type Processor struct {
 
 	clickDb *clickhouse.ClickhouseDB
 
-	stages      []ProcessorStage
-	natsMetrics *metrics.NatsMetrics
+	stages          []ProcessorStage
+	natsMetrics     *metrics.NatsMetrics
+	tracerProvider  *telemetry.Provider
+	tracer          trace.Tracer
+	logger          *logger.Logger
 }
 
-func NewProcessor(natsStream *natsstream.Stream, clickDb *clickhouse.ClickhouseDB, natsMetrics *metrics.NatsMetrics) *Processor {
+func NewProcessor(
+	natsStream *natsstream.Stream,
+	clickDb *clickhouse.ClickhouseDB,
+	natsMetrics *metrics.NatsMetrics,
+	tracerProvider *telemetry.Provider,
+	log *logger.Logger,
+) *Processor {
 	err := natsStream.UpsertJetStream(rawEventsStream, rawEventsSubject)
 	if err != nil {
 		panic(err)
@@ -50,11 +61,19 @@ func NewProcessor(natsStream *natsstream.Stream, clickDb *clickhouse.ClickhouseD
 		NewStageClickClassification(),
 	}
 
+	var tracer trace.Tracer
+	if tracerProvider != nil {
+		tracer = tracerProvider.Tracer("zori.processor")
+	}
+
 	p := &Processor{
-		natsStream:  natsStream,
-		clickDb:     clickDb,
-		stages:      processingStages,
-		natsMetrics: natsMetrics,
+		natsStream:     natsStream,
+		clickDb:        clickDb,
+		stages:         processingStages,
+		natsMetrics:    natsMetrics,
+		tracerProvider: tracerProvider,
+		tracer:         tracer,
+		logger:         log,
 	}
 
 	p.ctx, p.cancelConsumer = context.WithCancel(context.Background())
@@ -87,15 +106,29 @@ func (p *Processor) Start() error {
 	_, err := p.consumer.Consume(func(msg jetstream.Msg) {
 		startTime := time.Now()
 
+		// Start a trace span for this message processing
+		ctx, span := p.startProcessingSpan(msg)
+		defer span.End()
+
 		var eventFrame types.ClientEventFrameV1
 		if err := json.Unmarshal(msg.Data(), &eventFrame); err != nil {
+			telemetry.RecordError(span, err)
+			p.logger.WithContext(ctx).Error("Failed to unmarshal event frame", "error", err)
 			p.natsMetrics.RecordMessageProcessed(rawEventsStream, "event-enricher", "unmarshal_error", time.Since(startTime))
 			p.natsMetrics.RecordMessageAck(rawEventsStream, "event-enricher", "nak")
 			msg.Nak()
 			return
 		}
 
-		if err := p.processEvent(&eventFrame); err != nil {
+		// Add ingestion attributes (minimal for high-volume)
+		telemetry.AddIngestionAttributes(span, eventFrame.OrgID, eventFrame.ProjectID, eventFrame.VisitorID, "process")
+
+		if err := p.processEvent(ctx, &eventFrame); err != nil {
+			telemetry.RecordError(span, err)
+			p.logger.WithContext(ctx).Error("Failed to process event",
+				"error", err,
+				"org_id", eventFrame.OrgID,
+				"project_id", eventFrame.ProjectID)
 			p.natsMetrics.RecordMessageProcessed(rawEventsStream, "event-enricher", "process_error", time.Since(startTime))
 			p.natsMetrics.RecordMessageAck(rawEventsStream, "event-enricher", "nak")
 			msg.Nak()
@@ -125,9 +158,8 @@ func (p *Processor) Start() error {
 			clickElementText = &eventFrame.ClickElement.Text
 		}
 
-		if err := p.clickDb.Ping(context.Background()); err != nil {
-			fmt.Println(err)
-			log.Printf("Error pinging database: %v", err)
+		if err := p.clickDb.Ping(ctx); err != nil {
+			p.logger.WithContext(ctx).Error("Error pinging database", "error", err)
 		}
 
 		insertStart := time.Now()
@@ -198,10 +230,16 @@ func (p *Processor) Start() error {
 
 		marshalEventFrame, err := json.Marshal(eventFrame)
 		if err != nil {
-			log.Printf("Error marshaling event frame: %v", err)
+			p.logger.WithContext(ctx).Error("Error marshaling event frame", "error", err)
 		} else {
 			p.natsStream.GetConnection().Publish(fmt.Sprintf("events:project:%s", eventFrame.ProjectID), marshalEventFrame)
 		}
+
+		telemetry.SetStatus(span, nil)
+		p.logger.WithContext(ctx).Debug("Event processed successfully",
+			"org_id", eventFrame.OrgID,
+			"project_id", eventFrame.ProjectID,
+			"visitor_id", eventFrame.VisitorID)
 	})
 
 	return err
@@ -213,7 +251,7 @@ func (p *Processor) Stop() error {
 	return nil
 }
 
-func (p *Processor) processEvent(eventFrame *types.ClientEventFrameV1) error {
+func (p *Processor) processEvent(ctx context.Context, eventFrame *types.ClientEventFrameV1) error {
 	stageNames := []string{
 		"location",
 		"page",
@@ -236,4 +274,17 @@ func (p *Processor) processEvent(eventFrame *types.ClientEventFrameV1) error {
 	}
 
 	return nil
+}
+
+// startProcessingSpan creates a new span for NATS message processing
+func (p *Processor) startProcessingSpan(msg jetstream.Msg) (context.Context, trace.Span) {
+	if p.tracer == nil {
+		return context.Background(), trace.SpanFromContext(context.Background())
+	}
+
+	ctx, span := p.tracer.Start(context.Background(), "processor.process_event",
+		trace.WithSpanKind(trace.SpanKindConsumer),
+	)
+
+	return ctx, span
 }

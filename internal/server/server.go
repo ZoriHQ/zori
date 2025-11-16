@@ -5,20 +5,31 @@ import (
 	"net/http"
 	"zori/internal/ctx"
 	"zori/internal/server/validators"
+	"zori/internal/telemetry"
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type HandlerFunc[T any] func(*ctx.Ctx) (T, error)
 type HandlerFuncWithFilter[T any, F any] func(*ctx.Ctx, *F) (*T, error)
 
 type Server struct {
-	Echo *echo.Echo
+	Echo   *echo.Echo
+	tracer trace.Tracer
 }
 
-func New() *Server {
+func New(tracerProvider *telemetry.Provider) *Server {
 	e := echo.New()
+
+	// Add OpenTelemetry middleware first (before logger)
+	var tracer trace.Tracer
+	if tracerProvider != nil {
+		tracer = tracerProvider.Tracer("zori.api")
+		e.Use(telemetry.EchoMiddleware(tracer))
+	}
+
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 	e.Use(middleware.CORS())
@@ -28,7 +39,8 @@ func New() *Server {
 	})
 
 	return &Server{
-		Echo: e,
+		Echo:   e,
+		tracer: tracer,
 	}
 }
 
@@ -67,18 +79,37 @@ func wrapHandlerWithFilter[T any, F any](s *Server, handler HandlerFuncWithFilte
 			c.Set("ctx", appctx)
 		}
 
+		// Add user and org info to span if available
+		if s.tracer != nil && appctx.Span() != nil {
+			if appctx.IsAuthenticated() {
+				appctx.Span().SetAttributes(telemetry.AttrUserID.String(appctx.UserID()))
+			}
+			if appctx.HasOrg() {
+				appctx.Span().SetAttributes(telemetry.AttrOrgID.String(appctx.OrgID()))
+			}
+		}
+
 		filter := new(F)
 		if err := c.Bind(filter); err != nil {
+			if appctx.Span() != nil {
+				telemetry.RecordError(appctx.Span(), err)
+			}
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 		}
 
 		if err := c.Validate(filter); err != nil {
+			if appctx.Span() != nil {
+				telemetry.RecordError(appctx.Span(), err)
+			}
 			return err
 		}
 
 		result, err := handler(appctx, filter)
 
 		if err != nil {
+			if appctx.Span() != nil {
+				telemetry.RecordError(appctx.Span(), err)
+			}
 			return s.handleError(c, err)
 		}
 
@@ -99,9 +130,23 @@ func wrapHandler[T any](s *Server, handler HandlerFunc[T]) echo.HandlerFunc {
 			c.Set("ctx", appctx)
 		}
 
+		// Add user and org info to span if available
+		if s.tracer != nil && appctx.Span() != nil {
+			if appctx.IsAuthenticated() {
+				appctx.Span().SetAttributes(telemetry.AttrUserID.String(appctx.UserID()))
+			}
+			if appctx.HasOrg() {
+				appctx.Span().SetAttributes(telemetry.AttrOrgID.String(appctx.OrgID()))
+			}
+		}
+
 		result, err := handler(appctx)
 
 		if err != nil {
+			// Record error on span
+			if appctx.Span() != nil {
+				telemetry.RecordError(appctx.Span(), err)
+			}
 			return s.handleError(c, err)
 		}
 
