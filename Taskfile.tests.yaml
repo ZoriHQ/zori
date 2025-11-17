@@ -17,7 +17,7 @@ tasks:
       - test:containers
     cmds:
       - goose -dir internal/storage/postgres/migrations postgres "postgres://postgres:postgres@localhost:5434/postgres?sslmode=disable" up
-      - GOOSE_DRIVER=clickhouse GOOSE_DBSTRING="tcp://default:default@localhost:9000/default" goose -dir internal/storage/clickhouse/migrations up
+      - GOOSE_DRIVER=clickhouse GOOSE_DBSTRING="clickhouse://default:default@localhost:9000/default" goose -dir internal/storage/clickhouse/migrations up
 
   test:cleanup:
     desc: Stop and remove test database containers
