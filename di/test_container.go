@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"net"
+	"sync"
 	"testing"
 	"time"
 
@@ -52,6 +53,12 @@ type TestContainer struct {
 	IngestionServerURL string
 	RevenueData        *revenueData.RevenueData
 }
+
+var (
+	sharedContainer     *TestContainer
+	sharedContainerOnce sync.Once
+	sharedContainerMu   sync.Mutex
+)
 
 func NewTestPostgresDB(cfg *config.Config) (*postgres.PostgresDB, error) {
 	sqldb := sql.OpenDB(pgdriver.NewConnector(pgdriver.WithDSN(cfg.PostgresURL)))
@@ -175,4 +182,51 @@ func NewTestContainer(t *testing.T) *TestContainer {
 
 func (tc *TestContainer) Cleanup() {
 	tc.App.RequireStop()
+}
+
+func GetSharedTestContainer(t *testing.T) *TestContainer {
+	sharedContainerOnce.Do(func() {
+		sharedContainer = NewTestContainer(t)
+	})
+	return sharedContainer
+}
+
+func (tc *TestContainer) CleanupTestData(ctx context.Context) error {
+	sharedContainerMu.Lock()
+	defer sharedContainerMu.Unlock()
+
+	if _, err := tc.DB.DB.NewTruncateTable().
+		Model((*models.Project)(nil)).
+		Cascade().
+		Exec(ctx); err != nil {
+		return fmt.Errorf("failed to truncate projects: %w", err)
+	}
+
+	if _, err := tc.DB.DB.NewTruncateTable().
+		Model((*models.Organization)(nil)).
+		Cascade().
+		Exec(ctx); err != nil {
+		return fmt.Errorf("failed to truncate organizations: %w", err)
+	}
+
+	if _, err := tc.DB.DB.NewTruncateTable().
+		Model((*models.Account)(nil)).
+		Cascade().
+		Exec(ctx); err != nil {
+		return fmt.Errorf("failed to truncate accounts: %w", err)
+	}
+
+	if err := tc.ClickHouse.Db().Exec(ctx, "TRUNCATE TABLE IF EXISTS events"); err != nil {
+		return fmt.Errorf("failed to truncate events: %w", err)
+	}
+
+	if err := tc.ClickHouse.Db().Exec(ctx, "TRUNCATE TABLE IF EXISTS payment_events"); err != nil {
+		return fmt.Errorf("failed to truncate payment_events: %w", err)
+	}
+
+	if err := tc.Cache.FlushAll(ctx); err != nil {
+		return fmt.Errorf("failed to flush cache: %w", err)
+	}
+
+	return nil
 }

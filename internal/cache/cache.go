@@ -78,3 +78,7 @@ func (s *CacheService) SetNX(ctx context.Context, key string, value any, ttl tim
 
 	return result, nil
 }
+
+func (s *CacheService) FlushAll(ctx context.Context) error {
+	return s.redisClient.FlushAll(ctx).Err()
+}
