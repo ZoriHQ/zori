@@ -8,8 +8,8 @@ import (
 )
 
 type SessionDurationResponse struct {
-	AvgDuration         float64 `json:"avg_duration"`
-	PreviousAvgDuration float64 `json:"previous_avg_duration"`
+	AvgDuration         float64 `json:"avg_duration" ch:"avg_duration"`
+	PreviousAvgDuration float64 `json:"previous_avg_duration" ch:"previous_avg_duration"`
 }
 
 type SessionDurationTile struct {
@@ -35,7 +35,7 @@ func (t *SessionDurationTile) fetchData(ctx *ctx.Ctx, filter *filters.SectionFil
 	row := t.db.Db().QueryRow(ctx, query, ctx.OrgID(), filter.ProjectID, ctx.OrgID(), filter.ProjectID)
 
 	var data SessionDurationResponse
-	err := row.Scan(&data.AvgDuration, &data.PreviousAvgDuration)
+	err := row.ScanStruct(&data)
 	if err != nil {
 		return nil, err
 	}

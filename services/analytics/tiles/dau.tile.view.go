@@ -7,8 +7,8 @@ import (
 )
 
 type DAUResponse struct {
-	Count         uint64 `json:"count"`
-	PreviousCount uint64 `json:"previous_count"`
+	Count         uint64 `json:"count" ch:"count"`
+	PreviousCount uint64 `json:"previous_count" ch:"previous_count"`
 }
 
 type DAUTile struct {
@@ -34,7 +34,7 @@ func (t *DAUTile) fetchData(ctx *ctx.Ctx, filter *filters.SectionFilter) (*DAURe
 	row := t.db.Db().QueryRow(ctx, query, ctx.OrgID(), filter.ProjectID)
 
 	var data DAUResponse
-	err := row.Scan(&data.Count, &data.PreviousCount)
+	err := row.ScanStruct(&data)
 	if err != nil {
 		return nil, err
 	}

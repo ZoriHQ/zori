@@ -26,6 +26,8 @@ type TilesService struct {
 	timeBetweenVisitsTile    *tiles.TimeBetweenVisitsTile
 	visitorsByBrowserTile    *tiles.VisitorsByBrowserTile
 	visitorsByOSTile         *tiles.VisitorsByOSTile
+	entryPagesTile           *tiles.EntryPagesTile
+	exitPagesTile            *tiles.ExitPagesTile
 }
 
 func NewTilesService(
@@ -45,6 +47,8 @@ func NewTilesService(
 	timeBetweenVisitsTile *tiles.TimeBetweenVisitsTile,
 	visitorsByBrowserTile *tiles.VisitorsByBrowserTile,
 	visitorsByOSTile *tiles.VisitorsByOSTile,
+	entryPagesTile *tiles.EntryPagesTile,
+	exitPagesTile *tiles.ExitPagesTile,
 ) *TilesService {
 	return &TilesService{
 		timelineTile:             timelineTile,
@@ -63,6 +67,8 @@ func NewTilesService(
 		timeBetweenVisitsTile:    timeBetweenVisitsTile,
 		visitorsByOSTile:         visitorsByOSTile,
 		visitorsByBrowserTile:    visitorsByBrowserTile,
+		entryPagesTile:           entryPagesTile,
+		exitPagesTile:            exitPagesTile,
 	}
 }
 
@@ -336,4 +342,38 @@ func (s *TilesService) GetVisitorsByBrowserTile(ctx *ctx.Ctx, filter *filters.Se
 // @Router /api/v1/analytics/tiles/visitors-by-os [get]
 func (s *TilesService) GetVisitorsByOSTile(ctx *ctx.Ctx, filter *filters.SectionFilter) (*tiles.VisitorsByOSResponse, error) {
 	return s.visitorsByOSTile.Fetch(ctx, filter)
+}
+
+// GetEntryPagesTile returns the top entry pages where visitors first enter the site
+// @Summary Get entry pages tile
+// @Description Get top entry pages where new visitors first land for current period compared to the previous period
+// @Tags Analytics
+// @Accept json
+// @Produce json
+// @Security ApiKeyAuth
+// @Param filter query filters.SectionFilter true "Filter parameters"
+// @Success 200 {object} tiles.EntryPagesResponse "Entry pages with period comparison"
+// @Failure 400 {object} map[string]interface{} "Invalid request parameters"
+// @Failure 401 {object} map[string]interface{} "Unauthorized - Invalid or missing JWT token"
+// @Failure 500 {object} map[string]interface{} "Internal server error"
+// @Router /api/v1/analytics/tiles/entry-pages [get]
+func (s *TilesService) GetEntryPagesTile(ctx *ctx.Ctx, filter *filters.SectionFilter) (*tiles.EntryPagesResponse, error) {
+	return s.entryPagesTile.Fetch(ctx, filter)
+}
+
+// GetExitPagesTile returns the top exit pages where sessions end
+// @Summary Get exit pages tile
+// @Description Get top exit pages where sessions end for current period compared to the previous period
+// @Tags Analytics
+// @Accept json
+// @Produce json
+// @Security ApiKeyAuth
+// @Param filter query filters.SectionFilter true "Filter parameters"
+// @Success 200 {object} tiles.ExitPagesResponse "Exit pages with period comparison"
+// @Failure 400 {object} map[string]interface{} "Invalid request parameters"
+// @Failure 401 {object} map[string]interface{} "Unauthorized - Invalid or missing JWT token"
+// @Failure 500 {object} map[string]interface{} "Internal server error"
+// @Router /api/v1/analytics/tiles/exit-pages [get]
+func (s *TilesService) GetExitPagesTile(ctx *ctx.Ctx, filter *filters.SectionFilter) (*tiles.ExitPagesResponse, error) {
+	return s.exitPagesTile.Fetch(ctx, filter)
 }

@@ -74,6 +74,10 @@ resources:
           time_between_visits_response: "#/components/schemas/tiles.TimeBetweenVisitsResponse"
           visitors_by_os_response: "#/components/schemas/tiles.VisitorsByOSResponse"
           visitors_by_browser_response: "#/components/schemas/tiles.VisitorsByBrowserResponse"
+          entry_pages_data: "#/components/schemas/tiles.EntryPagesData"
+          entry_pages_response: "#/components/schemas/tiles.EntryPagesResponse"
+          exit_pages_data: "#/components/schemas/tiles.ExitPagesData"
+          exit_pages_response: "#/components/schemas/tiles.ExitPagesResponse"
         methods:
           timeline: get /api/v1/analytics/timeline
         subresources:
@@ -104,6 +108,8 @@ resources:
               traffic_by_utm: get /api/v1/analytics/tiles/traffic-by-utm
               visitors_by_browser: get /api/v1/analytics/tiles/visitors-by-browser
               visitors_by_os: get /api/v1/analytics/tiles/visitors-by-os
+              entry_pages: get /api/v1/analytics/tiles/entry-pages
+              exit_pages: get /api/v1/analytics/tiles/exit-pages
           retention:
             methods:
               churn_rate: get /api/v1/analytics/retention/churn-rate

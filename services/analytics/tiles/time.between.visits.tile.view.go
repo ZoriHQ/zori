@@ -8,8 +8,8 @@ import (
 )
 
 type TimeBetweenVisitsResponse struct {
-	AvgHours         float64 `json:"avg_hours"`
-	PreviousAvgHours float64 `json:"previous_avg_hours"`
+	AvgHours         float64 `json:"avg_hours" ch:"avg_hours"`
+	PreviousAvgHours float64 `json:"previous_avg_hours" ch:"previous_avg_hours"`
 }
 
 type TimeBetweenVisitsTile struct {
@@ -35,7 +35,7 @@ func (t *TimeBetweenVisitsTile) fetchData(ctx *ctx.Ctx, filter *filters.SectionF
 	row := t.db.Db().QueryRow(ctx, query, ctx.OrgID(), filter.ProjectID, ctx.OrgID(), filter.ProjectID)
 
 	var data TimeBetweenVisitsResponse
-	err := row.Scan(&data.AvgHours, &data.PreviousAvgHours)
+	err := row.ScanStruct(&data)
 	if err != nil {
 		return nil, err
 	}

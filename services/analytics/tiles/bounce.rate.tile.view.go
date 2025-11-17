@@ -8,8 +8,8 @@ import (
 )
 
 type BounceRateResponse struct {
-	Rate         float64 `json:"rate"`
-	PreviousRate float64 `json:"previous_rate"`
+	Rate         float64 `json:"rate" ch:"rate"`
+	PreviousRate float64 `json:"previous_rate" ch:"previous_rate"`
 }
 
 type BounceRateTile struct {
@@ -35,7 +35,7 @@ func (t *BounceRateTile) fetchData(ctx *ctx.Ctx, filter *filters.SectionFilter) 
 	row := t.db.Db().QueryRow(ctx, query, ctx.OrgID(), filter.ProjectID, ctx.OrgID(), filter.ProjectID)
 
 	var data BounceRateResponse
-	err := row.Scan(&data.Rate, &data.PreviousRate)
+	err := row.ScanStruct(&data)
 	if err != nil {
 		return nil, err
 	}

@@ -8,8 +8,8 @@ import (
 )
 
 type ReturnRateResponse struct {
-	Rate         float64 `json:"rate"`
-	PreviousRate float64 `json:"previous_rate"`
+	Rate         float64 `json:"rate" ch:"rate"`
+	PreviousRate float64 `json:"previous_rate" ch:"previous_rate"`
 }
 
 type ReturnRateTile struct {
@@ -35,7 +35,7 @@ func (t *ReturnRateTile) fetchData(ctx *ctx.Ctx, filter *filters.SectionFilter) 
 	row := t.db.Db().QueryRow(ctx, query, ctx.OrgID(), filter.ProjectID, ctx.OrgID(), filter.ProjectID)
 
 	var data ReturnRateResponse
-	err := row.Scan(&data.Rate, &data.PreviousRate)
+	err := row.ScanStruct(&data)
 	if err != nil {
 		return nil, err
 	}

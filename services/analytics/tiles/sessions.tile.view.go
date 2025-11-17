@@ -8,8 +8,8 @@ import (
 )
 
 type UniqueSessionsResponse struct {
-	Count         uint64 `json:"count"`
-	PreviousCount uint64 `json:"previous_count"`
+	Count         uint64 `json:"count" ch:"count"`
+	PreviousCount uint64 `json:"previous_count" ch:"previous_count"`
 }
 
 type UniqueSessionsTile struct {
@@ -35,7 +35,7 @@ func (t *UniqueSessionsTile) fetchData(ctx *ctx.Ctx, filter *filters.SectionFilt
 	row := t.db.Db().QueryRow(ctx, query, ctx.OrgID(), filter.ProjectID)
 
 	var data UniqueSessionsResponse
-	err := row.Scan(&data.Count, &data.PreviousCount)
+	err := row.ScanStruct(&data)
 	if err != nil {
 		return nil, err
 	}

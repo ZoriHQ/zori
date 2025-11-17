@@ -8,8 +8,8 @@ import (
 )
 
 type PagesPerSessionResponse struct {
-	AvgPages         float64 `json:"avg_pages"`
-	PreviousAvgPages float64 `json:"previous_avg_pages"`
+	AvgPages         float64 `json:"avg_pages"  ch:"avg_pages"`
+	PreviousAvgPages float64 `json:"previous_avg_pages" ch:"previous_avg_pages"`
 }
 
 type PagesPerSessionTile struct {
@@ -35,7 +35,7 @@ func (t *PagesPerSessionTile) fetchData(ctx *ctx.Ctx, filter *filters.SectionFil
 	row := t.db.Db().QueryRow(ctx, query, ctx.OrgID(), filter.ProjectID, ctx.OrgID(), filter.ProjectID)
 
 	var data PagesPerSessionResponse
-	err := row.Scan(&data.AvgPages, &data.PreviousAvgPages)
+	err := row.ScanStruct(&data)
 	if err != nil {
 		return nil, err
 	}

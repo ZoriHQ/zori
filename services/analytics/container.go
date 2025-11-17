@@ -31,6 +31,8 @@ func BuildAnalyticsDIContainer() fx.Option {
 		fx.Provide(tiles.NewTimeBetweenVisitsTile),
 		fx.Provide(tiles.NewVisitorsByBrowserTile),
 		fx.Provide(tiles.NewVisitorsByOSTile),
+		fx.Provide(tiles.NewEntryPagesTile),
+		fx.Provide(tiles.NewExitPagesTile),
 		fx.Provide(services.NewAnalyticsService),
 		fx.Provide(services.NewVisitorsService),
 		fx.Provide(services.NewTilesService),
