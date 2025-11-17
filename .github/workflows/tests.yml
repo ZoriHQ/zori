@@ -23,24 +23,39 @@ jobs:
       - name: Start test services
         run: docker compose -f docker-compose.test.yaml up -d
 
+      - name: Wait for services to be ready
+        run: |
+          echo "Waiting for services to be healthy..."
+          for i in {1..30}; do
+            if docker compose -f docker-compose.test.yaml ps | grep -q "(healthy)"; then
+              echo "Services are healthy"
+              break
+            fi
+            echo "Waiting... ($i/30)"
+            sleep 2
+          done
+          echo "Checking ClickHouse connectivity..."
+          timeout 30 bash -c 'until nc -z 127.0.0.1 9002; do sleep 1; done'
+          echo "All services ready"
+
       - name: Install goose
         run: go install github.com/pressly/goose/v3/cmd/goose@latest
 
       - name: Run database migrations
         run: |
-          goose -dir internal/storage/postgres/migrations postgres "postgres://postgres:postgres@localhost:5434/postgres?sslmode=disable" up
-          GOOSE_DRIVER=clickhouse GOOSE_DBSTRING="tcp://default:default@localhost:9002/default" goose -dir internal/storage/clickhouse/migrations up
+          goose -dir internal/storage/postgres/migrations postgres "postgres://postgres:postgres@127.0.0.1:5434/postgres?sslmode=disable" up
+          GOOSE_DRIVER=clickhouse GOOSE_DBSTRING="tcp://default:default@127.0.0.1:9002/default" goose -dir internal/storage/clickhouse/migrations up
 
       - name: Run tests with coverage
         env:
-          POSTGRES_URL: "postgres://postgres:postgres@localhost:5434/postgres?sslmode=disable"
-          CLICKHOUSE_URL: "localhost:9000"
+          POSTGRES_URL: "postgres://postgres:postgres@127.0.0.1:5434/postgres?sslmode=disable"
+          CLICKHOUSE_URL: "127.0.0.1:9002"
           CLICKHOUSE_USERNAME: "default"
           CLICKHOUSE_USER: "default"
           CLICKHOUSE_PASSWORD: "default"
           CLICKHOUSE_DATABASE: "default"
-          NATS_STREAM_URL: "nats://localhost:4222"
-          REDIS_ADDRS: "localhost:6379"
+          NATS_STREAM_URL: "nats://127.0.0.1:4222"
+          REDIS_ADDRS: "127.0.0.1:6379"
           JWT_SECRET_KEY: "test-secret-key-for-testing-purposes-min-32-chars"
           ENCRYPTION_KEY: "test-encryption-key-must-be-32-chars-long!"
           ZORI_IS_OSS: "true"
