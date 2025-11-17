@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.6](https://github.com/ZoriHQ/zori/compare/v0.2.5...v0.2.6) (2025-11-17)
+
+
+### Miscellaneous
+
+* **ci:** added .env.test to git ([44f9309](https://github.com/ZoriHQ/zori/commit/44f9309cab86739d996097bdec7401fce160ade8))
+
 ## [0.2.5](https://github.com/ZoriHQ/zori/compare/v0.2.4...v0.2.5) (2025-11-16)
 
 
