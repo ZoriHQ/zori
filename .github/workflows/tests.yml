@@ -23,28 +23,6 @@ jobs:
       - name: Start test services
         run: docker compose -f docker-compose.test.yaml up -d
 
-      - name: Wait for services to be ready
-        run: |
-          echo "Waiting for services to be healthy..."
-          for i in {1..30}; do
-            if docker compose -f docker-compose.test.yaml ps | grep -q "(healthy)"; then
-              echo "Services are healthy"
-              break
-            fi
-            echo "Waiting... ($i/30)"
-            sleep 2
-          done
-          echo "Checking ClickHouse connectivity..."
-          for i in {1..30}; do
-            if timeout 2 bash -c "echo > /dev/tcp/127.0.0.1/9002" 2>/dev/null; then
-              echo "ClickHouse is ready"
-              break
-            fi
-            echo "Waiting for ClickHouse... ($i/30)"
-            sleep 1
-          done
-          echo "All services ready"
-
       - name: Install goose
         run: go install github.com/pressly/goose/v3/cmd/goose@latest
 
