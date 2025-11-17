@@ -22,7 +22,7 @@ services:
     environment:
       CLICKHOUSE_DB: default
     ports:
-      - "9002:9000"
+      - "9000:9000"
       - "8123:8123"
     healthcheck:
       test: ["CMD", "wget", "--spider", "-q", "localhost:8123/ping"]

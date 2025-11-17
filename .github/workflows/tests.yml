@@ -29,12 +29,12 @@ jobs:
       - name: Run database migrations
         run: |
           goose -dir internal/storage/postgres/migrations postgres "postgres://postgres:postgres@127.0.0.1:5434/postgres?sslmode=disable" up
-          GOOSE_DRIVER=clickhouse GOOSE_DBSTRING="tcp://default:default@127.0.0.1:9002/default" goose -dir internal/storage/clickhouse/migrations up
+          GOOSE_DRIVER=clickhouse GOOSE_DBSTRING="tcp://default:default@127.0.0.1:9000/default" goose -dir internal/storage/clickhouse/migrations up
 
       - name: Run tests with coverage
         env:
           POSTGRES_URL: "postgres://postgres:postgres@127.0.0.1:5434/postgres?sslmode=disable"
-          CLICKHOUSE_URL: "127.0.0.1:9002"
+          CLICKHOUSE_URL: "127.0.0.1:9000"
           CLICKHOUSE_USERNAME: "default"
           CLICKHOUSE_USER: "default"
           CLICKHOUSE_PASSWORD: "default"
