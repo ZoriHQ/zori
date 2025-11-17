@@ -81,6 +81,7 @@ func (t *TrafficUTMSourceTile) buildTrafficSourceUTMQuery(ctx *ctx.Ctx, filter *
 			FROM events
 			WHERE events.organization_id = ?
 			AND events.project_id = ?
+			AND created_at > now() - %[2]s
 			AND (
 				utm_parameters['utm_source'] != ''
 				OR utm_parameters['utm_medium'] != ''

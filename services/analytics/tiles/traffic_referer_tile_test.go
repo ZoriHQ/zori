@@ -370,4 +370,113 @@ func TestTrafficRefererSourceTile_FetchByReferer(t *testing.T) {
 
 		assert.Empty(t, response.Data, "Should have empty data for no events")
 	})
+
+	t.Run("should not include referers outside the time window", func(t *testing.T) {
+		tc5 := di.NewTestContainer(t)
+		defer tc5.Cleanup()
+
+		_, project5 := fixtures.SetupAccountAndProject(t, tc5)
+		tile5 := tiles.NewTrafficRefererSourceTile(tc5.ClickHouse)
+
+		time.Sleep(500 * time.Millisecond)
+
+		now := time.Now().UTC()
+
+		// Create events:
+		// - linkedin.com only outside the time window (20+ days ago)
+		// - twitter.com only in the current period (last 2 hours)
+		// - Old event from 30 days ago should be completely excluded
+		events := []fixtures.EventInsertData{
+			// LinkedIn - outside the 14-day window
+			{
+				VisitorID:          "visitor-linkedin-1",
+				SessionID:          "session-linkedin-1",
+				ClientTimestampUTC: now.Add(-20 * 24 * time.Hour), // 20 days ago
+				ReferrerDomain:     nullable.FromString("linkedin.com").Ptr(),
+				ProjectID:          project5.ID,
+				OrganizationID:     project5.OrganizationID,
+				UserAgent:          "Mozilla/5.0",
+				IP:                 "127.0.0.1",
+				PageURL:            "/",
+				PagePath:           "/",
+				Host:               project5.Domain,
+			},
+			{
+				VisitorID:          "visitor-linkedin-2",
+				SessionID:          "session-linkedin-2",
+				ClientTimestampUTC: now.Add(-25 * 24 * time.Hour), // 25 days ago
+				ReferrerDomain:     nullable.FromString("linkedin.com").Ptr(),
+				ProjectID:          project5.ID,
+				OrganizationID:     project5.OrganizationID,
+				UserAgent:          "Mozilla/5.0",
+				IP:                 "127.0.0.1",
+				PageURL:            "/",
+				PagePath:           "/",
+				Host:               project5.Domain,
+			},
+			// Twitter - only in current period
+			{
+				VisitorID:          "visitor-twitter-1",
+				SessionID:          "session-twitter-1",
+				ClientTimestampUTC: now.Add(-1 * time.Hour),
+				ReferrerDomain:     nullable.FromString("twitter.com").Ptr(),
+				ProjectID:          project5.ID,
+				OrganizationID:     project5.OrganizationID,
+				UserAgent:          "Mozilla/5.0",
+				IP:                 "127.0.0.1",
+				PageURL:            "/",
+				PagePath:           "/",
+				Host:               project5.Domain,
+			},
+			// Very old event - should be completely excluded
+			{
+				VisitorID:          "visitor-old",
+				SessionID:          "session-old",
+				ClientTimestampUTC: now.Add(-30 * 24 * time.Hour), // 30 days ago
+				ReferrerDomain:     nullable.FromString("ancient-site.com").Ptr(),
+				ProjectID:          project5.ID,
+				OrganizationID:     project5.OrganizationID,
+				UserAgent:          "Mozilla/5.0",
+				IP:                 "127.0.0.1",
+				PageURL:            "/",
+				PagePath:           "/",
+				Host:               project5.Domain,
+			},
+		}
+
+		err := fixtures.InsertEventsDirect(t, tc5, events)
+		require.NoError(t, err)
+
+		time.Sleep(1 * time.Second)
+
+		timeRange, err := filters.ValidateTimeRange(filters.TimeBoundariesLastWeek)
+		require.NoError(t, err)
+
+		filter := &filters.SectionFilter{
+			ProjectID:      project5.ID,
+			TimeBoundaries: filters.TimeBoundariesLastWeek,
+			TimeRange:      timeRange,
+		}
+
+		appCtx := fixtures.NewTestCtxWithOrg(project5.OrganizationID)
+
+		response, err := tile5.FetchByReferer(appCtx, filter)
+		require.NoError(t, err)
+		require.NotNil(t, response)
+
+		// Should only have twitter.com (in current period)
+		// LinkedIn is outside the 14-day window (last_7_days = current 7 days + previous 7 days = 14 days total)
+		// ancient-site.com is way outside the window
+		assert.Equal(t, 1, len(response.Data), "Should only have referers within the time window")
+
+		// Verify it's twitter with correct counts
+		twitterData := response.Data[0]
+		assert.Equal(t, "twitter.com", twitterData.RefererURL)
+		assert.NotNil(t, twitterData.Count)
+		assert.Equal(t, uint64(1), *twitterData.Count, "Twitter should have 1 current visitor")
+		assert.NotNil(t, twitterData.PreviousCount)
+		assert.Equal(t, uint64(0), *twitterData.PreviousCount, "Twitter should have 0 previous visitors")
+
+		t.Logf("Twitter: current=%d, previous=%d", *twitterData.Count, *twitterData.PreviousCount)
+	})
 }

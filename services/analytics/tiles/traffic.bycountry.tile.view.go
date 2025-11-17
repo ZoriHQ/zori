@@ -66,6 +66,7 @@ func (t *TrafficCountrySourceTile) buildTrafficSourceCountryQuery(ctx *ctx.Ctx, 
 		FROM events
 		WHERE events.organization_id = ?
 		AND events.project_id = ?
+		AND created_at > now() - %[2]s
 		GROUP BY country
 		HAVING count > 0
 		ORDER BY count DESC

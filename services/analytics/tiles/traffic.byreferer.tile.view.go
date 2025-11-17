@@ -70,6 +70,7 @@ func (t *TrafficRefererSourceTile) buildTrafficSourceRefererQuery(ctx *ctx.Ctx, 
 		FROM events
 		WHERE events.organization_id = ?
 		AND events.project_id = ?
+		AND created_at > now() - %[2]s
 		GROUP BY referer_url
 		ORDER BY current_visits DESC
 	`, filter.TimeRange.IntervalValue, filter.TimeRange.IntervalValueDelta)
