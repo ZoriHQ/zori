@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.2.6](https://github.com/ZoriHQ/zori/compare/v0.2.5...v0.2.6) (2025-11-17)
+
+
+### Bug Fixes
+
+* **ci:** tests ([498e0ae](https://github.com/ZoriHQ/zori/commit/498e0aeae4863973bfb0a6f2f12e588321bdb967))
+* **misc:** updates ([1260242](https://github.com/ZoriHQ/zori/commit/1260242b2ba391d9234d085b2fe4faaab3e78e6a))
+
+
+### Miscellaneous
+
+* **ci:** added .env.test to git ([44f9309](https://github.com/ZoriHQ/zori/commit/44f9309cab86739d996097bdec7401fce160ade8))
+* **ci:** tests ([9418d5a](https://github.com/ZoriHQ/zori/commit/9418d5aa39c91db59f0c9677dd99d15e7108b1a1))
+* **ci:** tests ([be44e26](https://github.com/ZoriHQ/zori/commit/be44e26a2fb5c266f34ba8b5cf94f2931a8d1012))
+* **ci:** tests ([c99ff53](https://github.com/ZoriHQ/zori/commit/c99ff53212372c157c7dc5856c21a4ab01e8d660))
+* **ci:** tests ([ced9652](https://github.com/ZoriHQ/zori/commit/ced9652cb71a394f074845178bacbe86f425bb62))
+
 ## [0.2.5](https://github.com/ZoriHQ/zori/compare/v0.2.4...v0.2.5) (2025-11-16)
 
 
