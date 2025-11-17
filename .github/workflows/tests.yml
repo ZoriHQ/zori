@@ -35,7 +35,14 @@ jobs:
             sleep 2
           done
           echo "Checking ClickHouse connectivity..."
-          timeout 30 bash -c 'until nc -z 127.0.0.1 9002; do sleep 1; done'
+          for i in {1..30}; do
+            if timeout 2 bash -c "echo > /dev/tcp/127.0.0.1/9002" 2>/dev/null; then
+              echo "ClickHouse is ready"
+              break
+            fi
+            echo "Waiting for ClickHouse... ($i/30)"
+            sleep 1
+          done
           echo "All services ready"
 
       - name: Install goose
