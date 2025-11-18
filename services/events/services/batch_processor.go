@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	defaultBatchSize = 10
+	defaultBatchSize = 200
 )
 
 type BatchItem struct {
@@ -74,7 +74,7 @@ func (bp *BatchProcessor) AddEvent(eventFrame *types.ClientEventFrameV1, msg jet
 func (bp *BatchProcessor) processBatches() {
 	defer bp.wg.Done()
 
-	ticker := time.NewTicker(5 * time.Second)
+	ticker := time.NewTicker(10 * time.Second)
 	defer ticker.Stop()
 
 	for {
