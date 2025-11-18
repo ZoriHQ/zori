@@ -30,4 +30,6 @@ type ClientEventFrameV1 struct {
 	LinkDestination      *string `json:"link_destination"`
 	IsExternalLink       *bool   `json:"is_external_link"`
 	IsDownloadLink       *bool   `json:"is_download_link"`
+
+	PagePattern *string `json:"page_pattern"`
 }

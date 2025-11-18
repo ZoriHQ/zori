@@ -1,6 +1,6 @@
 module zori
 
-go 1.24.4
+go 1.25
 
 require (
 	github.com/Cleverse/go-utilities/nullable v0.0.0-20250808171844-1347aec4138e
@@ -45,6 +45,7 @@ require (
 	github.com/Cleverse/go-utilities/errors v0.0.0-20231113142714-2364608744a9 // indirect
 	github.com/ClickHouse/ch-go v0.69.0 // indirect
 	github.com/KyleBanks/depth v1.2.1 // indirect
+	github.com/ZoriHQ/trie-url-classifier v0.0.0-20251118200024-c3d27d80529d // indirect
 	github.com/andybalholm/brotli v1.2.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/boyter/go-string v1.0.5 // indirect
