@@ -48,7 +48,7 @@ jobs:
           ZORI_IS_OSS: "true"
           ZORI_API_HOST: "http://localhost:1323"
           LOG_LEVEL: "error"
-        run: go test -v -race -coverprofile=coverage.out -covermode=atomic ./...
+        run: go test -v -race -coverprofile=coverage.out  ./...
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
