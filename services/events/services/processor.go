@@ -104,14 +104,17 @@ func (p *Processor) Start() error {
 			return
 		}
 
-		p.batchProcessor.AddEvent(&eventFrame, msg)
-
+		// Marshal event frame before passing to batch processor to avoid race condition
+		// The batch processor will modify the event frame (adding PagePattern), so we need to
+		// marshal it before that modification happens
 		marshalEventFrame, err := json.Marshal(eventFrame)
 		if err != nil {
 			log.Printf("Error marshaling event frame: %v", err)
 		} else {
 			p.natsStream.GetConnection().Publish(fmt.Sprintf("events:project:%s", eventFrame.ProjectID), marshalEventFrame)
 		}
+
+		p.batchProcessor.AddEvent(&eventFrame, msg)
 	})
 
 	return err
