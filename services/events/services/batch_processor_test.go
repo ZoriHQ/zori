@@ -33,7 +33,7 @@ func TestURLClassification(t *testing.T) {
 }
 
 func TestBatchProcessorConstants(t *testing.T) {
-	if defaultBatchSize != 10 {
+	if defaultBatchSize != 200 {
 		t.Errorf("Expected default batch size to be 10, got %d", defaultBatchSize)
 	}
 }
