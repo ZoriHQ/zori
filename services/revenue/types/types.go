@@ -119,6 +119,9 @@ type TopCustomer struct {
 	AvgOrderValue      float64   `json:"avg_order_value"`
 	Currency           string    `json:"currency,omitempty"`
 	FirstTrafficOrigin *string   `json:"first_traffic_origin,omitempty"`
+	FirstUTMSource     *string   `json:"first_utm_source,omitempty"`
+	FirstUTMMedium     *string   `json:"first_utm_medium,omitempty"`
+	FirstUTMCampaign   *string   `json:"first_utm_campaign,omitempty"`
 	LocationCountryISO *string   `json:"location_country_iso,omitempty"`
 }
 

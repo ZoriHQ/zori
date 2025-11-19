@@ -666,28 +666,51 @@ func (r *RevenueData) GetTopCustomers(ctx context.Context, projectID string, tim
 				p.currency
 			FROM distinct_payments p
 			LEFT JOIN visitor_identity_map vim ON p.visitor_id = vim.visitor_id
+		),
+		customer_revenue AS (
+			SELECT
+				cg.customer_id,
+				any(cg.visitor_id) as representative_visitor_id,
+				groupArray(DISTINCT cg.visitor_id) as visitor_ids,
+				any(cg.user_id) as user_id,
+				any(cg.external_id) as external_id,
+				COALESCE(SUM(cg.amount), 0) as total_revenue,
+				COUNT(DISTINCT cg.payment_id) as payment_count,
+				MIN(cg.payment_timestamp_utc) as first_payment_date,
+				MAX(cg.payment_timestamp_utc) as last_payment_date,
+				CASE
+					WHEN COUNT(DISTINCT cg.payment_id) > 0
+					THEN COALESCE(SUM(cg.amount), 0) / COUNT(DISTINCT cg.payment_id)
+					ELSE 0
+				END as avg_order_value,
+				any(cg.currency) as currency
+			FROM customer_groups cg
+			GROUP BY cg.customer_id
+		),
+		visitor_locations AS (
+			SELECT
+				visitor_id,
+				any(location_country_iso) as location_country_iso
+			FROM events
+			WHERE project_id = ?
+			GROUP BY visitor_id
 		)
 		SELECT
-			cg.customer_id,
-			any(cg.visitor_id) as representative_visitor_id,
-			groupArray(DISTINCT cg.visitor_id) as visitor_ids,
-			any(cg.user_id) as user_id,
-			any(cg.external_id) as external_id,
-			COALESCE(SUM(cg.amount), 0) as total_revenue,
-			COUNT(DISTINCT cg.payment_id) as payment_count,
-			MIN(cg.payment_timestamp_utc) as first_payment_date,
-			MAX(cg.payment_timestamp_utc) as last_payment_date,
-			CASE
-				WHEN COUNT(DISTINCT cg.payment_id) > 0
-				THEN COALESCE(SUM(cg.amount), 0) / COUNT(DISTINCT cg.payment_id)
-				ELSE 0
-			END as avg_order_value,
-			any(cg.currency) as currency,
-			any(e.location_country_iso) as location_country_iso
-		FROM customer_groups cg
-		LEFT JOIN events e ON cg.visitor_id = e.visitor_id AND e.project_id = ?
-		GROUP BY cg.customer_id
-		ORDER BY total_revenue DESC
+			cr.customer_id,
+			cr.representative_visitor_id,
+			cr.visitor_ids,
+			cr.user_id,
+			cr.external_id,
+			cr.total_revenue,
+			cr.payment_count,
+			cr.first_payment_date,
+			cr.last_payment_date,
+			cr.avg_order_value,
+			cr.currency,
+			vl.location_country_iso
+		FROM customer_revenue cr
+		LEFT JOIN visitor_locations vl ON cr.representative_visitor_id = vl.visitor_id
+		ORDER BY cr.total_revenue DESC
 		LIMIT ?
 	`
 
@@ -733,15 +756,22 @@ func (r *RevenueData) GetTopCustomers(ctx context.Context, projectID string, tim
 			}
 		}
 
-		originQuery := `
-			SELECT argMinMerge(first_referrer_domain) as first_origin
+		attributionQuery := `
+			SELECT
+				argMinMerge(first_referrer_domain) as first_origin,
+				argMinMerge(first_utm_source) as first_utm_source,
+				argMinMerge(first_utm_medium) as first_utm_medium,
+				argMinMerge(first_utm_campaign) as first_utm_campaign
 			FROM visitor_first_touch_attribution
 			WHERE project_id = ? AND visitor_id = ?
 			GROUP BY visitor_id
 		`
-		originRow := r.clickDb.Db().QueryRow(ctx, originQuery, projectID, customer.VisitorID)
-		if err := originRow.Scan(&customer.FirstTrafficOrigin); err != nil {
+		attrRow := r.clickDb.Db().QueryRow(ctx, attributionQuery, projectID, customer.VisitorID)
+		if err := attrRow.Scan(&customer.FirstTrafficOrigin, &customer.FirstUTMSource, &customer.FirstUTMMedium, &customer.FirstUTMCampaign); err != nil {
 			customer.FirstTrafficOrigin = nil
+			customer.FirstUTMSource = nil
+			customer.FirstUTMMedium = nil
+			customer.FirstUTMCampaign = nil
 		}
 
 		customers = append(customers, customer)

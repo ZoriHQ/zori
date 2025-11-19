@@ -5980,6 +5980,15 @@ const docTemplate = `{
                 "first_traffic_origin": {
                     "type": "string"
                 },
+                "first_utm_campaign": {
+                    "type": "string"
+                },
+                "first_utm_medium": {
+                    "type": "string"
+                },
+                "first_utm_source": {
+                    "type": "string"
+                },
                 "last_payment_date": {
                     "type": "string"
                 },
