@@ -12,9 +12,8 @@ import (
 
 func BuildAnalyticsDIContainer() fx.Option {
 	return fx.Module("analytics",
-		fx.Provide(ingestionData.NewVisitorRepository),
 		fx.Provide(data.NewAnalyticsData),
-
+		fx.Provide(fx.Private, ingestionData.NewVisitorRepository),
 		fx.Provide(tiles.NewTimelineTile),
 		fx.Provide(tiles.NewTrafficRefererSourceTile),
 		fx.Provide(tiles.NewTrafficCountrySourceTile),

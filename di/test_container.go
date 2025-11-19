@@ -29,6 +29,8 @@ import (
 	"zori/services/revenue"
 	revenueData "zori/services/revenue/data"
 	revenueServices "zori/services/revenue/services"
+	"zori/services/analytics"
+	analyticsData "zori/services/analytics/data"
 
 	"github.com/uptrace/bun"
 	"github.com/uptrace/bun/dialect/pgdialect"
@@ -52,6 +54,7 @@ type TestContainer struct {
 	IngestionServer    *ingestionWeb.IngestionServer
 	IngestionServerURL string
 	RevenueData        *revenueData.RevenueData
+	AnalyticsData      *analyticsData.AnalyticsData
 }
 
 var (
@@ -107,6 +110,7 @@ func NewTestContainer(t *testing.T) *TestContainer {
 
 		payments.BuildPaymentsDIContainer(),
 		revenue.BuildRevenueDIContainer(),
+		analytics.BuildAnalyticsDIContainer(),
 
 		fx.Provide(metrics.NewMetricsCollector),
 		fx.Provide(metrics.NewIngestMetrics),
@@ -160,7 +164,7 @@ func NewTestContainer(t *testing.T) *TestContainer {
 			})
 		}),
 		fx.NopLogger,
-		fx.Populate(&tc.DB, &tc.ClickHouse, &tc.NATS, &tc.Server, &tc.Config, &tc.Cache, &tc.Processor, &tc.PaymentProcessor, &tc.RevenueService, &tc.IngestionServer, &tc.RevenueData),
+		fx.Populate(&tc.DB, &tc.ClickHouse, &tc.NATS, &tc.Server, &tc.Config, &tc.Cache, &tc.Processor, &tc.PaymentProcessor, &tc.RevenueService, &tc.IngestionServer, &tc.RevenueData, &tc.AnalyticsData),
 	)
 
 	tc.App = app

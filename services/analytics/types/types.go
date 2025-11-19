@@ -120,7 +120,7 @@ type TopVisitor struct {
 	FirstSeen  time.Time `json:"first_seen"`
 	LastSeen   time.Time `json:"last_seen"`
 
-	DistinctPayments int        `json:"distinct_payments"`
+	DistinctPayments uint64     `json:"distinct_payments"`
 	TotalRevenue     float64    `json:"total_revenue"`
 	Currency         *string    `json:"currency,omitempty"`
 	FirstPaymentDate *time.Time `json:"first_payment_date,omitempty"`

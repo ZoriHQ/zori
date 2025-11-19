@@ -1038,16 +1038,24 @@ func TestRevenueMetrics_TopCustomers(t *testing.T) {
 
 		assert.GreaterOrEqual(t, customers[0].TotalRevenue, customers[1].TotalRevenue)
 
+		foundWithAttribution := false
 		for i, customer := range customers {
-			t.Logf("%d. Visitor %s: $%.2f (%d payments, avg $%.2f)",
+			t.Logf("%d. Visitor %s: $%.2f (%d payments, avg $%.2f) - Source: %v, Medium: %v",
 				i+1,
 				customer.VisitorID,
 				float64(customer.TotalRevenue)/100,
 				customer.PaymentCount,
-				customer.AvgOrderValue)
+				customer.AvgOrderValue,
+				customer.FirstUTMSource,
+				customer.FirstUTMMedium)
+
+			if customer.FirstUTMSource != nil && *customer.FirstUTMSource != "" {
+				foundWithAttribution = true
+			}
 		}
 
-		t.Logf("✓ Top customers ranked correctly")
+		assert.True(t, foundWithAttribution, "At least one customer should have UTM attribution data")
+		t.Logf("✓ Top customers ranked correctly with attribution data")
 	})
 
 	t.Run("should respect limit parameter", func(t *testing.T) {
@@ -1099,6 +1107,114 @@ func TestRevenueMetrics_TopCustomers(t *testing.T) {
 		assert.Greater(t, customer.AvgOrderValue, 0.0)
 
 		t.Logf("✓ Customer metadata included")
+	})
+
+	t.Run("should calculate correct revenue for customers with multiple visitors and many events", func(t *testing.T) {
+		tc4 := di.NewTestContainer(t)
+		defer tc4.Cleanup()
+
+		_, project4 := fixtures.SetupAccountAndProject(t, tc4)
+		time.Sleep(1 * time.Second)
+
+		visitor1 := "visitor-device-1"
+		visitor2 := "visitor-device-2"
+		sharedUserID := "user-123"
+
+		for i := 0; i < 50; i++ {
+			event := fixtures.NewEventBuilder().
+				WithVisitorID(visitor1).
+				WithSessionID(fmt.Sprintf("session-1-%d", i)).
+				WithIdentity(sharedUserID, "", "user@example.com").
+				WithPageURL(fmt.Sprintf("/page-%d", i)).
+				WithHost(project4.Domain).
+				WithUTMSource("google").
+				Build()
+			err := fixtures.SendEventToTestServer(t, tc4, project4, event)
+			require.NoError(t, err)
+		}
+
+		for i := 0; i < 30; i++ {
+			event := fixtures.NewEventBuilder().
+				WithVisitorID(visitor2).
+				WithSessionID(fmt.Sprintf("session-2-%d", i)).
+				WithIdentity(sharedUserID, "", "user@example.com").
+				WithPageURL(fmt.Sprintf("/page-%d", i)).
+				WithHost(project4.Domain).
+				WithUTMSource("google").
+				Build()
+			err := fixtures.SendEventToTestServer(t, tc4, project4, event)
+			require.NoError(t, err)
+		}
+
+		_, err := fixtures.WaitForEvents(t, tc4, fixtures.QueryEventsOptions{
+			ProjectID: &project4.ID,
+		}, 80, 20*time.Second)
+		require.NoError(t, err)
+
+		time.Sleep(2 * time.Second)
+
+		payment1 := fixtures.NewPaymentBuilder(project4.ID, project4.OrganizationID).
+			WithVisitorID(visitor1).
+			WithAmount(4000). // $40
+			WithProductName("Product from device 1").
+			Build()
+
+		payment2 := fixtures.NewPaymentBuilder(project4.ID, project4.OrganizationID).
+			WithVisitorID(visitor2).
+			WithAmount(4000). // $40
+			WithProductName("Product from device 2").
+			Build()
+
+		err = fixtures.SendPaymentToNATS(t, tc4, payment1)
+		require.NoError(t, err)
+
+		time.Sleep(100 * time.Millisecond)
+
+		err = fixtures.SendPaymentToNATS(t, tc4, payment2)
+		require.NoError(t, err)
+
+		succeededStatus := "succeeded"
+		_, err = fixtures.WaitForPayments(t, tc4, fixtures.QueryPaymentEventsOptions{
+			ProjectID:     &project4.ID,
+			PaymentStatus: &succeededStatus,
+		}, 2, 10*time.Second)
+		require.NoError(t, err)
+
+		time.Sleep(3 * time.Second)
+
+		customers, err := tc4.RevenueData.GetTopCustomers(ctx, project4.ID, revenueTypes.TimeRangeLast7Days, 10)
+		require.NoError(t, err)
+		require.NotEmpty(t, customers, "Should have at least one customer")
+
+		var customer *revenueTypes.TopCustomer
+		for i := range customers {
+			if customers[i].UserID != nil && *customers[i].UserID == sharedUserID {
+				customer = &customers[i]
+				break
+			}
+		}
+
+		require.NotNil(t, customer, "Should find customer with user_id %s", sharedUserID)
+
+		expectedRevenue := int64(8000) // $80.00 in cents
+		assert.Equal(t, expectedRevenue, customer.TotalRevenue,
+			"Revenue should be exactly $80 despite multiple visitors and many events. "+
+				"If this is inflated (e.g., $11,200), there's a cartesian join bug.")
+
+		assert.Equal(t, uint64(2), customer.PaymentCount, "Should have exactly 2 payments")
+
+		assert.Len(t, customer.VisitorIDs, 2, "Customer should be linked to both visitor IDs")
+		assert.Contains(t, customer.VisitorIDs, visitor1)
+		assert.Contains(t, customer.VisitorIDs, visitor2)
+
+		expectedAvgOrderValue := 4000.0 // $40 per order
+		assert.InDelta(t, expectedAvgOrderValue, customer.AvgOrderValue, 1.0,
+			"Average order value should be $40")
+
+		t.Logf("✓ Customer with 2 visitors (80 events total): $%.2f revenue, %d payments",
+			float64(customer.TotalRevenue)/100,
+			customer.PaymentCount)
+		t.Logf("✓ No cartesian join inflation - revenue is correctly calculated")
 	})
 }
 

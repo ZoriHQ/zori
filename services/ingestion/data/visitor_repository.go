@@ -140,3 +140,74 @@ func (r *VisitorRepository) GetVisitorsByIDs(ctx context.Context, visitorIDs []s
 	}
 	return visitors, nil
 }
+
+func (r *VisitorRepository) GetAllVisitorIDsByIdentities(ctx context.Context, projectID string, visitorIDs []string) ([]string, error) {
+	if len(visitorIDs) == 0 {
+		return []string{}, nil
+	}
+
+	var identities []*models.Visitor
+	err := r.db.NewSelect().
+		Model(&identities).
+		Where("visitor_id IN (?)", bun.In(visitorIDs)).
+		Scan(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var userIDs []string
+	var externalIDs []string
+	var emails []string
+
+	for _, identity := range identities {
+		if identity.UserID != nil && *identity.UserID != "" {
+			userIDs = append(userIDs, *identity.UserID)
+		}
+		if identity.ExternalID != nil && *identity.ExternalID != "" {
+			externalIDs = append(externalIDs, *identity.ExternalID)
+		}
+		if identity.Email != nil && *identity.Email != "" {
+			emails = append(emails, *identity.Email)
+		}
+	}
+
+	query := r.db.NewSelect().
+		Model((*models.Visitor)(nil)).
+		Column("visitor_id").
+		Where("project_id = ?", projectID)
+
+	hasCondition := false
+	if len(userIDs) > 0 {
+		query = query.WhereGroup(" OR ", func(q *bun.SelectQuery) *bun.SelectQuery {
+			return q.Where("user_id IN (?)", bun.In(userIDs))
+		})
+		hasCondition = true
+	}
+	if len(externalIDs) > 0 {
+		if hasCondition {
+			query = query.WhereOr("external_id IN (?)", bun.In(externalIDs))
+		} else {
+			query = query.WhereGroup(" OR ", func(q *bun.SelectQuery) *bun.SelectQuery {
+				return q.Where("external_id IN (?)", bun.In(externalIDs))
+			})
+			hasCondition = true
+		}
+	}
+	if len(emails) > 0 {
+		if hasCondition {
+			query = query.WhereOr("email IN (?)", bun.In(emails))
+		} else {
+			query = query.WhereGroup(" OR ", func(q *bun.SelectQuery) *bun.SelectQuery {
+				return q.Where("email IN (?)", bun.In(emails))
+			})
+		}
+	}
+
+	var allVisitorIDs []string
+	err = query.Scan(ctx, &allVisitorIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	return allVisitorIDs, nil
+}

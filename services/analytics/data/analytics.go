@@ -25,6 +25,15 @@ func NewAnalyticsData(clickDb *clickhouse.ClickhouseDB, visitorRepository *inges
 	}
 }
 
+func contains(slice []string, str string) bool {
+	for _, item := range slice {
+		if item == str {
+			return true
+		}
+	}
+	return false
+}
+
 func (a *AnalyticsData) GetVisitorsByDevice(ctx *ctx.Ctx, filter *filters.SectionFilter) ([]types.VisitorDataPoint, error) {
 	query := fmt.Sprintf(`
 		SELECT
@@ -414,6 +423,8 @@ func (a *AnalyticsData) GetTopVisitors(ctx *ctx.Ctx, filter *filters.SectionFilt
 		Name       *string
 	}
 	visitorIdentityMap := make(map[string]*visitorIdentity)
+
+	var allRelatedVisitorIDs []string
 	if len(visitorIDs) > 0 {
 		identities, err := a.visitorRepository.GetVisitorsByIDs(ctx, visitorIDs)
 		if err != nil {
@@ -427,6 +438,82 @@ func (a *AnalyticsData) GetTopVisitors(ctx *ctx.Ctx, filter *filters.SectionFilt
 				Name:       identity.Name,
 			}
 		}
+
+		allRelatedVisitorIDs, err = a.visitorRepository.GetAllVisitorIDsByIdentities(ctx, filter.ProjectID, visitorIDs)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get all related visitor IDs: %w", err)
+		}
+
+		allIdentities, err := a.visitorRepository.GetVisitorsByIDs(ctx, allRelatedVisitorIDs)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get all related visitor identities: %w", err)
+		}
+		for _, identity := range allIdentities {
+			if _, exists := visitorIdentityMap[identity.VisitorID]; !exists {
+				visitorIdentityMap[identity.VisitorID] = &visitorIdentity{
+					UserID:     identity.UserID,
+					ExternalID: identity.ExternalID,
+					Email:      identity.Email,
+					Name:       identity.Name,
+				}
+			}
+		}
+	} else {
+		allRelatedVisitorIDs = []string{}
+	}
+
+	earliestSeenQuery := `
+		SELECT
+			visitor_id,
+			min(client_timestamp_utc) as earliest_seen
+		FROM events
+		WHERE project_id = ?
+			AND visitor_id IN (` + clickhouse.BuildPlaceholders(len(allRelatedVisitorIDs)) + `)
+		GROUP BY visitor_id
+	`
+
+	earliestSeenArgs := []interface{}{filter.ProjectID}
+	for _, vid := range allRelatedVisitorIDs {
+		earliestSeenArgs = append(earliestSeenArgs, vid)
+	}
+
+	type earliestSeenData struct {
+		VisitorID    string
+		EarliestSeen time.Time
+	}
+
+	earliestSeenMap := make(map[string]time.Time)
+	if len(allRelatedVisitorIDs) > 0 {
+		earliestRows, err := a.clickDb.Db().Query(ctx, earliestSeenQuery, earliestSeenArgs...)
+		if err != nil {
+			return nil, fmt.Errorf("failed to query earliest seen data: %w", err)
+		}
+		defer earliestRows.Close()
+
+		for earliestRows.Next() {
+			var esd earliestSeenData
+			if err := earliestRows.Scan(&esd.VisitorID, &esd.EarliestSeen); err != nil {
+				return nil, fmt.Errorf("failed to scan earliest seen data: %w", err)
+			}
+			earliestSeenMap[esd.VisitorID] = esd.EarliestSeen
+		}
+
+		if err := earliestRows.Err(); err != nil {
+			return nil, fmt.Errorf("error iterating earliest seen rows: %w", err)
+		}
+	}
+
+	allVisitorIDsForPayments := make(map[string]bool)
+	for _, vid := range visitorIDs {
+		allVisitorIDsForPayments[vid] = true
+	}
+	for _, vid := range allRelatedVisitorIDs {
+		allVisitorIDsForPayments[vid] = true
+	}
+
+	visitorIDListForPayments := make([]string, 0, len(allVisitorIDsForPayments))
+	for vid := range allVisitorIDsForPayments {
+		visitorIDListForPayments = append(visitorIDListForPayments, vid)
 	}
 
 	paymentQuery := `
@@ -440,18 +527,18 @@ func (a *AnalyticsData) GetTopVisitors(ctx *ctx.Ctx, filter *filters.SectionFilt
 		WHERE project_id = ?
 			AND payment_status = 'succeeded'
 			AND visitor_id IS NOT NULL
-			AND visitor_id IN (` + clickhouse.BuildPlaceholders(len(visitorIDs)) + `)
+			AND visitor_id IN (` + clickhouse.BuildPlaceholders(len(visitorIDListForPayments)) + `)
 		GROUP BY visitor_id
 	`
 
 	paymentArgs := []interface{}{filter.ProjectID}
-	for _, vid := range visitorIDs {
+	for _, vid := range visitorIDListForPayments {
 		paymentArgs = append(paymentArgs, vid)
 	}
 
 	type paymentData struct {
 		VisitorID        string
-		DistinctPayments int
+		DistinctPayments uint64
 		TotalAmount      int64 // in cents
 		Currency         string
 		FirstPaymentDate time.Time
@@ -557,6 +644,41 @@ func (a *AnalyticsData) GetTopVisitors(ctx *ctx.Ctx, filter *filters.SectionFilt
 					enhanced.FirstPaymentDate = &pd.FirstPaymentDate
 				}
 
+				for _, relatedID := range allRelatedVisitorIDs {
+					if relatedID == vd.VisitorID {
+						continue // Already checked above
+					}
+
+					if relatedIdentity, exists := visitorIdentityMap[relatedID]; exists {
+						matchesIdentity := false
+						if identity.UserID != nil && *identity.UserID != "" && relatedIdentity.UserID != nil && *relatedIdentity.UserID == *identity.UserID {
+							matchesIdentity = true
+						} else if identity.ExternalID != nil && *identity.ExternalID != "" && relatedIdentity.ExternalID != nil && *relatedIdentity.ExternalID == *identity.ExternalID {
+							matchesIdentity = true
+						} else if identity.Email != nil && *identity.Email != "" && relatedIdentity.Email != nil && *relatedIdentity.Email == *identity.Email {
+							matchesIdentity = true
+						}
+
+						if matchesIdentity {
+							if !contains(enhanced.VisitorIDs, relatedID) {
+								enhanced.VisitorIDs = append(enhanced.VisitorIDs, relatedID)
+							}
+
+							if pd, hasPayment := paymentMap[relatedID]; hasPayment {
+								enhanced.DistinctPayments += pd.DistinctPayments
+								enhanced.TotalRevenue += float64(pd.TotalAmount) / 100.0
+
+								if enhanced.FirstPaymentDate == nil || pd.FirstPaymentDate.Before(*enhanced.FirstPaymentDate) {
+									enhanced.FirstPaymentDate = &pd.FirstPaymentDate
+								}
+								if enhanced.Currency == nil {
+									enhanced.Currency = &pd.Currency
+								}
+							}
+						}
+					}
+				}
+
 				groupMap[key] = enhanced
 			}
 		} else {
@@ -586,6 +708,19 @@ func (a *AnalyticsData) GetTopVisitors(ctx *ctx.Ctx, filter *filters.SectionFilt
 	result := make([]types.TopVisitor, 0)
 
 	for _, enhanced := range groupMap {
+		var absoluteEarliestSeen time.Time
+		for _, vid := range enhanced.VisitorIDs {
+			if earliestSeen, exists := earliestSeenMap[vid]; exists {
+				if absoluteEarliestSeen.IsZero() || earliestSeen.Before(absoluteEarliestSeen) {
+					absoluteEarliestSeen = earliestSeen
+				}
+			}
+		}
+
+		if !absoluteEarliestSeen.IsZero() && absoluteEarliestSeen.Before(enhanced.FirstSeen) {
+			enhanced.FirstSeen = absoluteEarliestSeen
+		}
+
 		if enhanced.FirstPaymentDate != nil {
 			timeToFirstPurchase := enhanced.FirstPaymentDate.Sub(enhanced.FirstSeen).Seconds()
 			if timeToFirstPurchase >= 0 {
@@ -596,6 +731,14 @@ func (a *AnalyticsData) GetTopVisitors(ctx *ctx.Ctx, filter *filters.SectionFilt
 	}
 
 	for _, enhanced := range ungroupedVisitors {
+		for _, vid := range enhanced.VisitorIDs {
+			if earliestSeen, exists := earliestSeenMap[vid]; exists {
+				if earliestSeen.Before(enhanced.FirstSeen) {
+					enhanced.FirstSeen = earliestSeen
+				}
+			}
+		}
+
 		if enhanced.FirstPaymentDate != nil {
 			timeToFirstPurchase := enhanced.FirstPaymentDate.Sub(enhanced.FirstSeen).Seconds()
 			if timeToFirstPurchase >= 0 {
