@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.1](https://github.com/ZoriHQ/zori/compare/v0.3.0...v0.3.1) (2025-11-19)
+
+
+### Bug Fixes
+
+* **ci:** updated golang version in dockerfile ([52a5aa9](https://github.com/ZoriHQ/zori/commit/52a5aa930548cc400586404fa6e60e91a5a29f0c))
+* **deps:** updated go.mod ([a530bea](https://github.com/ZoriHQ/zori/commit/a530beaa0f4b2e5ec25988c073a893e2ae15432a))
+
 ## [0.3.0](https://github.com/ZoriHQ/zori/compare/v0.2.5...v0.3.0) (2025-11-17)
 
 
