@@ -47,7 +47,7 @@ func (s *StageIdentity) ProcessFrame(frame *types.ClientEventFrameV1) error {
 			}
 
 			if err := s.visitorRepository.UpsertVisitor(context.Background(), visitor); err != nil {
-				fmt.Println("Error upserting visitor: %s", err.Error())
+				fmt.Println(fmt.Sprintf("Error upserting visitor: %s", err.Error()))
 			}
 		}
 	}
