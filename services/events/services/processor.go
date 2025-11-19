@@ -10,6 +10,7 @@ import (
 	"zori/internal/metrics"
 	"zori/internal/natsstream"
 	"zori/internal/storage/clickhouse"
+	"zori/services/ingestion/data"
 	"zori/services/ingestion/types"
 
 	"github.com/nats-io/nats.go/jetstream"
@@ -36,7 +37,7 @@ type Processor struct {
 	batchProcessor *BatchProcessor
 }
 
-func NewProcessor(natsStream *natsstream.Stream, clickDb *clickhouse.ClickhouseDB, natsMetrics *metrics.NatsMetrics, batchProcessor *BatchProcessor) *Processor {
+func NewProcessor(natsStream *natsstream.Stream, clickDb *clickhouse.ClickhouseDB, natsMetrics *metrics.NatsMetrics, batchProcessor *BatchProcessor, visitorRepository *data.VisitorRepository) *Processor {
 	err := natsStream.UpsertJetStream(rawEventsStream, rawEventsSubject)
 	if err != nil {
 		panic(err)
@@ -47,7 +48,7 @@ func NewProcessor(natsStream *natsstream.Stream, clickDb *clickhouse.ClickhouseD
 		NewStagePage(),
 		NewStageUserAgent(),
 		NewStageReferrer(),
-		NewStageIdentity(),
+		NewStageIdentityWithRepository(visitorRepository),
 		NewStageClickClassification(),
 	}
 
