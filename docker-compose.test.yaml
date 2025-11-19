@@ -21,6 +21,9 @@ services:
     container_name: clickhouse-test
     environment:
       CLICKHOUSE_DB: default
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
+      CLICKHOUSE_PASSWORD: default
+      CLICKHOUSE_USER: default
     ports:
       - "9000:9000"
       - "8123:8123"
@@ -30,18 +33,17 @@ services:
       timeout: 5s
       retries: 10
     volumes:
-      - ./scripts/clickhouse-users-test.xml:/etc/clickhouse-server/users.d/test.xml
       - clickhouse-test-data:/var/lib/clickhouse
 
   nats-test:
-    image: nats:latest
+    image: nats:alpine
     container_name: nats-test
     command: ["-js", "-m", "8222"]
     ports:
       - "4222:4222"
       - "8222:8222"
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "localhost:8222/healthz"]
+      test: ["CMD", "nc", "-z", "localhost", "4222"]
       interval: 2s
       timeout: 5s
       retries: 10

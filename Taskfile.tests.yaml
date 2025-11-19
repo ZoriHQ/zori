@@ -7,8 +7,8 @@ tasks:
   test:containers:
     desc: Start test database containers using docker compose
     cmds:
-      - docker compose -f docker-compose.test.yaml up -d
-      - echo "Waiting for services to be healthy..."
+      - docker compose -f docker-compose.test.yaml up -d --wait postgres-test clickhouse-test nats-test redis-test
+      - echo "All services are ready!"
 
   test:migrate:
     desc: Run migrations for test databases

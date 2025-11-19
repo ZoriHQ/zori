@@ -31,11 +31,12 @@ type Processor struct {
 
 	clickDb *clickhouse.ClickhouseDB
 
-	stages      []ProcessorStage
-	natsMetrics *metrics.NatsMetrics
+	stages         []ProcessorStage
+	natsMetrics    *metrics.NatsMetrics
+	batchProcessor *BatchProcessor
 }
 
-func NewProcessor(natsStream *natsstream.Stream, clickDb *clickhouse.ClickhouseDB, natsMetrics *metrics.NatsMetrics) *Processor {
+func NewProcessor(natsStream *natsstream.Stream, clickDb *clickhouse.ClickhouseDB, natsMetrics *metrics.NatsMetrics, batchProcessor *BatchProcessor) *Processor {
 	err := natsStream.UpsertJetStream(rawEventsStream, rawEventsSubject)
 	if err != nil {
 		panic(err)
@@ -51,10 +52,11 @@ func NewProcessor(natsStream *natsstream.Stream, clickDb *clickhouse.ClickhouseD
 	}
 
 	p := &Processor{
-		natsStream:  natsStream,
-		clickDb:     clickDb,
-		stages:      processingStages,
-		natsMetrics: natsMetrics,
+		natsStream:     natsStream,
+		clickDb:        clickDb,
+		stages:         processingStages,
+		natsMetrics:    natsMetrics,
+		batchProcessor: batchProcessor,
 	}
 
 	p.ctx, p.cancelConsumer = context.WithCancel(context.Background())
@@ -102,106 +104,17 @@ func (p *Processor) Start() error {
 			return
 		}
 
-		var (
-			clickPositionX       *float64
-			clickPositionY       *float64
-			clickScreenWidth     *uint16
-			clickScreenHeight    *uint16
-			clickElementTag      *string
-			clickElementSelector *string
-			clickElementText     *string
-		)
-
-		if eventFrame.ClickPosition != nil {
-			clickPositionX = &eventFrame.ClickPosition.X
-			clickPositionY = &eventFrame.ClickPosition.Y
-			clickScreenWidth = &eventFrame.ClickPosition.ScreenWidth
-			clickScreenHeight = &eventFrame.ClickPosition.ScreenHeight
-		}
-
-		if eventFrame.ClickElement != nil {
-			clickElementTag = &eventFrame.ClickElement.Tag
-			clickElementSelector = &eventFrame.ClickElement.Selector
-			clickElementText = &eventFrame.ClickElement.Text
-		}
-
-		if err := p.clickDb.Ping(context.Background()); err != nil {
-			fmt.Println(err)
-			log.Printf("Error pinging database: %v", err)
-		}
-
-		insertStart := time.Now()
-		if err := p.clickDb.Db().AsyncInsert(context.Background(),
-			`INSERT INTO events (
-				ip, visitor_id, session_id, browser_name, os_name, device_type, client_generated_event_id, event_name,
-				location_country_iso, location_city, location_latitude, location_longitude,
-				client_timestamp_utc, server_timestamp_utc, user_agent, host,
-				page_url, page_path, referrer_url, referrer_domain, referrer_path, utm_parameters,
-				click_element_tag, click_element_selector, click_element_text,
-				click_position_x, click_position_y, click_screen_width, click_screen_height,
-				click_element_type, click_element_category, is_cta_click, link_destination, is_external_link, is_download_link,
-				project_id, organization_id,
-				user_id, external_id, email_hash
-			) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, true,
-			eventFrame.IP,
-			eventFrame.VisitorID,
-			eventFrame.SessionID,
-			eventFrame.BrowserName,
-			eventFrame.OsName,
-			eventFrame.DeviceType,
-			eventFrame.ClientGeneratedEventID,
-			eventFrame.EventName,
-			eventFrame.LocationCountryISO,
-			eventFrame.LocationCity,
-			eventFrame.LocationLatitude,
-			eventFrame.LocationLongitude,
-			eventFrame.ClientTimeStampUTC,
-			time.Now().UTC(),
-			eventFrame.UserAgent,
-			eventFrame.Host,
-			eventFrame.PageURL,
-			eventFrame.PagePath,
-			eventFrame.Referrer,
-			eventFrame.ReferredDomain,
-			eventFrame.ReferrerPath,
-			eventFrame.UTMParameters,
-			clickElementTag,
-			clickElementSelector,
-			clickElementText,
-			clickPositionX,
-			clickPositionY,
-			clickScreenWidth,
-			clickScreenHeight,
-			eventFrame.ClickElementType,
-			eventFrame.ClickElementCategory,
-			eventFrame.IsCTAClick,
-			eventFrame.LinkDestination,
-			eventFrame.IsExternalLink,
-			eventFrame.IsDownloadLink,
-			eventFrame.ProjectID,
-			eventFrame.OrganizationID,
-			eventFrame.UserID,
-			eventFrame.ExternalID,
-			eventFrame.EmailHash,
-		); err != nil {
-			p.natsMetrics.RecordClickHouseError("events", "insert_error")
-			p.natsMetrics.RecordMessageProcessed(rawEventsStream, "event-enricher", "clickhouse_error", time.Since(startTime))
-			p.natsMetrics.RecordMessageAck(rawEventsStream, "event-enricher", "nak")
-			msg.Nak()
-			return
-		}
-		p.natsMetrics.RecordClickHouseInsert("events", time.Since(insertStart))
-
-		p.natsMetrics.RecordMessageProcessed(rawEventsStream, "event-enricher", "success", time.Since(startTime))
-		p.natsMetrics.RecordMessageAck(rawEventsStream, "event-enricher", "ack")
-		msg.Ack()
-
+		// Marshal event frame before passing to batch processor to avoid race condition
+		// The batch processor will modify the event frame (adding PagePattern), so we need to
+		// marshal it before that modification happens
 		marshalEventFrame, err := json.Marshal(eventFrame)
 		if err != nil {
 			log.Printf("Error marshaling event frame: %v", err)
 		} else {
 			p.natsStream.GetConnection().Publish(fmt.Sprintf("events:project:%s", eventFrame.ProjectID), marshalEventFrame)
 		}
+
+		p.batchProcessor.AddEvent(&eventFrame, msg)
 	})
 
 	return err

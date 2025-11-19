@@ -25,7 +25,7 @@ type Config struct {
 	// OSS Auth Configuration (only used when ZoriOSS is true)
 	JWTSecret string `env:"JWT_SECRET"`
 
-	NatsCredentialsContent string `env:"NATS_CREDENTIALS_CONTENT,required"`
+	NatsCredentialsContent string `env:"NATS_CREDENTIALS_CONTENT"`
 	NatsStreamURL          string `env:"NATS_STREAM_URL,required"`
 
 	// Encryption Configuration (for payment provider credentials)
@@ -40,11 +40,11 @@ type Config struct {
 	ZoriStripeAppWebhookSecret string `env:"ZORI_STRIPE_APP_WEBHOOK_SECRET"`
 
 	// Metrics Configuration (for Grafana Cloud)
-	MetricsEnabled         bool   `env:"METRICS_ENABLED" envDefault:"false"`
-	MetricsPort            string `env:"METRICS_PORT" envDefault:"9090"`
-	GrafanaCloudRemoteURL  string `env:"GRAFANA_CLOUD_REMOTE_WRITE_URL"`
-	GrafanaCloudUsername   string `env:"GRAFANA_CLOUD_USERNAME"`
-	GrafanaCloudAPIKey     string `env:"GRAFANA_CLOUD_API_KEY"`
+	MetricsEnabled        bool   `env:"METRICS_ENABLED" envDefault:"false"`
+	MetricsPort           string `env:"METRICS_PORT" envDefault:"9090"`
+	GrafanaCloudRemoteURL string `env:"GRAFANA_CLOUD_REMOTE_WRITE_URL"`
+	GrafanaCloudUsername  string `env:"GRAFANA_CLOUD_USERNAME"`
+	GrafanaCloudAPIKey    string `env:"GRAFANA_CLOUD_API_KEY"`
 }
 
 func NewConfig() *Config {
