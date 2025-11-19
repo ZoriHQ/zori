@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"sync"
+	"sync/atomic"
 	"time"
 	"zori/internal/metrics"
 	"zori/internal/storage/clickhouse"
@@ -29,9 +30,12 @@ type BatchProcessor struct {
 	batch     []BatchItem
 	batchMu   sync.Mutex
 
-	eventChan chan BatchItem
-	stopChan  chan struct{}
-	wg        sync.WaitGroup
+	eventChan   chan BatchItem
+	stopChan    chan struct{}
+	wg          sync.WaitGroup
+	started     atomic.Bool
+	stopOnce    sync.Once
+	lifecycleMu sync.Mutex
 }
 
 func NewBatchProcessor(clickDb *clickhouse.ClickhouseDB, natsMetrics *metrics.NatsMetrics) *BatchProcessor {
@@ -46,20 +50,35 @@ func NewBatchProcessor(clickDb *clickhouse.ClickhouseDB, natsMetrics *metrics.Na
 }
 
 func (bp *BatchProcessor) Start() error {
+	bp.lifecycleMu.Lock()
+	defer bp.lifecycleMu.Unlock()
+
+	if !bp.started.CompareAndSwap(false, true) {
+		return nil
+	}
 	bp.wg.Add(1)
 	go bp.processBatches()
 	return nil
 }
 
 func (bp *BatchProcessor) Stop() error {
-	close(bp.stopChan)
-	bp.wg.Wait()
-
-	bp.batchMu.Lock()
-	if len(bp.batch) > 0 {
-		bp.processBatch(bp.batch)
+	bp.lifecycleMu.Lock()
+	if !bp.started.Load() {
+		bp.lifecycleMu.Unlock()
+		return nil
 	}
-	bp.batchMu.Unlock()
+	bp.lifecycleMu.Unlock()
+
+	bp.stopOnce.Do(func() {
+		close(bp.stopChan)
+		bp.wg.Wait()
+
+		bp.batchMu.Lock()
+		if len(bp.batch) > 0 {
+			bp.processBatch(bp.batch)
+		}
+		bp.batchMu.Unlock()
+	})
 
 	return nil
 }
