@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0](https://github.com/ZoriHQ/zori/compare/v0.3.1...v0.4.0) (2025-11-20)
+
+
+### Features
+
+* **revenue:** small fixes for revenue attribution ([cad5ac0](https://github.com/ZoriHQ/zori/commit/cad5ac042f66cbe23974752c2f8b4da79331b131))
+
 ## [0.3.1](https://github.com/ZoriHQ/zori/compare/v0.3.0...v0.3.1) (2025-11-19)
 
 
