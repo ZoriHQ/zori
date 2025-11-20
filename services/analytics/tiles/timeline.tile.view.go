@@ -47,8 +47,10 @@ func (c *TimelineTile) Fetch(ctx *ctx.Ctx, filter *filters.SectionFilter) (*Time
 	rows, err := c.db.Db().Query(
 		ctx,
 		query,
+		ctx.OrgID(),
 		filter.ProjectID,
 		filter.TimeRange.Start,
+		ctx.OrgID(),
 		filter.ProjectID,
 		filter.TimeRange.Start,
 		filter.TimeRange.Start,
@@ -75,25 +77,29 @@ func (c *TimelineTile) buildTimelineQuery(filter *filters.SectionFilter) string 
 	return fmt.Sprintf(`
 		WITH revenue AS (
 			SELECT
-				%[1]s(created_at) AS time_bucket,
+				%[1]s(payment_timestamp_utc) AS time_bucket,
 				sum(amount) AS amount_in_cents
 			FROM payment_events
-			WHERE project_id = ?
-				AND created_at >= ?
-				AND created_at <= now()
+			WHERE organization_id = ?
+				AND project_id = ?
+				AND payment_timestamp_utc >= ?
+				AND payment_timestamp_utc <= now()
+				AND payment_status = 'succeeded'
 			GROUP BY time_bucket
 		)
-		SELECT %[1]s(toDateTime(client_timestamp_utc))                                                             AS time_bucket,
-		countDistinctIf(visitor_id, device_type = 'Desktop')                                                       AS desktop,
-	    countDistinctIf(visitor_id, device_type = 'Mobile')                                                        AS mobile,
-	    countDistinctIf(visitor_id, device_type IS NULL OR (device_type != 'Desktop' AND device_type != 'Mobile')) AS unknown,
-		COALESCE(r.amount_in_cents, 0) AS amount_in_cents
+		SELECT
+		    %[1]s(toDateTime(client_timestamp_utc)) AS time_bucket,
+		    countDistinctIf(visitor_id, device_type = 'Desktop') AS desktop,
+	        countDistinctIf(visitor_id, device_type = 'Mobile') AS mobile,
+	        countDistinctIf(visitor_id, device_type IS NULL OR (device_type != 'Desktop' AND device_type != 'Mobile')) AS unknown,
+		    any(r.amount_in_cents) AS amount_in_cents
 		FROM events e
 		LEFT JOIN revenue r ON %[1]s(e.client_timestamp_utc) = r.time_bucket
-		WHERE e.project_id = ?
+		WHERE e.organization_id = ?
+		  AND e.project_id = ?
 		  AND e.client_timestamp_utc >= ?
 		  AND e.client_timestamp_utc <= now()
-		GROUP BY ALL
+		GROUP BY time_bucket
 		ORDER BY time_bucket ASC
 		WITH FILL FROM %[1]s(toDateTime(?)) TO %[1]s(now()) STEP %[5]s(1);`,
 		filter.TimeRange.TimeBucketFunction,
