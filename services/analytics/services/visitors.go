@@ -69,10 +69,10 @@ func (s *VisitorsService) IdentifyVisitor(c *ctx.Ctx) (*types.ManualIdentifyResp
 		Email:        req.Email,
 		Name:         req.Name,
 		Phone:        req.Phone,
-		CustomTraits: make(map[string]interface{}),
+		CustomTraits: make(map[string]any),
 	}
 
-	if req.AdditionalProperties != nil && len(req.AdditionalProperties) > 0 {
+	if len(req.AdditionalProperties) > 0 {
 		visitor.CustomTraits = req.AdditionalProperties
 	}
 

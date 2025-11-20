@@ -7,7 +7,7 @@ tasks:
   test:containers:
     desc: Start test database containers using docker compose
     cmds:
-      - docker compose -f docker-compose.test.yaml up -d --wait postgres-test clickhouse-test nats-test redis-test
+      - docker compose -f ./run/tests/docker-compose.test.yaml up -d --wait postgres-test clickhouse-test nats-test redis-test
       - echo "All services are ready!"
 
   test:migrate:
@@ -22,7 +22,7 @@ tasks:
   test:cleanup:
     desc: Stop and remove test database containers
     cmds:
-      - docker compose -f docker-compose.test.yaml down -v
+      - docker compose -f ./run/tests/docker-compose.test.yaml down -v
 
   test:
     desc: "Run tests (usage: task test -- ./path/to/tests or task test -- -v -run TestName ./path)"

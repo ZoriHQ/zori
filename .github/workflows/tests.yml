@@ -21,7 +21,7 @@ jobs:
           cache: true
 
       - name: Start test services and wait for health checks
-        run: docker compose -f docker-compose.test.yaml up -d --wait postgres-test clickhouse-test nats-test redis-test
+        run: docker compose -f ./run/tests/docker-compose.test.yaml up -d --wait postgres-test clickhouse-test nats-test redis-test
 
       - name: Install goose
         run: go install github.com/pressly/goose/v3/cmd/goose@latest
