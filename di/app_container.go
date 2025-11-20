@@ -15,6 +15,7 @@ import (
 	"zori/internal/server/middlewares"
 	"zori/internal/storage/clickhouse"
 	"zori/internal/storage/postgres"
+	"zori/internal/telemetry"
 	"zori/services/analytics"
 	"zori/services/auth"
 	"zori/services/events"
@@ -49,6 +50,8 @@ func NewApplication() *fx.App {
 			postgres.NewPostgresDB,
 			clickhouse.NewClickhouseDB,
 			server.New,
+			telemetry.NewLogger,
+			telemetry.NewTracerProvider,
 		),
 		fx.Provide(natsstream.NewStream),
 		fx.Provide(cache.NewCacheService),

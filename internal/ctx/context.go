@@ -3,6 +3,7 @@ package ctx
 import (
 	"context"
 	"zori/internal/storage/postgres/models"
+	"zori/internal/telemetry"
 
 	"github.com/labstack/echo/v4"
 )
@@ -48,4 +49,8 @@ func (c *Ctx) UserID() string {
 
 func (c *Ctx) OrgID() string {
 	return c.orgID
+}
+
+func (c *Ctx) Logger() *telemetry.Logger {
+	return telemetry.FromContext(c.Context)
 }

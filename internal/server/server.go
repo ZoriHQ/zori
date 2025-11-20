@@ -3,11 +3,14 @@ package server
 import (
 	"fmt"
 	"net/http"
+	"zori/internal/config"
 	"zori/internal/ctx"
 	"zori/internal/server/validators"
+	"zori/internal/telemetry"
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/labstack/echo/otelecho"
 )
 
 type HandlerFunc[T any] func(*ctx.Ctx) (T, error)
@@ -17,8 +20,21 @@ type Server struct {
 	Echo *echo.Echo
 }
 
-func New() *Server {
+func New(cfg *config.Config, logger *telemetry.Logger) *Server {
 	e := echo.New()
+
+	// Add OpenTelemetry middleware
+	e.Use(otelecho.Middleware(cfg.ServiceName))
+
+	// Add Logger injection middleware
+	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			req := c.Request()
+			c.SetRequest(req.WithContext(telemetry.WithContext(req.Context(), logger)))
+			return next(c)
+		}
+	})
+
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 	e.Use(middleware.CORS())

@@ -10,6 +10,7 @@ import (
 	"zori/internal/natsstream"
 	"zori/internal/server"
 	"zori/internal/storage/postgres"
+	"zori/internal/telemetry"
 	"zori/services/ingestion"
 	"zori/services/ingestion/web"
 	"zori/services/organizations"
@@ -26,6 +27,8 @@ func NewIngestionApplication() *fx.App {
 			config.NewConfig,
 			postgres.NewPostgresDB,
 			server.New,
+			telemetry.NewLogger,
+			telemetry.NewTracerProvider,
 		),
 
 		fx.Provide(natsstream.NewStream),

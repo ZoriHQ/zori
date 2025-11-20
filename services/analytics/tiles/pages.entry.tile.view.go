@@ -58,14 +58,23 @@ func (t *EntryPagesTile) fetchData(ctx *ctx.Ctx, filter *filters.SectionFilter) 
 
 func (t *EntryPagesTile) buildQuery(filter *filters.SectionFilter) string {
 	return fmt.Sprintf(`
+		WITH first_events AS (
+		    SELECT
+		        session_id,
+		        argMin(ifNull(nullIf(page_pattern, ''), page_path), client_timestamp_utc) AS page,
+		        min(client_timestamp_utc) AS timestamp
+		    FROM events
+		    WHERE organization_id = ?
+		    AND project_id = ?
+		    AND session_id != ''
+		    AND client_timestamp_utc > now() - %[2]s
+		    GROUP BY session_id
+		)
 		SELECT
-		    ifNull(nullIf(entry_page, ''), 'UNKNOWN') AS page,
-		    countIf(started_at > now() - %[1]s) AS count,
-		    countIf(started_at BETWEEN now() - %[2]s AND now() - %[1]s) AS previous_count
-		FROM sessions
-		WHERE organization_id = ?
-		AND project_id = ?
-		AND started_at > now() - %[2]s
+		    ifNull(nullIf(page, ''), 'UNKNOWN') AS page,
+		    countIf(timestamp > now() - %[1]s) AS count,
+		    countIf(timestamp BETWEEN now() - %[2]s AND now() - %[1]s) AS previous_count
+		FROM first_events
 		GROUP BY page
 		HAVING count > 0
 		ORDER BY count DESC

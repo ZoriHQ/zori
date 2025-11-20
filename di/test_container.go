@@ -18,6 +18,9 @@ import (
 	"zori/internal/storage/clickhouse"
 	"zori/internal/storage/postgres"
 	"zori/internal/storage/postgres/models"
+	"zori/internal/telemetry"
+	"zori/services/analytics"
+	analyticsData "zori/services/analytics/data"
 	"zori/services/events"
 	eventsServices "zori/services/events/services"
 	"zori/services/ingestion"
@@ -29,8 +32,6 @@ import (
 	"zori/services/revenue"
 	revenueData "zori/services/revenue/data"
 	revenueServices "zori/services/revenue/services"
-	"zori/services/analytics"
-	analyticsData "zori/services/analytics/data"
 
 	"github.com/uptrace/bun"
 	"github.com/uptrace/bun/dialect/pgdialect"
@@ -97,6 +98,8 @@ func NewTestContainer(t *testing.T) *TestContainer {
 			natsstream.NewStream,
 			cache.NewCacheService,
 			server.New,
+			telemetry.NewLogger,
+			telemetry.NewTracerProvider,
 		),
 
 		organizations.BuildOrganizationDIContainer(),

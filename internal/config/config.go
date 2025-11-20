@@ -45,6 +45,10 @@ type Config struct {
 	GrafanaCloudRemoteURL string `env:"GRAFANA_CLOUD_REMOTE_WRITE_URL"`
 	GrafanaCloudUsername  string `env:"GRAFANA_CLOUD_USERNAME"`
 	GrafanaCloudAPIKey    string `env:"GRAFANA_CLOUD_API_KEY"`
+
+	// OpenTelemetry Configuration
+	ServiceName          string `env:"SERVICE_NAME" envDefault:"zori"`
+	OtelExporterEndpoint string `env:"OTEL_EXPORTER_OTLP_ENDPOINT"`
 }
 
 func NewConfig() *Config {
