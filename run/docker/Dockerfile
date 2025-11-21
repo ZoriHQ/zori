@@ -22,7 +22,8 @@ RUN addgroup -g 1001 -S appgroup && \
 WORKDIR /app
 
 COPY --from=builder /app/zori .
-COPY --from=builder /app/ipdb.mmdb .
+
+RUN wget https://cdn.zorihq.com/ipdb/ipdb.mmdb -O ./ipdb.mmdb
 
 RUN chown -R appuser:appgroup /app
 

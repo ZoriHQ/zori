@@ -1,7 +1,13 @@
 version: "3"
 includes:
-  lib:
+  tests:
     taskfile: ./tasks/Taskfile.tests.yaml
+    flatten: true
+  docs:
+    taskfile: ./tasks/Taskfile.docs.yaml
+    flatten: true
+  resources:
+    taskfile: ./tasks/Taskfile.resources.yaml
     flatten: true
 
 dotenv: [".env"]
@@ -14,6 +20,8 @@ tasks:
     aliases:
       - s
     desc: Start the API HTTP server (default port 1323)
+    deps:
+      - pullipdb
     cmds:
       - go run . server {{.CLI_ARGS}}
 
@@ -21,6 +29,8 @@ tasks:
     aliases:
       - i
     desc: Start the Ingestion HTTP server (default port 1324)
+    deps:
+      - pullipdb
     cmds:
       - go run . ingestion {{.CLI_ARGS}}
 
@@ -35,17 +45,6 @@ tasks:
     cmds:
       - goose -dir internal/storage/postgres/migrations postgres "$POSTGRES_URL" down
       - GOOSE_DRIVER=clickhouse GOOSE_DBSTRING=$CLICKHOUSE_URL goose -dir internal/storage/clickhouse/migrations down
-
-  docs:
-    desc: Generate Swagger documentation
-    cmds:
-      - npm install -g api-spec-converter
-      - swag init -g main.go --parseDependency --parseInternal --parseDepth 2 --parseFuncBody
-      - npx api-spec-converter --syntax=json --from=swagger_2 --to=openapi_3 docs/swagger.json > docs/openapi.json
-      - npx api-spec-converter --syntax=yaml --from=swagger_2 --to=openapi_3 docs/swagger.yaml > docs/openapi.yaml
-      - rm docs/swagger.yaml
-      - rm docs/swagger.json
-    silent: true
 
   start:
     desc: Quick start - setup environment and run server

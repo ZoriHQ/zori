@@ -1,0 +1,14 @@
+version: "3"
+
+vars:
+  GO_MODULE: zori
+
+tasks:
+  pullipdb:
+    desc: Pull IPDB database (only if not exists)
+    cmds:
+      - test -f ./ipdb.mmdb || wget https://cdn.zorihq.com/ipdb/ipdb.mmdb -O ./ipdb.mmdb
+  pullipdb:force:
+    desc: Pull IPDB database (force download)
+    cmds:
+      - wget https://cdn.zorihq.com/ipdb/ipdb.mmdb -O ./ipdb.mmdb
