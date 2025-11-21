@@ -1,12 +1,14 @@
 package web
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
 	"zori/internal/cache"
 	"zori/internal/storage/postgres/models"
+	"zori/internal/telemetry"
 	"zori/services/ingestion/services"
 	"zori/services/ingestion/types"
 	projectsServices "zori/services/projects/services"
@@ -19,14 +21,16 @@ type IngestionServer struct {
 	identifier     *services.Identifier
 	projectService *projectsServices.ProjectService
 	cacheService   *cache.CacheService
+	logger         *telemetry.Logger
 }
 
-func NewIngestionServer(ingestor *services.Ingestor, identifier *services.Identifier, projectService *projectsServices.ProjectService, cacheService *cache.CacheService) *IngestionServer {
+func NewIngestionServer(ingestor *services.Ingestor, identifier *services.Identifier, projectService *projectsServices.ProjectService, cacheService *cache.CacheService, logger *telemetry.Logger) *IngestionServer {
 	return &IngestionServer{
 		ingestor:       ingestor,
 		identifier:     identifier,
 		projectService: projectService,
 		cacheService:   cacheService,
+		logger:         logger,
 	}
 }
 
@@ -157,9 +161,17 @@ func (h *IngestionServer) Injest(ctx *fasthttp.RequestCtx) {
 		clientEvent.IP = ctx.RemoteIP().String()
 	}
 
-	go h.ingestor.Ingest(&project, &clientEvent)
+	go func() {
+		err := h.ingestor.Ingest(&project, &clientEvent)
+		if err != nil {
+			h.logger.Error("Failed to ingest event", telemetry.Error(err), telemetry.String("project_id", project.ID))
+		}
+	}()
 
-	fmt.Fprintf(ctx, "ACCEPTED %d", len(ctx.PostBody()))
+	_, err = fmt.Fprintf(ctx, "ACCEPTED %d", len(ctx.PostBody()))
+	if err != nil {
+		h.logger.Error("Failed to write ingest response", telemetry.Error(err))
+	}
 }
 
 func (h *IngestionServer) Identify(ctx *fasthttp.RequestCtx) {
@@ -245,12 +257,14 @@ func (h *IngestionServer) Identify(ctx *fasthttp.RequestCtx) {
 	}
 
 	go func() {
-		err := h.identifier.Identify(ctx, &project, &identifyEvent)
+		err := h.identifier.Identify(context.Background(), &project, &identifyEvent)
 		if err != nil {
-			fmt.Println("Identify error: ", err)
+			h.logger.Error("Failed to identify visitor", telemetry.Error(err), telemetry.String("project_id", project.ID), telemetry.String("visitor_id", identifyEvent.VisitorID))
 			return
 		}
 	}()
 
-	fmt.Fprintf(ctx, "IDENTIFIED %d", len(ctx.PostBody()))
+	if _, err := fmt.Fprintf(ctx, "IDENTIFIED %d", len(ctx.PostBody())); err != nil {
+		h.logger.Error("Failed to write identify response", telemetry.Error(err))
+	}
 }

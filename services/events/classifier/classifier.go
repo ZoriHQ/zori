@@ -242,9 +242,5 @@ func (c *Classifier) isDownloadLink(href string) bool {
 		}
 	}
 
-	if strings.Contains(href, "download=") {
-		return true
-	}
-
-	return false
+	return strings.Contains(href, "download=")
 }

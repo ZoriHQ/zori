@@ -3,10 +3,10 @@ package metrics
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/http"
 	"time"
 	"zori/internal/config"
+	"zori/internal/telemetry"
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
@@ -14,22 +14,24 @@ import (
 type MetricsServer struct {
 	collector *MetricsCollector
 	config    *config.Config
+	logger    *telemetry.Logger
 	server    *http.Server
 	pusher    *MetricsPusher
 	pushCtx   context.Context
 	pushStop  context.CancelFunc
 }
 
-func NewMetricsServer(collector *MetricsCollector, cfg *config.Config) *MetricsServer {
+func NewMetricsServer(collector *MetricsCollector, cfg *config.Config, logger *telemetry.Logger) *MetricsServer {
 	return &MetricsServer{
 		collector: collector,
 		config:    cfg,
+		logger:    logger,
 	}
 }
 
 func (s *MetricsServer) Start() error {
 	if !s.config.MetricsEnabled {
-		log.Println("Metrics server is disabled")
+		s.logger.Info("Metrics server is disabled")
 		return nil
 	}
 
@@ -43,7 +45,9 @@ func (s *MetricsServer) Start() error {
 
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("OK"))
+		if _, err := w.Write([]byte("OK")); err != nil {
+			s.logger.Error("Failed to write health check response", telemetry.Error(err))
+		}
 	})
 
 	s.server = &http.Server{
@@ -51,25 +55,24 @@ func (s *MetricsServer) Start() error {
 		Handler: mux,
 	}
 
-	log.Printf("Starting metrics server on :%s", s.config.MetricsPort)
+	s.logger.Info("Starting metrics server", telemetry.String("port", s.config.MetricsPort))
 	go func() {
 		if err := s.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Printf("Metrics server error: %v", err)
+			s.logger.Error("Metrics server error", telemetry.Error(err))
 		}
 	}()
 
 	if s.config.GrafanaCloudRemoteURL != "" {
-		pusher, err := NewMetricsPusher(s.collector, s.config)
+		pusher, err := NewMetricsPusher(s.collector, s.config, s.logger)
 		if err != nil {
-			log.Printf("Failed to create metrics pusher: %v", err)
-			log.Println("Continuing without remote write to Grafana Cloud")
+			s.logger.Warn("Failed to create metrics pusher, continuing without remote write", telemetry.Error(err))
 		} else {
 			s.pusher = pusher
 			s.pushCtx, s.pushStop = context.WithCancel(context.Background())
 			go s.pusher.Start(s.pushCtx)
 		}
 	} else {
-		log.Println("Grafana Cloud remote write URL not configured, skipping metrics push")
+		s.logger.Info("Grafana Cloud remote write URL not configured, skipping metrics push")
 	}
 
 	return nil
@@ -77,7 +80,7 @@ func (s *MetricsServer) Start() error {
 
 func (s *MetricsServer) Stop(ctx context.Context) error {
 	if s.pusher != nil && s.pushStop != nil {
-		log.Println("Stopping metrics pusher...")
+		s.logger.Info("Stopping metrics pusher")
 		s.pushStop()
 		s.pusher.Stop()
 	}

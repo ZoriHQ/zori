@@ -13,6 +13,7 @@ import (
 	"zori/internal/config"
 	"zori/internal/ctx"
 	"zori/internal/storage/postgres/models"
+	"zori/internal/telemetry"
 	"zori/internal/utils"
 	"zori/services/payments/data"
 	"zori/services/payments/types"
@@ -27,6 +28,7 @@ type ConnectionService struct {
 	projectData     *projectsData.ProjectData
 	encryptor       *utils.Encryptor
 	backfillService *BackfillService
+	logger          *telemetry.Logger
 }
 
 func NewConnectionService(
@@ -35,6 +37,7 @@ func NewConnectionService(
 	projectData *projectsData.ProjectData,
 	encryptor *utils.Encryptor,
 	backfillService *BackfillService,
+	logger *telemetry.Logger,
 ) *ConnectionService {
 	return &ConnectionService{
 		config:          cfg,
@@ -42,6 +45,7 @@ func NewConnectionService(
 		projectData:     projectData,
 		encryptor:       encryptor,
 		backfillService: backfillService,
+		logger:          logger,
 	}
 }
 
@@ -121,7 +125,7 @@ func (cs *ConnectionService) getStripeAppInstructions(c *ctx.Ctx, projectID stri
 }
 
 func (cs *ConnectionService) getManualConnectionInstructions(providerType string) (*types.ProviderInstructionsResponse, error) {
-	fields := []types.ProviderField{}
+	var fields []types.ProviderField
 
 	switch providerType {
 	case "stripe":
@@ -321,7 +325,11 @@ func (cs *ConnectionService) exchangeCodeForToken(code string) (map[string]inter
 	if err != nil {
 		return nil, fmt.Errorf("failed to exchange code: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			cs.logger.Error("Failed to close response body", telemetry.Error(err))
+		}
+	}()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {

@@ -12,7 +12,7 @@ import (
 	"zori/services/payments/types"
 
 	"github.com/stripe/stripe-go/v83"
-	"github.com/stripe/stripe-go/v83/client"
+	"github.com/stripe/stripe-go/v83/client" //nolint:all
 )
 
 type BackfillService struct {
@@ -41,8 +41,8 @@ func (bs *BackfillService) BackfillStripePayments(
 		return fmt.Errorf("failed to decrypt API key: %w", err)
 	}
 
-	sc := &client.API{}
-	sc.Init(apiKey, nil)
+	sc := &client.API{}  //nolint:all
+	sc.Init(apiKey, nil) //nolint:all
 
 	log.Printf("Starting backfill for provider %s from %s", provider.ID, startDate.Format(time.RFC3339))
 
@@ -61,7 +61,7 @@ func (bs *BackfillService) BackfillStripePayments(
 
 func (bs *BackfillService) backfillCharges(
 	ctx context.Context,
-	sc *client.API,
+	sc *client.API, //nolint:all
 	provider *models.PaymentProvider,
 	project *models.Project,
 	startDate time.Time,
@@ -74,7 +74,7 @@ func (bs *BackfillService) backfillCharges(
 	params.Filters.AddFilter("created", "gte", fmt.Sprintf("%d", startDate.Unix()))
 
 	count := 0
-	iter := sc.Charges.List(params)
+	iter := sc.Charges.List(params) //nolint:all
 	for iter.Next() {
 		select {
 		case <-ctx.Done():
@@ -131,7 +131,7 @@ func (bs *BackfillService) backfillCharges(
 
 func (bs *BackfillService) backfillInvoices(
 	ctx context.Context,
-	sc *client.API,
+	sc *client.API, //nolint:all
 	provider *models.PaymentProvider,
 	project *models.Project,
 	startDate time.Time,
@@ -145,7 +145,7 @@ func (bs *BackfillService) backfillInvoices(
 	params.Filters.AddFilter("created", "gte", fmt.Sprintf("%d", startDate.Unix()))
 
 	count := 0
-	iter := sc.Invoices.List(params)
+	iter := sc.Invoices.List(params) //nolint:all
 	for iter.Next() {
 		select {
 		case <-ctx.Done():

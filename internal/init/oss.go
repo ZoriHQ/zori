@@ -243,11 +243,6 @@ func (o *OSSInitializer) displayCredentials(username, password, orgID string) {
 ╚═══════════════════════════════════════════════════════════════╝
 `
 
-	apiHost := o.cfg.ZoriAPIHost
-	if len(apiHost) > 30 {
-		apiHost = apiHost[:27] + "..."
-	}
-
 	formattedBanner := fmt.Sprintf(banner, username, password)
 
 	fmt.Println(formattedBanner)

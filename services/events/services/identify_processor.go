@@ -7,11 +7,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"time"
 	"zori/internal/metrics"
 	"zori/internal/natsstream"
 	"zori/internal/storage/clickhouse"
+	"zori/internal/telemetry"
 	"zori/services/ingestion/types"
 
 	"github.com/nats-io/nats.go/jetstream"
@@ -33,9 +33,10 @@ type IdentifyProcessor struct {
 
 	clickDb     *clickhouse.ClickhouseDB
 	natsMetrics *metrics.NatsMetrics
+	logger      *telemetry.Logger
 }
 
-func NewIdentifyProcessor(natsStream *natsstream.Stream, clickDb *clickhouse.ClickhouseDB, natsMetrics *metrics.NatsMetrics) *IdentifyProcessor {
+func NewIdentifyProcessor(natsStream *natsstream.Stream, clickDb *clickhouse.ClickhouseDB, natsMetrics *metrics.NatsMetrics, logger *telemetry.Logger) *IdentifyProcessor {
 	err := natsStream.UpsertJetStream(identifyEventsStream, identifyEventsSubject)
 	if err != nil {
 		panic(err)
@@ -45,6 +46,7 @@ func NewIdentifyProcessor(natsStream *natsstream.Stream, clickDb *clickhouse.Cli
 		natsStream:  natsStream,
 		clickDb:     clickDb,
 		natsMetrics: natsMetrics,
+		logger:      logger,
 	}
 
 	p.ctx, p.cancelConsumer = context.WithCancel(context.Background())
@@ -79,24 +81,30 @@ func (p *IdentifyProcessor) Start() error {
 
 		var identifyFrame types.IdentifyEventFrameV1
 		if err := json.Unmarshal(msg.Data(), &identifyFrame); err != nil {
-			log.Printf("Failed to unmarshal identify event: %v", err)
+			p.logger.Error("Failed to unmarshal identify event", telemetry.Error(err))
 			p.natsMetrics.RecordMessageProcessed(identifyEventsStream, "identify-processor", "unmarshal_error", time.Since(startTime))
 			p.natsMetrics.RecordMessageAck(identifyEventsStream, "identify-processor", "nak")
-			msg.Nak()
+			if err := msg.Nak(); err != nil {
+				p.logger.Error("Failed to nak message after unmarshal error", telemetry.Error(err))
+			}
 			return
 		}
 
 		if err := p.updateVisitorEvents(&identifyFrame); err != nil {
-			log.Printf("Failed to update visitor events: %v", err)
+			p.logger.Error("Failed to update visitor events", telemetry.Error(err), telemetry.String("visitor_id", identifyFrame.VisitorID))
 			p.natsMetrics.RecordMessageProcessed(identifyEventsStream, "identify-processor", "update_error", time.Since(startTime))
 			p.natsMetrics.RecordMessageAck(identifyEventsStream, "identify-processor", "nak")
-			msg.Nak()
+			if err := msg.Nak(); err != nil {
+				p.logger.Error("Failed to nak message after update error", telemetry.Error(err))
+			}
 			return
 		}
 
 		p.natsMetrics.RecordMessageProcessed(identifyEventsStream, "identify-processor", "success", time.Since(startTime))
 		p.natsMetrics.RecordMessageAck(identifyEventsStream, "identify-processor", "ack")
-		msg.Ack()
+		if err := msg.Ack(); err != nil {
+			p.logger.Error("Failed to ack message after successful processing", telemetry.Error(err))
+		}
 	})
 
 	return err
@@ -149,7 +157,7 @@ func (p *IdentifyProcessor) updateVisitorEvents(identifyFrame *types.IdentifyEve
 		return fmt.Errorf("failed to update visitor events: %w", err)
 	}
 
-	log.Printf("Updated events for visitor %s with identity information", identifyFrame.VisitorID)
+	p.logger.Info("Updated events with identity information", telemetry.String("visitor_id", identifyFrame.VisitorID), telemetry.String("project_id", identifyFrame.ProjectID))
 	return nil
 }
 

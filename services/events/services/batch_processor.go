@@ -7,6 +7,7 @@ import (
 	"time"
 	"zori/internal/metrics"
 	"zori/internal/storage/clickhouse"
+	"zori/internal/telemetry"
 	"zori/services/ingestion/types"
 
 	trieclassifier "github.com/ZoriHQ/trie-url-classifier"
@@ -25,6 +26,7 @@ type BatchItem struct {
 type BatchProcessor struct {
 	clickDb     *clickhouse.ClickhouseDB
 	natsMetrics *metrics.NatsMetrics
+	logger      *telemetry.Logger
 
 	batchSize int
 	batch     []BatchItem
@@ -38,10 +40,11 @@ type BatchProcessor struct {
 	lifecycleMu sync.Mutex
 }
 
-func NewBatchProcessor(clickDb *clickhouse.ClickhouseDB, natsMetrics *metrics.NatsMetrics) *BatchProcessor {
+func NewBatchProcessor(clickDb *clickhouse.ClickhouseDB, natsMetrics *metrics.NatsMetrics, logger *telemetry.Logger) *BatchProcessor {
 	return &BatchProcessor{
 		clickDb:     clickDb,
 		natsMetrics: natsMetrics,
+		logger:      logger,
 		batchSize:   defaultBatchSize,
 		batch:       make([]BatchItem, 0, defaultBatchSize),
 		eventChan:   make(chan BatchItem, 100),
@@ -161,7 +164,9 @@ func (bp *BatchProcessor) processBatch(batch []BatchItem) {
 		bp.natsMetrics.RecordClickHouseError("events", "connection_error")
 		for _, item := range batch {
 			bp.natsMetrics.RecordMessageAck(rawEventsStream, "event-enricher", "nak")
-			item.Msg.Nak()
+			if err := item.Msg.Nak(); err != nil {
+				bp.logger.Error("Failed to nak message after ClickHouse connection error", telemetry.Error(err))
+			}
 		}
 		return
 	}
@@ -185,7 +190,9 @@ func (bp *BatchProcessor) processBatch(batch []BatchItem) {
 		bp.natsMetrics.RecordClickHouseError("events", "prepare_error")
 		for _, item := range batch {
 			bp.natsMetrics.RecordMessageAck(rawEventsStream, "event-enricher", "nak")
-			item.Msg.Nak()
+			if err := item.Msg.Nak(); err != nil {
+				bp.logger.Error("Failed to nak message after ClickHouse prepare error", telemetry.Error(err))
+			}
 		}
 		return
 	}
@@ -264,7 +271,9 @@ func (bp *BatchProcessor) processBatch(batch []BatchItem) {
 			bp.natsMetrics.RecordClickHouseError("events", "append_error")
 			for _, item := range batch {
 				bp.natsMetrics.RecordMessageAck(rawEventsStream, "event-enricher", "nak")
-				item.Msg.Nak()
+				if err := item.Msg.Nak(); err != nil {
+					bp.logger.Error("Failed to nak message after ClickHouse append error", telemetry.Error(err))
+				}
 			}
 			return
 		}
@@ -275,7 +284,9 @@ func (bp *BatchProcessor) processBatch(batch []BatchItem) {
 		for _, item := range batch {
 			bp.natsMetrics.RecordMessageProcessed(rawEventsStream, "event-enricher", "clickhouse_error", time.Since(startTime))
 			bp.natsMetrics.RecordMessageAck(rawEventsStream, "event-enricher", "nak")
-			item.Msg.Nak()
+			if err := item.Msg.Nak(); err != nil {
+				bp.logger.Error("Failed to nak message after ClickHouse insert error", telemetry.Error(err))
+			}
 		}
 		return
 	}
@@ -285,6 +296,8 @@ func (bp *BatchProcessor) processBatch(batch []BatchItem) {
 	for _, item := range batch {
 		bp.natsMetrics.RecordMessageProcessed(rawEventsStream, "event-enricher", "success", time.Since(startTime))
 		bp.natsMetrics.RecordMessageAck(rawEventsStream, "event-enricher", "ack")
-		item.Msg.Ack()
+		if err := item.Msg.Ack(); err != nil {
+			bp.logger.Error("Failed to ack message after ClickHouse insert success", telemetry.Error(err))
+		}
 	}
 }

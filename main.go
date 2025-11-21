@@ -14,10 +14,6 @@ import (
 	"github.com/urfave/cli/v3"
 )
 
-type contextKey string
-
-const resetAuthKey contextKey = "reset-auth"
-
 // @title           OpenAPI Specification for Zori server
 // @version         1.0
 // @termsOfService  https://swagger.io/terms/

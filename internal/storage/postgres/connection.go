@@ -54,5 +54,5 @@ func (p *PostgresDB) Close() error {
 }
 
 func (p *PostgresDB) Ping(ctx context.Context) error {
-	return p.DB.PingContext(ctx)
+	return p.PingContext(ctx)
 }

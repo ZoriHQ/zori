@@ -126,9 +126,10 @@ func TestEntryPagesTile_Fetch(t *testing.T) {
 		var homePageCount uint64
 		var pricingPageCount uint64
 		for _, data := range response.Data {
-			if data.Page == "/" {
+			switch data.Page {
+			case "/":
 				homePageCount = data.Count
-			} else if data.Page == "/pricing" {
+			case "/pricing":
 				pricingPageCount = data.Count
 			}
 		}

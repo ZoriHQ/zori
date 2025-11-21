@@ -5,11 +5,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"time"
 	"zori/internal/metrics"
 	"zori/internal/natsstream"
 	"zori/internal/storage/clickhouse"
+	"zori/internal/telemetry"
 	"zori/services/ingestion/data"
 	"zori/services/ingestion/types"
 
@@ -35,9 +35,10 @@ type Processor struct {
 	stages         []ProcessorStage
 	natsMetrics    *metrics.NatsMetrics
 	batchProcessor *BatchProcessor
+	logger         *telemetry.Logger
 }
 
-func NewProcessor(natsStream *natsstream.Stream, clickDb *clickhouse.ClickhouseDB, natsMetrics *metrics.NatsMetrics, batchProcessor *BatchProcessor, visitorRepository *data.VisitorRepository) *Processor {
+func NewProcessor(natsStream *natsstream.Stream, clickDb *clickhouse.ClickhouseDB, natsMetrics *metrics.NatsMetrics, batchProcessor *BatchProcessor, visitorRepository *data.VisitorRepository, logger *telemetry.Logger) *Processor {
 	err := natsStream.UpsertJetStream(rawEventsStream, rawEventsSubject)
 	if err != nil {
 		panic(err)
@@ -58,6 +59,7 @@ func NewProcessor(natsStream *natsstream.Stream, clickDb *clickhouse.ClickhouseD
 		stages:         processingStages,
 		natsMetrics:    natsMetrics,
 		batchProcessor: batchProcessor,
+		logger:         logger,
 	}
 
 	p.ctx, p.cancelConsumer = context.WithCancel(context.Background())
@@ -94,14 +96,19 @@ func (p *Processor) Start() error {
 		if err := json.Unmarshal(msg.Data(), &eventFrame); err != nil {
 			p.natsMetrics.RecordMessageProcessed(rawEventsStream, "event-enricher", "unmarshal_error", time.Since(startTime))
 			p.natsMetrics.RecordMessageAck(rawEventsStream, "event-enricher", "nak")
-			msg.Nak()
+			if err := msg.Nak(); err != nil {
+				p.logger.Error("Failed to nak message after unmarshal error", telemetry.Error(err))
+			}
+
 			return
 		}
 
 		if err := p.processEvent(&eventFrame); err != nil {
 			p.natsMetrics.RecordMessageProcessed(rawEventsStream, "event-enricher", "process_error", time.Since(startTime))
 			p.natsMetrics.RecordMessageAck(rawEventsStream, "event-enricher", "nak")
-			msg.Nak()
+			if err := msg.Nak(); err != nil {
+				p.logger.Error("Failed to nak message after processing error", telemetry.Error(err))
+			}
 			return
 		}
 
@@ -110,9 +117,11 @@ func (p *Processor) Start() error {
 		// marshal it before that modification happens
 		marshalEventFrame, err := json.Marshal(eventFrame)
 		if err != nil {
-			log.Printf("Error marshaling event frame: %v", err)
+			p.logger.Error("Failed to marshal event frame", telemetry.Error(err), telemetry.String("project_id", eventFrame.ProjectID))
 		} else {
-			p.natsStream.GetConnection().Publish(fmt.Sprintf("events:project:%s", eventFrame.ProjectID), marshalEventFrame)
+			if err := p.natsStream.GetConnection().Publish(fmt.Sprintf("events:project:%s", eventFrame.ProjectID), marshalEventFrame); err != nil {
+				p.logger.Error("Failed to publish project events", telemetry.Error(err), telemetry.String("project_id", eventFrame.ProjectID))
+			}
 		}
 
 		p.batchProcessor.AddEvent(&eventFrame, msg)

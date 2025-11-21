@@ -76,6 +76,7 @@ func (t *TrafficRefererSourceTile) buildTrafficSourceRefererQuery(ctx *ctx.Ctx, 
 	`, filter.TimeRange.IntervalValue, filter.TimeRange.IntervalValueDelta)
 }
 
+//nolint:all
 func (t *TrafficRefererSourceTile) buildTrafficSourceRevenueQuery(filter *filters.SectionFilter) string {
 	return fmt.Sprintf(`
 		WITH visitor_attribution AS (

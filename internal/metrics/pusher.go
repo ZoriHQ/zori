@@ -5,10 +5,10 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"time"
 	"zori/internal/config"
+	"zori/internal/telemetry"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/snappy"
@@ -23,9 +23,10 @@ type MetricsPusher struct {
 	config     *config.Config
 	stopCh     chan struct{}
 	doneCh     chan struct{}
+	logger     *telemetry.Logger
 }
 
-func NewMetricsPusher(collector *MetricsCollector, cfg *config.Config) (*MetricsPusher, error) {
+func NewMetricsPusher(collector *MetricsCollector, cfg *config.Config, logger *telemetry.Logger) (*MetricsPusher, error) {
 	if cfg.GrafanaCloudRemoteURL == "" {
 		return nil, fmt.Errorf("grafana cloud remote write URL is not configured")
 	}
@@ -41,6 +42,7 @@ func NewMetricsPusher(collector *MetricsCollector, cfg *config.Config) (*Metrics
 		config:     cfg,
 		stopCh:     make(chan struct{}),
 		doneCh:     make(chan struct{}),
+		logger:     logger,
 	}, nil
 }
 
@@ -49,23 +51,23 @@ func (p *MetricsPusher) Start(ctx context.Context) {
 	defer ticker.Stop()
 	defer close(p.doneCh)
 
-	log.Println("Starting metrics pusher to Grafana Cloud")
+	p.logger.Info("Starting metrics pusher to Grafana Cloud")
 
 	if err := p.pushMetrics(ctx); err != nil {
-		log.Printf("Failed to push metrics: %v", err)
+		p.logger.Error("Failed to push metrics on startup", telemetry.Error(err))
 	}
 
 	for {
 		select {
 		case <-ticker.C:
 			if err := p.pushMetrics(ctx); err != nil {
-				log.Printf("Failed to push metrics: %v", err)
+				p.logger.Error("Failed to push metrics", telemetry.Error(err))
 			}
 		case <-p.stopCh:
-			log.Println("Stopping metrics pusher")
+			p.logger.Info("Stopping metrics pusher")
 			return
 		case <-ctx.Done():
-			log.Println("Context cancelled, stopping metrics pusher")
+			p.logger.Info("Context cancelled, stopping metrics pusher")
 			return
 		}
 	}
@@ -116,7 +118,11 @@ func (p *MetricsPusher) pushMetrics(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("failed to send request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			p.logger.Error("Failed to close response body", telemetry.Error(err))
+		}
+	}()
 
 	if resp.StatusCode/100 != 2 {
 		body, _ := io.ReadAll(resp.Body)

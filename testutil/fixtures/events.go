@@ -149,7 +149,11 @@ func SendEvent(t *testing.T, ingestionURL string, projectToken string, event typ
 	if err != nil {
 		return fmt.Errorf("failed to send event: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			t.Logf("failed to close response body: %v", err)
+		}
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)

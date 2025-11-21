@@ -53,7 +53,7 @@ func WaitForPostgresReady(t *testing.T, tc *di.TestContainer, timeout time.Durat
 	ctx := context.Background()
 
 	return WaitForCondition(ctx, timeout, 100*time.Millisecond, func() (bool, error) {
-		err := tc.DB.DB.PingContext(ctx)
+		err := tc.DB.PingContext(ctx)
 		return err == nil, nil
 	})
 }

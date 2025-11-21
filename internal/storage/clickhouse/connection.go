@@ -18,10 +18,7 @@ func NewClickhouseDB(cfg *config.Config) *ClickhouseDB {
 		panic("CLICKHOUSE_URL is required")
 	}
 
-	debug := false
-	if os.Getenv("CLICKHOUSE_DEBUG") == "true" {
-		debug = true
-	}
+	debug := os.Getenv("CLICKHOUSE_DEBUG") == "true"
 
 	clickDbConn, err := goclick.Open(&goclick.Options{
 		Addr: []string{cfg.ClickHouseURL},

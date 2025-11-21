@@ -151,11 +151,12 @@ func TestExitPagesTile_Fetch(t *testing.T) {
 		var contactPageCount uint64
 		var homePageCount uint64
 		for _, data := range response.Data {
-			if data.Page == "/about" {
+			switch data.Page {
+			case "/about":
 				aboutPageCount = data.Count
-			} else if data.Page == "/contact" {
+			case "/contact":
 				contactPageCount = data.Count
-			} else if data.Page == "/" {
+			case "/":
 				homePageCount = data.Count
 			}
 		}
