@@ -10,3 +10,6 @@
 # We ignore this folder to keep the repository clean
 sdks/
 CLAUDE.md
+
+# Exclude binary files
+zori

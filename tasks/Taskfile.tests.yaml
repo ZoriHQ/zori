@@ -12,7 +12,7 @@ tasks:
 
   test:migrate:
     desc: Run migrations for test databases
-    dotenv: [".env.test"]
+    dotenv: ["example.env"]
     deps:
       - test:containers
     cmds:
@@ -26,7 +26,7 @@ tasks:
 
   test:
     desc: "Run tests (usage: task test -- ./path/to/tests or task test -- -v -run TestName ./path)"
-    dotenv: [".env.test"]
+    dotenv: ["example.env"]
     deps:
       - test:migrate
     cmds:
@@ -34,7 +34,7 @@ tasks:
 
   test:coverage:
     desc: Run tests with coverage report
-    dotenv: [".env.test"]
+    dotenv: ["example.env"]
     deps:
       - test:migrate
     cmds:
@@ -44,7 +44,7 @@ tasks:
 
   test:analytics:tiles:
     desc: Run all tiles tests
-    dotenv: [".env.test"]
+    dotenv: ["example.env"]
     deps:
       - test:migrate
     cmds:
@@ -52,7 +52,7 @@ tasks:
 
   test:verbose:
     desc: Run all tests with verbose output
-    dotenv: [".env.test"]
+    dotenv: ["example.env"]
     deps:
       - test:migrate
     cmds:
@@ -60,7 +60,7 @@ tasks:
 
   test:watch:
     desc: Run tests in watch mode (requires entr)
-    dotenv: [".env.test"]
+    dotenv: ["example.env"]
     cmds:
       - find . -name "*.go" | entr -c go test ./...
 
