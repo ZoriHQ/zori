@@ -65,4 +65,4 @@ jobs:
 
       - name: Cleanup test services
         if: always()
-        run: docker compose -f docker-compose.test.yaml down -v
+        run: docker compose -f ./run/tests/docker-compose.test.yaml down -v
