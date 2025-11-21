@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"zori/internal/server"
+	"zori/internal/telemetry"
 	"zori/services/events/services"
 	projectsService "zori/services/projects/services"
 
@@ -20,13 +21,17 @@ var (
 	}
 )
 
-func RegisterRoutes(s *server.Server, projectService *projectsService.ProjectService, jwtService *services.JWTService, eventsService *services.EventsService) {
+func RegisterRoutes(s *server.Server, projectService *projectsService.ProjectService, jwtService *services.JWTService, eventsService *services.EventsService, logger *telemetry.Logger) {
 	s.Echo.GET("/events/stream", func(c echo.Context) error {
 		ws, err := upgrader.Upgrade(c.Response(), c.Request(), nil)
 		if err != nil {
 			return err
 		}
-		defer ws.Close()
+		defer func() {
+			if err := ws.Close(); err != nil {
+				logger.Error("Failed to close websocket", telemetry.Error(err))
+			}
+		}()
 
 		id := c.QueryParam("id")
 		token := c.QueryParam("token")
@@ -46,12 +51,18 @@ func RegisterRoutes(s *server.Server, projectService *projectsService.ProjectSer
 		}
 
 		subscription, err := eventsService.SubscribeOnEventsStream(project.ID, func(msg *nats.Msg) {
-			ws.WriteMessage(websocket.TextMessage, msg.Data)
+			if err := ws.WriteMessage(websocket.TextMessage, msg.Data); err != nil {
+				logger.Error("Failed to write message to websocket", telemetry.Error(err), telemetry.String("project_id", project.ID))
+			}
 		})
 		if err != nil {
 			return err
 		}
-		defer subscription.Unsubscribe()
+		defer func() {
+			if err := subscription.Unsubscribe(); err != nil {
+				logger.Error("Failed to unsubscribe from events stream", telemetry.Error(err), telemetry.String("project_id", project.ID))
+			}
+		}()
 
 		for {
 			if _, _, err := ws.ReadMessage(); err != nil {

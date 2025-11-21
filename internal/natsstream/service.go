@@ -46,7 +46,7 @@ func (s *Stream) UpsertJetStream(name string, sourceSubject string) error {
 		return err
 	}
 	if streamInfo == nil {
-		streamInfo, err = s.js.AddStream(&nats.StreamConfig{
+		_, err = s.js.AddStream(&nats.StreamConfig{
 			Name:     name,
 			Subjects: []string{sourceSubject},
 			MaxBytes: 100000,

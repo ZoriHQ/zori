@@ -33,8 +33,7 @@ func BuildPaymentsProcessorDIContainer() fx.Option {
 	return fx.Invoke(func(lc fx.Lifecycle, processor *services.PaymentProcessor) {
 		lc.Append(fx.Hook{
 			OnStart: func(ctx context.Context) error {
-				go processor.Start()
-				return nil
+				return processor.Start()
 			},
 			OnStop: func(ctx context.Context) error {
 				return processor.Stop()

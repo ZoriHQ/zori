@@ -74,7 +74,7 @@ func (r *RevenueData) CheckPaymentDataQuality(ctx context.Context, projectID str
 	if err != nil {
 		return &report, nil
 	}
-	defer rows.Close()
+	defer clickhouse.EnsureClosed(rows)
 
 	var samples []DuplicatePaymentSample
 	for rows.Next() {
@@ -363,7 +363,7 @@ func (r *RevenueData) GetAttributionByOrigin(ctx context.Context, projectID stri
 	if err != nil {
 		return nil, fmt.Errorf("failed to query attribution by origin: %w", err)
 	}
-	defer rows.Close()
+	defer clickhouse.EnsureClosed(rows)
 
 	var dataPoints []types.OriginAttributionDataPoint
 	for rows.Next() {
@@ -397,7 +397,7 @@ func (r *RevenueData) GetAttributionByUTM(ctx context.Context, projectID string,
 		return nil, err
 	}
 
-	utmField := "first_utm_source"
+	var utmField string
 	switch utmType {
 	case "medium":
 		utmField = "first_utm_medium"
@@ -505,7 +505,7 @@ func (r *RevenueData) GetAttributionByUTM(ctx context.Context, projectID string,
 	if err != nil {
 		return nil, fmt.Errorf("failed to query attribution by UTM: %w", err)
 	}
-	defer rows.Close()
+	defer clickhouse.EnsureClosed(rows)
 
 	var dataPoints []types.UTMAttributionDataPoint
 	for rows.Next() {
@@ -541,7 +541,8 @@ func (r *RevenueData) GetTimeline(ctx context.Context, projectID string, timeRan
 
 	var query string
 
-	if timeRange == types.TimeRangeLast30Days || timeRange == types.TimeRangeLast90Days {
+	switch timeRange {
+	case types.TimeRangeLast30Days, types.TimeRangeLast90Days:
 		query = `
 			SELECT
 				time_bucket,
@@ -555,7 +556,7 @@ func (r *RevenueData) GetTimeline(ctx context.Context, projectID string, timeRan
 			GROUP BY time_bucket
 			ORDER BY time_bucket ASC
 		`
-	} else if timeRange == types.TimeRangeToday || timeRange == types.TimeRangeLast7Days {
+	case types.TimeRangeToday, types.TimeRangeLast7Days:
 		query = `
 			SELECT
 				time_bucket,
@@ -569,7 +570,7 @@ func (r *RevenueData) GetTimeline(ctx context.Context, projectID string, timeRan
 			GROUP BY time_bucket
 			ORDER BY time_bucket ASC
 		`
-	} else {
+	default:
 		query = fmt.Sprintf(`
 			WITH distinct_payments AS (
 				SELECT DISTINCT
@@ -598,7 +599,7 @@ func (r *RevenueData) GetTimeline(ctx context.Context, projectID string, timeRan
 	if err != nil {
 		return nil, fmt.Errorf("failed to query revenue timeline: %w", err)
 	}
-	defer rows.Close()
+	defer clickhouse.EnsureClosed(rows)
 
 	var dataPoints []types.TimelineDataPoint
 	for rows.Next() {
@@ -722,7 +723,7 @@ func (r *RevenueData) GetTopCustomers(ctx context.Context, projectID string, tim
 	if err != nil {
 		return nil, fmt.Errorf("failed to query top customers: %w", err)
 	}
-	defer rows.Close()
+	defer clickhouse.EnsureClosed(rows)
 
 	var customers []types.TopCustomer
 	for rows.Next() {
@@ -872,7 +873,7 @@ func (r *RevenueData) GetCustomerProfile(ctx context.Context, projectID string, 
 
 	paymentsRows, err := r.clickDb.Db().Query(ctx, paymentsQuery, projectID, visitorID)
 	if err == nil {
-		defer paymentsRows.Close()
+		defer clickhouse.EnsureClosed(paymentsRows)
 
 		var payments []types.Payment
 		for paymentsRows.Next() {
@@ -912,7 +913,7 @@ func (r *RevenueData) GetCustomerProfile(ctx context.Context, projectID string, 
 
 	timeRows, err := r.clickDb.Db().Query(ctx, revenueOverTimeQuery, projectID, visitorID, revenueStartTime)
 	if err == nil {
-		defer timeRows.Close()
+		defer clickhouse.EnsureClosed(timeRows)
 
 		var revenueOverTime []types.RevenueOverTimeDataPoint
 		for timeRows.Next() {

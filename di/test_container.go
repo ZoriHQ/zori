@@ -157,9 +157,7 @@ func NewTestContainer(t *testing.T) *TestContainer {
 		fx.Invoke(func(lc fx.Lifecycle, processor *paymentsServices.PaymentProcessor) {
 			lc.Append(fx.Hook{
 				OnStart: func(ctx context.Context) error {
-					go processor.Start()
-					t.Logf("Started payment processor for testing")
-					return nil
+					return processor.Start()
 				},
 				OnStop: func(ctx context.Context) error {
 					return processor.Stop()

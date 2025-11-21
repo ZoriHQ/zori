@@ -5,11 +5,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"time"
 	"zori/internal/natsstream"
 	"zori/internal/storage/clickhouse"
 	clickhouseModels "zori/internal/storage/clickhouse/models"
+	"zori/internal/telemetry"
 	"zori/services/payments/types"
 
 	"github.com/nats-io/nats.go/jetstream"
@@ -23,6 +23,7 @@ const (
 type PaymentProcessor struct {
 	natsStream *natsstream.Stream
 	clickDb    *clickhouse.ClickhouseDB
+	logger     *telemetry.Logger
 
 	consumerJsConn jetstream.JetStream
 	consumer       jetstream.Consumer
@@ -31,7 +32,7 @@ type PaymentProcessor struct {
 	ctx            context.Context
 }
 
-func NewPaymentProcessor(natsStream *natsstream.Stream, clickDb *clickhouse.ClickhouseDB) *PaymentProcessor {
+func NewPaymentProcessor(natsStream *natsstream.Stream, clickDb *clickhouse.ClickhouseDB, logger *telemetry.Logger) *PaymentProcessor {
 	err := natsStream.UpsertJetStream(paymentStream, paymentSubject)
 	if err != nil {
 		panic(err)
@@ -40,6 +41,7 @@ func NewPaymentProcessor(natsStream *natsstream.Stream, clickDb *clickhouse.Clic
 	p := &PaymentProcessor{
 		natsStream: natsStream,
 		clickDb:    clickDb,
+		logger:     logger,
 	}
 
 	p.ctx, p.cancelConsumer = context.WithCancel(context.Background())
@@ -73,18 +75,24 @@ func (p *PaymentProcessor) Start() error {
 	_, err := p.consumer.Consume(func(msg jetstream.Msg) {
 		var paymentFrame types.PaymentEventFrame
 		if err := json.Unmarshal(msg.Data(), &paymentFrame); err != nil {
-			log.Printf("Failed to unmarshal payment event: %v", err)
-			msg.Nak()
+			p.logger.Error("Failed to unmarshal payment event", telemetry.Error(err))
+			if err := msg.Nak(); err != nil {
+				p.logger.Error("Failed to nak message after unmarshal error", telemetry.Error(err))
+			}
 			return
 		}
 
 		if err := p.processPayment(&paymentFrame); err != nil {
-			log.Printf("Failed to process payment: %v", err)
-			msg.Nak()
+			p.logger.Error("Failed to process payment", telemetry.Error(err), telemetry.String("payment_id", paymentFrame.PaymentID))
+			if err := msg.Nak(); err != nil {
+				p.logger.Error("Failed to nak message after processing error", telemetry.Error(err))
+			}
 			return
 		}
 
-		msg.Ack()
+		if err := msg.Ack(); err != nil {
+			p.logger.Error("Failed to ack message after processing", telemetry.Error(err))
+		}
 	})
 
 	return err
@@ -147,11 +155,11 @@ func (p *PaymentProcessor) processPayment(frame *types.PaymentEventFrame) error 
 		return fmt.Errorf("failed to insert payment event: %w", err)
 	}
 
-	log.Printf("Successfully processed payment %s (visitor: %v, amount: %d %s)",
-		frame.PaymentID,
-		frame.VisitorID,
-		frame.Amount,
-		frame.Currency,
+	p.logger.Info("Successfully processed payment",
+		telemetry.String("payment_id", frame.PaymentID),
+		telemetry.String("visitor_id", *frame.VisitorID),
+		telemetry.Int("amount", int(frame.Amount)),
+		telemetry.String("currency", frame.Currency),
 	)
 
 	return nil

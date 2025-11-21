@@ -93,9 +93,10 @@ func TestVisitorsByOSTile_Fetch(t *testing.T) {
 		var windowsVisitorCount uint64
 		var macosVisitorCount uint64
 		for _, data := range response.Data {
-			if data.BrowserName == "Windows" {
+			switch data.BrowserName {
+			case "Windows":
 				windowsVisitorCount += data.Count
-			} else if data.BrowserName == "MacOS" {
+			case "MacOS":
 				macosVisitorCount += data.Count
 			}
 		}

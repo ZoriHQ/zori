@@ -57,7 +57,7 @@ func (s *VisitorsService) IdentifyVisitor(c *ctx.Ctx) (*types.ManualIdentifyResp
 		return nil, echo.NewHTTPError(400, "visitor_id is required")
 	}
 
-	if req.UserID == nil && req.ExternalID == nil && req.Email == nil && req.Name == nil && req.Phone == nil && (req.AdditionalProperties == nil || len(req.AdditionalProperties) == 0) {
+	if req.UserID == nil && req.ExternalID == nil && req.Email == nil && req.Name == nil && req.Phone == nil && len(req.AdditionalProperties) == 0 {
 		return nil, echo.NewHTTPError(400, "At least one identity field must be provided")
 	}
 

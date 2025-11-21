@@ -33,7 +33,7 @@ func (i *Identifier) Identify(ctx context.Context, project *models.Project, iden
 		CustomTraits:   make(map[string]interface{}),
 	}
 
-	if identifyEvent.AdditionalProperties != nil && len(identifyEvent.AdditionalProperties) > 0 {
+	if len(identifyEvent.AdditionalProperties) > 0 {
 		visitor.CustomTraits = identifyEvent.AdditionalProperties
 	}
 

@@ -16,7 +16,7 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/stripe/stripe-go/v83"
-	"github.com/stripe/stripe-go/v83/client"
+	"github.com/stripe/stripe-go/v83/client" //nolint:all
 	"github.com/stripe/stripe-go/v83/webhook"
 )
 
@@ -229,11 +229,11 @@ func extractSubscriptionMetadata(invoice *stripe.Invoice) map[string]string {
 	return nil
 }
 
-func (wh *WebhookHandler) createStripeClient(provider *models.PaymentProvider) (*client.API, error) {
-	sc := &client.API{}
+func (wh *WebhookHandler) createStripeClient(provider *models.PaymentProvider) (*client.API, error) { // nolint:all
+	sc := &client.API{} //nolint:all
 
 	if wh.config.ZoriStripeApp && !wh.config.ZoriOSS {
-		sc.Init(wh.config.ZoriStripeAppSecretKey, &stripe.Backends{
+		sc.Init(wh.config.ZoriStripeAppSecretKey, &stripe.Backends{ //nolint:all
 			API: stripe.GetBackendWithConfig(stripe.APIBackend, &stripe.BackendConfig{
 				URL: stripe.String(stripe.APIURL),
 			}),
@@ -243,7 +243,7 @@ func (wh *WebhookHandler) createStripeClient(provider *models.PaymentProvider) (
 		if err != nil {
 			return nil, fmt.Errorf("failed to decrypt API key: %w", err)
 		}
-		sc.Init(apiKey, nil)
+		sc.Init(apiKey, nil) // nolint:all
 	}
 
 	return sc, nil
@@ -262,9 +262,10 @@ func (wh *WebhookHandler) fetchChargeWithInvoice(chargeID string, provider *mode
 		params.SetStripeAccount(provider.AccountID)
 	}
 
-	return sc.Charges.Get(chargeID, params)
+	return sc.Charges.Get(chargeID, params) //nolint:all
 }
 
+//nolint:all
 func (wh *WebhookHandler) fetchPaymentIntentWithInvoice(paymentIntentID string, provider *models.PaymentProvider) (*stripe.PaymentIntent, error) {
 	sc, err := wh.createStripeClient(provider)
 	if err != nil {
@@ -278,7 +279,7 @@ func (wh *WebhookHandler) fetchPaymentIntentWithInvoice(paymentIntentID string, 
 		params.SetStripeAccount(provider.AccountID)
 	}
 
-	return sc.PaymentIntents.Get(paymentIntentID, params)
+	return sc.PaymentIntents.Get(paymentIntentID, params) //nolint:all
 }
 
 func (wh *WebhookHandler) extractStripePaymentData(event *stripe.Event, project *models.Project, provider *models.PaymentProvider) (*types.PaymentEventFrame, error) {

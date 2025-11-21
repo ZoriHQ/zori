@@ -96,9 +96,10 @@ func TestVisitorsByBrowserTile_Fetch(t *testing.T) {
 		var edgeBrowserCount uint64
 		var safariBrowserCount uint64
 		for _, data := range response.Data {
-			if data.BrowserName == "Edge" {
+			switch data.BrowserName {
+			case "Edge":
 				edgeBrowserCount += data.Count
-			} else if data.BrowserName == "Safari" {
+			case "Safari":
 				safariBrowserCount += data.Count
 			}
 		}

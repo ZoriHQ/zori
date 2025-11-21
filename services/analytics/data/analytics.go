@@ -53,7 +53,7 @@ func (a *AnalyticsData) GetVisitorsByDevice(ctx *ctx.Ctx, filter *filters.Sectio
 	if err != nil {
 		return nil, fmt.Errorf("failed to query visitors by device: %w", err)
 	}
-	defer rows.Close()
+	defer clickhouse.EnsureClosed(rows)
 
 	var dataPoints []types.VisitorDataPoint
 	for rows.Next() {
@@ -195,7 +195,7 @@ func (a *AnalyticsData) GetRecentEvents(ctx *ctx.Ctx, req *types.RecentEventsReq
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to query recent events: %w", err)
 	}
-	defer rows.Close()
+	defer clickhouse.EnsureClosed(rows)
 
 	var events []types.RecentEvent
 	for rows.Next() {
@@ -265,7 +265,7 @@ func (a *AnalyticsData) GetEventFilterOptions(ctx *ctx.Ctx, filter *filters.Sect
 	if err != nil {
 		return nil, fmt.Errorf("failed to query traffic origins: %w", err)
 	}
-	defer originsRows.Close()
+	defer clickhouse.EnsureClosed(originsRows)
 
 	var origins []string
 	for originsRows.Next() {
@@ -294,7 +294,7 @@ func (a *AnalyticsData) GetEventFilterOptions(ctx *ctx.Ctx, filter *filters.Sect
 	if err != nil {
 		return nil, fmt.Errorf("failed to query pages: %w", err)
 	}
-	defer pagesRows.Close()
+	defer clickhouse.EnsureClosed(pagesRows)
 
 	var pages []string
 	for pagesRows.Next() {
@@ -323,7 +323,7 @@ func (a *AnalyticsData) GetEventFilterOptions(ctx *ctx.Ctx, filter *filters.Sect
 	if err != nil {
 		return nil, fmt.Errorf("failed to query event names: %w", err)
 	}
-	defer eventNamesRows.Close()
+	defer clickhouse.EnsureClosed(eventNamesRows)
 
 	var eventNames []string
 	for eventNamesRows.Next() {
@@ -378,7 +378,7 @@ func (a *AnalyticsData) GetTopVisitors(ctx *ctx.Ctx, filter *filters.SectionFilt
 	if err != nil {
 		return nil, fmt.Errorf("failed to query visitor data: %w", err)
 	}
-	defer rows.Close()
+	defer clickhouse.EnsureClosed(rows)
 
 	type visitorData struct {
 		VisitorID          string
@@ -488,7 +488,7 @@ func (a *AnalyticsData) GetTopVisitors(ctx *ctx.Ctx, filter *filters.SectionFilt
 		if err != nil {
 			return nil, fmt.Errorf("failed to query earliest seen data: %w", err)
 		}
-		defer earliestRows.Close()
+		defer clickhouse.EnsureClosed(earliestRows)
 
 		for earliestRows.Next() {
 			var esd earliestSeenData
@@ -550,7 +550,7 @@ func (a *AnalyticsData) GetTopVisitors(ctx *ctx.Ctx, filter *filters.SectionFilt
 		if err != nil {
 			return nil, fmt.Errorf("failed to query payment data: %w", err)
 		}
-		defer paymentRows.Close()
+		defer clickhouse.EnsureClosed(paymentRows)
 
 		for paymentRows.Next() {
 			var pd paymentData
@@ -845,7 +845,7 @@ func (a *AnalyticsData) GetVisitorProfile(ctx *ctx.Ctx, filter *filters.VisitorP
 	if err != nil {
 		return nil, fmt.Errorf("failed to query events over time: %w", err)
 	}
-	defer timeRows.Close()
+	defer clickhouse.EnsureClosed(timeRows)
 
 	var eventsOverTime []types.EventsOverTimeDataPoint
 	for timeRows.Next() {
@@ -967,7 +967,7 @@ func (a *AnalyticsData) GetCohortAnalysis(ctx *ctx.Ctx, filter *filters.SectionF
 	if err != nil {
 		return nil, fmt.Errorf("failed to query cohort analysis: %w", err)
 	}
-	defer rows.Close()
+	defer clickhouse.EnsureClosed(rows)
 
 	var cohorts []types.CohortData
 	for rows.Next() {
