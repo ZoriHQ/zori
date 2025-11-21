@@ -125,7 +125,7 @@ func (h *IngestionServer) Injest(ctx *fasthttp.RequestCtx) {
 		go func() {
 			err = h.projectService.SetFirstEventReceivedNow(project.ID)
 			if err != nil {
-				ctx.Error("Failed to update project", fasthttp.StatusInternalServerError)
+				h.logger.Error("Failed to update project first event timestamp", telemetry.Error(err), telemetry.String("project_id", project.ID))
 			}
 		}()
 	}
