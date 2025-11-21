@@ -21,10 +21,9 @@ jobs:
           cache: true
 
       - name: Run golangci-lint
-        uses: golangci/golangci-lint-action@v6
+        uses: golangci/golangci-lint-action@v9
         with:
-          version: latest
-          args: --timeout=5m
+          version: v2.6
 
       - name: Start test services and wait for health checks
         run: docker compose -f ./run/tests/docker-compose.test.yaml up -d --wait postgres-test clickhouse-test nats-test redis-test
