@@ -145,7 +145,7 @@ func (bs *BackfillService) backfillInvoices(
 	params.Filters.AddFilter("created", "gte", fmt.Sprintf("%d", startDate.Unix()))
 
 	count := 0
-	iter := sc.Invoices.List(params)
+	iter := sc.Invoices.List(params) //nolint:all
 	for iter.Next() {
 		select {
 		case <-ctx.Done():
