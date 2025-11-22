@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.4.1](https://github.com/ZoriHQ/zori/compare/v0.4.0...v0.4.1) (2025-11-21)
+
+
+### Bug Fixes
+
+* **ci:** linter ([1cd9d16](https://github.com/ZoriHQ/zori/commit/1cd9d169da0305fc22733bafc4ea0cae302f7868))
+* **ingestion:** datarace ([9be185d](https://github.com/ZoriHQ/zori/commit/9be185d4bad0a097705bc82e1ae86380a9f80a18))
+
+
+### Miscellaneous
+
+* **core:** clean up some code ([1334628](https://github.com/ZoriHQ/zori/commit/1334628a1d5fd71239720911380ec9106cac7bad))
+* **core:** clean up some code ([c26df72](https://github.com/ZoriHQ/zori/commit/c26df720047586f951109a54082f794ff62a4c49))
+
 ## [0.4.0](https://github.com/ZoriHQ/zori/compare/v0.3.1...v0.4.0) (2025-11-20)
 
 
