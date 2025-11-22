@@ -19,6 +19,7 @@ import (
 	"zori/services/analytics"
 	"zori/services/auth"
 	"zori/services/events"
+	"zori/services/llmtraces"
 	"zori/services/organizations"
 	orgServices "zori/services/organizations/services"
 	"zori/services/payments"
@@ -67,6 +68,7 @@ func NewApplication() *fx.App {
 		analytics.BuildAnalyticsDIContainer(),
 		revenue.BuildRevenueDIContainer(),
 		payments.BuildPaymentsDIContainer(),
+		llmtraces.BuildLLMTracesDIContainer(),
 
 		fx.Provide(
 			fx.Annotate(
@@ -91,6 +93,8 @@ func NewApplication() *fx.App {
 		events.BuildEventsWebContainer(),
 		payments.BuildPaymentsProcessorDIContainer(),
 		payments.BuildPaymentsWebhookDIContainer(),
+		llmtraces.BuildLLMTracesWebDIContainer(),
+		llmtraces.BuildLLMTracesProcessorDIContainer(),
 
 		fx.Invoke(func(lc fx.Lifecycle, metricsServer *metrics.MetricsServer) {
 			lc.Append(fx.Hook{

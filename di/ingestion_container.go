@@ -13,6 +13,7 @@ import (
 	"zori/internal/telemetry"
 	"zori/services/ingestion"
 	"zori/services/ingestion/web"
+	llmtracesServices "zori/services/llmtraces/services"
 	"zori/services/organizations"
 	"zori/services/payments"
 	"zori/services/projects"
@@ -42,6 +43,8 @@ func NewIngestionApplication() *fx.App {
 		organizations.BuildOrganizationDIContainer(),
 		projects.BuildProjectsDIContainer(),
 		payments.BuildPaymentsDIContainer(),
+
+		fx.Provide(llmtracesServices.NewLLMTraceIngestor),
 
 		fx.Invoke(registerDatabaseLifecycle),
 		ingestion.BuildIngestionDiContainer(),

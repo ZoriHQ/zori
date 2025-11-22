@@ -25,6 +25,7 @@ import (
 	eventsServices "zori/services/events/services"
 	"zori/services/ingestion"
 	ingestionWeb "zori/services/ingestion/web"
+	llmtracesServices "zori/services/llmtraces/services"
 	"zori/services/organizations"
 	"zori/services/payments"
 	paymentsServices "zori/services/payments/services"
@@ -114,6 +115,8 @@ func NewTestContainer(t *testing.T) *TestContainer {
 		payments.BuildPaymentsDIContainer(),
 		revenue.BuildRevenueDIContainer(),
 		analytics.BuildAnalyticsDIContainer(),
+
+		fx.Provide(llmtracesServices.NewLLMTraceIngestor),
 
 		fx.Provide(metrics.NewMetricsCollector),
 		fx.Provide(metrics.NewIngestMetrics),

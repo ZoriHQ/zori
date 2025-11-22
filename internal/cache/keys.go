@@ -7,6 +7,7 @@ const (
 	AnalyticsCacheKey   CacheKey = "analytics"
 	RevenueCacheKey     CacheKey = "revenue"
 	EventDedupeCacheKey CacheKey = "event:dedupe"
+	LLMPriceCacheKey    CacheKey = "llm:price"
 )
 
 func (k CacheKey) FromValue(value string) string {

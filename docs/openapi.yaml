@@ -2722,6 +2722,322 @@ paths:
         description: Admin credentials
         required: true
       summary: Login to OSS deployment
+  /api/v1/llm-traces/tiles/avg-price-per-customer:
+    get:
+      parameters:
+        - example: cus_xyz789
+          in: query
+          name: customer_id
+          schema:
+            type: string
+        - example: 50
+          in: query
+          name: limit
+          schema:
+            default: 50
+            maximum: 100
+            minimum: 1
+            type: integer
+        - example: 0
+          in: query
+          name: offset
+          schema:
+            default: 0
+            minimum: 0
+            type: integer
+        - example: proj_123
+          in: query
+          name: project_id
+          required: true
+          schema:
+            type: string
+        - example: 'https://google.com'
+          in: query
+          name: referrer
+          schema:
+            type: string
+        - example: last_7_days
+          in: query
+          name: time_range
+          required: true
+          schema:
+            default: last_7_days
+            enum:
+              - last_hour
+              - today
+              - yesterday
+              - last_7_days
+              - last_30_days
+              - last_90_days
+            type: string
+          x-enum-varnames:
+            - TimeBoundariesHour
+            - TimeBoundariesToday
+            - TimeBoundariesYesterday
+            - TimeBoundariesLastWeek
+            - TimeBoundariesLastMonth
+            - TimeBoundariesLast90Days
+        - example: utm_source
+          in: query
+          name: utmtag
+          schema:
+            type: string
+        - example: google
+          in: query
+          name: utmtagValue
+          schema:
+            type: string
+        - example: visitor_abc123
+          in: query
+          name: visitor_id
+          schema:
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/tiles.AvgPricePerCustomerResponse'
+          description: Average price per customer with period comparison
+        '400':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Invalid request parameters
+        '401':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Unauthorized - Invalid or missing JWT token
+        '500':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Internal server error
+      security:
+        - ApiKeyAuth: []
+      tags:
+        - LLM Traces
+      description: >-
+        Get average LLM API cost per unique customer for the current period
+        compared to the previous period
+      summary: Get average price per customer tile
+  /api/v1/llm-traces/tiles/daily-price:
+    get:
+      parameters:
+        - example: cus_xyz789
+          in: query
+          name: customer_id
+          schema:
+            type: string
+        - example: 50
+          in: query
+          name: limit
+          schema:
+            default: 50
+            maximum: 100
+            minimum: 1
+            type: integer
+        - example: 0
+          in: query
+          name: offset
+          schema:
+            default: 0
+            minimum: 0
+            type: integer
+        - example: proj_123
+          in: query
+          name: project_id
+          required: true
+          schema:
+            type: string
+        - example: 'https://google.com'
+          in: query
+          name: referrer
+          schema:
+            type: string
+        - example: last_7_days
+          in: query
+          name: time_range
+          required: true
+          schema:
+            default: last_7_days
+            enum:
+              - last_hour
+              - today
+              - yesterday
+              - last_7_days
+              - last_30_days
+              - last_90_days
+            type: string
+          x-enum-varnames:
+            - TimeBoundariesHour
+            - TimeBoundariesToday
+            - TimeBoundariesYesterday
+            - TimeBoundariesLastWeek
+            - TimeBoundariesLastMonth
+            - TimeBoundariesLast90Days
+        - example: utm_source
+          in: query
+          name: utmtag
+          schema:
+            type: string
+        - example: google
+          in: query
+          name: utmtagValue
+          schema:
+            type: string
+        - example: visitor_abc123
+          in: query
+          name: visitor_id
+          schema:
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/tiles.DailyPriceResponse'
+          description: Daily price metrics with period comparison
+        '400':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Invalid request parameters
+        '401':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Unauthorized - Invalid or missing JWT token
+        '500':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Internal server error
+      security:
+        - ApiKeyAuth: []
+      tags:
+        - LLM Traces
+      description: >-
+        Get total LLM API costs, token counts, and trace count for the current
+        period compared to the previous period
+      summary: Get daily price tile
+  /api/v1/llm-traces/tiles/timeline:
+    get:
+      parameters:
+        - example: cus_xyz789
+          in: query
+          name: customer_id
+          schema:
+            type: string
+        - example: 50
+          in: query
+          name: limit
+          schema:
+            default: 50
+            maximum: 100
+            minimum: 1
+            type: integer
+        - example: 0
+          in: query
+          name: offset
+          schema:
+            default: 0
+            minimum: 0
+            type: integer
+        - example: proj_123
+          in: query
+          name: project_id
+          required: true
+          schema:
+            type: string
+        - example: 'https://google.com'
+          in: query
+          name: referrer
+          schema:
+            type: string
+        - example: last_7_days
+          in: query
+          name: time_range
+          required: true
+          schema:
+            default: last_7_days
+            enum:
+              - last_hour
+              - today
+              - yesterday
+              - last_7_days
+              - last_30_days
+              - last_90_days
+            type: string
+          x-enum-varnames:
+            - TimeBoundariesHour
+            - TimeBoundariesToday
+            - TimeBoundariesYesterday
+            - TimeBoundariesLastWeek
+            - TimeBoundariesLastMonth
+            - TimeBoundariesLast90Days
+        - example: utm_source
+          in: query
+          name: utmtag
+          schema:
+            type: string
+        - example: google
+          in: query
+          name: utmtagValue
+          schema:
+            type: string
+        - example: visitor_abc123
+          in: query
+          name: visitor_id
+          schema:
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/tiles.DailyPriceTimelineResponse'
+          description: Daily price timeline data for charts
+        '400':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Invalid request parameters
+        '401':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Unauthorized - Invalid or missing JWT token
+        '500':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Internal server error
+      security:
+        - ApiKeyAuth: []
+      tags:
+        - LLM Traces
+      description: Get LLM API costs over time broken down by day for chart visualization
+      summary: Get daily price timeline
   /api/v1/payment-providers:
     get:
       parameters:
@@ -3824,6 +4140,17 @@ components:
           example: '2024-01-15T10:30:00Z'
           type: string
       type: object
+    tiles.AvgPricePerCustomerResponse:
+      properties:
+        avg_price:
+          type: number
+        customer_count:
+          type: integer
+        previous_avg_price:
+          type: number
+        total_cost:
+          type: number
+      type: object
     tiles.BounceRateResponse:
       properties:
         previous_rate:
@@ -3867,6 +4194,35 @@ components:
           type: integer
         previous_count:
           type: integer
+      type: object
+    tiles.DailyPriceResponse:
+      properties:
+        previous_total_cost:
+          type: number
+        total_cost:
+          type: number
+        total_input_tokens:
+          type: integer
+        total_output_tokens:
+          type: integer
+        trace_count:
+          type: integer
+      type: object
+    tiles.DailyPriceTimelineData:
+      properties:
+        date:
+          type: string
+        total_cost:
+          type: number
+        trace_count:
+          type: integer
+      type: object
+    tiles.DailyPriceTimelineResponse:
+      properties:
+        data:
+          items:
+            $ref: '#/components/schemas/tiles.DailyPriceTimelineData'
+          type: array
       type: object
     tiles.EntryPagesData:
       properties:

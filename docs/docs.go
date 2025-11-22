@@ -3348,6 +3348,393 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/llm-traces/tiles/avg-price-per-customer": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Get average LLM API cost per unique customer for the current period compared to the previous period",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "LLM Traces"
+                ],
+                "summary": "Get average price per customer tile",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "cus_xyz789",
+                        "name": "customer_id",
+                        "in": "query"
+                    },
+                    {
+                        "maximum": 100,
+                        "minimum": 1,
+                        "type": "integer",
+                        "default": 50,
+                        "example": 50,
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "minimum": 0,
+                        "type": "integer",
+                        "default": 0,
+                        "example": 0,
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "proj_123",
+                        "name": "project_id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "https://google.com",
+                        "name": "referrer",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "last_hour",
+                            "today",
+                            "yesterday",
+                            "last_7_days",
+                            "last_30_days",
+                            "last_90_days"
+                        ],
+                        "type": "string",
+                        "default": "last_7_days",
+                        "example": "last_7_days",
+                        "x-enum-varnames": [
+                            "TimeBoundariesHour",
+                            "TimeBoundariesToday",
+                            "TimeBoundariesYesterday",
+                            "TimeBoundariesLastWeek",
+                            "TimeBoundariesLastMonth",
+                            "TimeBoundariesLast90Days"
+                        ],
+                        "name": "time_range",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "utm_source",
+                        "name": "utmtag",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "google",
+                        "name": "utmtagValue",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "visitor_abc123",
+                        "name": "visitor_id",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Average price per customer with period comparison",
+                        "schema": {
+                            "$ref": "#/definitions/tiles.AvgPricePerCustomerResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request parameters",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - Invalid or missing JWT token",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/llm-traces/tiles/daily-price": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Get total LLM API costs, token counts, and trace count for the current period compared to the previous period",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "LLM Traces"
+                ],
+                "summary": "Get daily price tile",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "cus_xyz789",
+                        "name": "customer_id",
+                        "in": "query"
+                    },
+                    {
+                        "maximum": 100,
+                        "minimum": 1,
+                        "type": "integer",
+                        "default": 50,
+                        "example": 50,
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "minimum": 0,
+                        "type": "integer",
+                        "default": 0,
+                        "example": 0,
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "proj_123",
+                        "name": "project_id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "https://google.com",
+                        "name": "referrer",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "last_hour",
+                            "today",
+                            "yesterday",
+                            "last_7_days",
+                            "last_30_days",
+                            "last_90_days"
+                        ],
+                        "type": "string",
+                        "default": "last_7_days",
+                        "example": "last_7_days",
+                        "x-enum-varnames": [
+                            "TimeBoundariesHour",
+                            "TimeBoundariesToday",
+                            "TimeBoundariesYesterday",
+                            "TimeBoundariesLastWeek",
+                            "TimeBoundariesLastMonth",
+                            "TimeBoundariesLast90Days"
+                        ],
+                        "name": "time_range",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "utm_source",
+                        "name": "utmtag",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "google",
+                        "name": "utmtagValue",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "visitor_abc123",
+                        "name": "visitor_id",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Daily price metrics with period comparison",
+                        "schema": {
+                            "$ref": "#/definitions/tiles.DailyPriceResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request parameters",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - Invalid or missing JWT token",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/llm-traces/tiles/timeline": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Get LLM API costs over time broken down by day for chart visualization",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "LLM Traces"
+                ],
+                "summary": "Get daily price timeline",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "cus_xyz789",
+                        "name": "customer_id",
+                        "in": "query"
+                    },
+                    {
+                        "maximum": 100,
+                        "minimum": 1,
+                        "type": "integer",
+                        "default": 50,
+                        "example": 50,
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "minimum": 0,
+                        "type": "integer",
+                        "default": 0,
+                        "example": 0,
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "proj_123",
+                        "name": "project_id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "https://google.com",
+                        "name": "referrer",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "last_hour",
+                            "today",
+                            "yesterday",
+                            "last_7_days",
+                            "last_30_days",
+                            "last_90_days"
+                        ],
+                        "type": "string",
+                        "default": "last_7_days",
+                        "example": "last_7_days",
+                        "x-enum-varnames": [
+                            "TimeBoundariesHour",
+                            "TimeBoundariesToday",
+                            "TimeBoundariesYesterday",
+                            "TimeBoundariesLastWeek",
+                            "TimeBoundariesLastMonth",
+                            "TimeBoundariesLast90Days"
+                        ],
+                        "name": "time_range",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "utm_source",
+                        "name": "utmtag",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "google",
+                        "name": "utmtagValue",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "visitor_abc123",
+                        "name": "visitor_id",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Daily price timeline data for charts",
+                        "schema": {
+                            "$ref": "#/definitions/tiles.DailyPriceTimelineResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request parameters",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - Invalid or missing JWT token",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/payment-providers": {
             "get": {
                 "security": [
@@ -4785,6 +5172,23 @@ const docTemplate = `{
                 }
             }
         },
+        "tiles.AvgPricePerCustomerResponse": {
+            "type": "object",
+            "properties": {
+                "avg_price": {
+                    "type": "number"
+                },
+                "customer_count": {
+                    "type": "integer"
+                },
+                "previous_avg_price": {
+                    "type": "number"
+                },
+                "total_cost": {
+                    "type": "number"
+                }
+            }
+        },
         "tiles.BounceRateResponse": {
             "type": "object",
             "properties": {
@@ -4846,6 +5250,51 @@ const docTemplate = `{
                 },
                 "previous_count": {
                     "type": "integer"
+                }
+            }
+        },
+        "tiles.DailyPriceResponse": {
+            "type": "object",
+            "properties": {
+                "previous_total_cost": {
+                    "type": "number"
+                },
+                "total_cost": {
+                    "type": "number"
+                },
+                "total_input_tokens": {
+                    "type": "integer"
+                },
+                "total_output_tokens": {
+                    "type": "integer"
+                },
+                "trace_count": {
+                    "type": "integer"
+                }
+            }
+        },
+        "tiles.DailyPriceTimelineData": {
+            "type": "object",
+            "properties": {
+                "date": {
+                    "type": "string"
+                },
+                "total_cost": {
+                    "type": "number"
+                },
+                "trace_count": {
+                    "type": "integer"
+                }
+            }
+        },
+        "tiles.DailyPriceTimelineResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/tiles.DailyPriceTimelineData"
+                    }
                 }
             }
         },

@@ -11,26 +11,30 @@ import (
 	"zori/internal/telemetry"
 	"zori/services/ingestion/services"
 	"zori/services/ingestion/types"
+	llmtracesServices "zori/services/llmtraces/services"
+	llmtracesTypes "zori/services/llmtraces/types"
 	projectsServices "zori/services/projects/services"
 
 	"github.com/valyala/fasthttp"
 )
 
 type IngestionServer struct {
-	ingestor       *services.Ingestor
-	identifier     *services.Identifier
-	projectService *projectsServices.ProjectService
-	cacheService   *cache.CacheService
-	logger         *telemetry.Logger
+	ingestor         *services.Ingestor
+	identifier       *services.Identifier
+	llmTraceIngestor *llmtracesServices.LLMTraceIngestor
+	projectService   *projectsServices.ProjectService
+	cacheService     *cache.CacheService
+	logger           *telemetry.Logger
 }
 
-func NewIngestionServer(ingestor *services.Ingestor, identifier *services.Identifier, projectService *projectsServices.ProjectService, cacheService *cache.CacheService, logger *telemetry.Logger) *IngestionServer {
+func NewIngestionServer(ingestor *services.Ingestor, identifier *services.Identifier, llmTraceIngestor *llmtracesServices.LLMTraceIngestor, projectService *projectsServices.ProjectService, cacheService *cache.CacheService, logger *telemetry.Logger) *IngestionServer {
 	return &IngestionServer{
-		ingestor:       ingestor,
-		identifier:     identifier,
-		projectService: projectService,
-		cacheService:   cacheService,
-		logger:         logger,
+		ingestor:         ingestor,
+		identifier:       identifier,
+		llmTraceIngestor: llmTraceIngestor,
+		projectService:   projectService,
+		cacheService:     cacheService,
+		logger:           logger,
 	}
 }
 
@@ -52,6 +56,8 @@ func (h *IngestionServer) HandleRequest(ctx *fasthttp.RequestCtx) {
 		h.Injest(ctx)
 	case "/identify":
 		h.Identify(ctx)
+	case "/llm-trace":
+		h.IngestLLMTrace(ctx)
 	case "/health":
 		ctx.Response.SetStatusCode(fasthttp.StatusOK)
 		ctx.Response.SetBodyString("Zori - Ingestion Server")
@@ -266,5 +272,85 @@ func (h *IngestionServer) Identify(ctx *fasthttp.RequestCtx) {
 
 	if _, err := fmt.Fprintf(ctx, "IDENTIFIED %d", len(ctx.PostBody())); err != nil {
 		h.logger.Error("Failed to write identify response", telemetry.Error(err))
+	}
+}
+
+func (h *IngestionServer) IngestLLMTrace(ctx *fasthttp.RequestCtx) {
+	if !ctx.IsPost() {
+		ctx.Error("Bad Request", fasthttp.StatusBadRequest)
+		return
+	}
+
+	var traceRequest llmtracesTypes.LLMTraceRequest
+	if err := json.Unmarshal(ctx.PostBody(), &traceRequest); err != nil {
+		ctx.Error("Failed to decode LLM trace payload", fasthttp.StatusBadRequest)
+		return
+	}
+
+	if traceRequest.Provider == "" {
+		ctx.Error("provider is required", fasthttp.StatusBadRequest)
+		return
+	}
+
+	if traceRequest.Model == "" {
+		ctx.Error("model is required", fasthttp.StatusBadRequest)
+		return
+	}
+
+	if traceRequest.InputTokens == nil && traceRequest.InputPrompt == nil {
+		ctx.Error("input_tokens or input_prompt is required", fasthttp.StatusBadRequest)
+		return
+	}
+
+	if traceRequest.OutputTokens == nil && traceRequest.OutputPrompt == nil {
+		ctx.Error("output_tokens or output_prompt is required", fasthttp.StatusBadRequest)
+		return
+	}
+
+	projectTokenBytes := ctx.Request.Header.Peek("x-zori-pt")
+	if projectTokenBytes == nil {
+		ctx.Error("X-Zori-PT Missing in the request header", fasthttp.StatusUnauthorized)
+		return
+	}
+
+	projectToken := string(projectTokenBytes)
+
+	projectFromCache, err := h.cacheService.Get(ctx, cache.ProjectCacheKey.FromValue(projectToken))
+	if err != nil {
+		ctx.Error("Invalid Project Token", fasthttp.StatusUnauthorized)
+		return
+	}
+
+	var project models.Project
+	if projectFromCache == nil {
+		projectPointer, err := h.projectService.GetProjectByPublishableToken(projectToken)
+		if err != nil {
+			ctx.Error("Invalid Project Token", fasthttp.StatusUnauthorized)
+			return
+		}
+
+		err = h.cacheService.Set(ctx, cache.ProjectCacheKey.FromValue(projectToken), *projectPointer, time.Minute)
+		if err != nil {
+			ctx.Error("Failed to cache project", fasthttp.StatusInternalServerError)
+			return
+		}
+
+		project = *projectPointer
+	} else {
+		if err = json.Unmarshal([]byte(*projectFromCache), &project); err != nil {
+			ctx.Error("Failed to unmarshal project", fasthttp.StatusInternalServerError)
+			return
+		}
+	}
+
+	go func() {
+		err := h.llmTraceIngestor.Ingest(context.Background(), project.ID, project.OrganizationID, &traceRequest)
+		if err != nil {
+			h.logger.Error("Failed to ingest LLM trace", telemetry.Error(err), telemetry.String("project_id", project.ID))
+		}
+	}()
+
+	if _, err := fmt.Fprintf(ctx, "ACCEPTED %d", len(ctx.PostBody())); err != nil {
+		h.logger.Error("Failed to write LLM trace response", telemetry.Error(err))
 	}
 }

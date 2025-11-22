@@ -7,6 +7,13 @@ import (
 	"github.com/nats-io/nats.go"
 )
 
+const (
+	EventsStreamName      = "events-stream"
+	EventsRawSubject      = "events:raw"
+	LLMTracesStreamName   = "llm-traces-stream"
+	LLMTracesRawSubject   = "llm-traces:raw"
+)
+
 type Stream struct {
 	nc *nats.Conn
 	js nats.JetStreamContext
@@ -65,4 +72,8 @@ func (s *Stream) GetJetStream() nats.JetStreamContext {
 
 func (s *Stream) GetConnection() *nats.Conn {
 	return s.nc
+}
+
+func (s *Stream) Publish(subject string, data []byte) error {
+	return s.nc.Publish(subject, data)
 }
