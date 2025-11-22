@@ -23,6 +23,9 @@ import (
 	analyticsData "zori/services/analytics/data"
 	"zori/services/events"
 	eventsServices "zori/services/events/services"
+	"zori/services/funnels"
+	funnelsData "zori/services/funnels/data"
+	funnelsServices "zori/services/funnels/services"
 	"zori/services/ingestion"
 	ingestionWeb "zori/services/ingestion/web"
 	"zori/services/organizations"
@@ -42,20 +45,23 @@ import (
 )
 
 type TestContainer struct {
-	App                *fxtest.App
-	DB                 *postgres.PostgresDB
-	ClickHouse         *clickhouse.ClickhouseDB
-	NATS               *natsstream.Stream
-	Server             *server.Server
-	Config             *config.Config
-	Cache              *cache.CacheService
-	Processor          *eventsServices.Processor
-	PaymentProcessor   *paymentsServices.PaymentProcessor
-	RevenueService     *revenueServices.RevenueService
-	IngestionServer    *ingestionWeb.IngestionServer
-	IngestionServerURL string
-	RevenueData        *revenueData.RevenueData
-	AnalyticsData      *analyticsData.AnalyticsData
+	App                  *fxtest.App
+	DB                   *postgres.PostgresDB
+	ClickHouse           *clickhouse.ClickhouseDB
+	NATS                 *natsstream.Stream
+	Server               *server.Server
+	Config               *config.Config
+	Cache                *cache.CacheService
+	Processor            *eventsServices.Processor
+	PaymentProcessor     *paymentsServices.PaymentProcessor
+	RevenueService       *revenueServices.RevenueService
+	IngestionServer      *ingestionWeb.IngestionServer
+	IngestionServerURL   string
+	RevenueData          *revenueData.RevenueData
+	AnalyticsData        *analyticsData.AnalyticsData
+	FunnelService        *funnelsServices.FunnelService
+	FunnelAnalyticsData  *funnelsData.FunnelAnalyticsData
+	FunnelRepository     *funnelsData.FunnelRepository
 }
 
 var (
@@ -114,6 +120,7 @@ func NewTestContainer(t *testing.T) *TestContainer {
 		payments.BuildPaymentsDIContainer(),
 		revenue.BuildRevenueDIContainer(),
 		analytics.BuildAnalyticsDIContainer(),
+		funnels.BuildFunnelsDIContainer(),
 
 		fx.Provide(metrics.NewMetricsCollector),
 		fx.Provide(metrics.NewIngestMetrics),
@@ -165,7 +172,7 @@ func NewTestContainer(t *testing.T) *TestContainer {
 			})
 		}),
 		fx.NopLogger,
-		fx.Populate(&tc.DB, &tc.ClickHouse, &tc.NATS, &tc.Server, &tc.Config, &tc.Cache, &tc.Processor, &tc.PaymentProcessor, &tc.RevenueService, &tc.IngestionServer, &tc.RevenueData, &tc.AnalyticsData),
+		fx.Populate(&tc.DB, &tc.ClickHouse, &tc.NATS, &tc.Server, &tc.Config, &tc.Cache, &tc.Processor, &tc.PaymentProcessor, &tc.RevenueService, &tc.IngestionServer, &tc.RevenueData, &tc.AnalyticsData, &tc.FunnelService, &tc.FunnelAnalyticsData, &tc.FunnelRepository),
 	)
 
 	tc.App = app
