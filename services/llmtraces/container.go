@@ -18,6 +18,7 @@ func BuildLLMTracesDIContainer() fx.Option {
 		fx.Provide(services.NewPriceFetcher),
 		fx.Provide(services.NewLLMTraceIngestor),
 		fx.Provide(services.NewLLMTraceProcessor),
+		fx.Provide(services.NewLLMTracesService),
 		fx.Provide(tiles.NewAvgPricePerCustomerTile),
 		fx.Provide(tiles.NewDailyPriceTile),
 		fx.Provide(tiles.NewDailyPriceTimelineTile),

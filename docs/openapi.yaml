@@ -2722,6 +2722,194 @@ paths:
         description: Admin credentials
         required: true
       summary: Login to OSS deployment
+  /api/v1/llm-traces/filter-options:
+    get:
+      parameters:
+        - example: cus_xyz789
+          in: query
+          name: customer_id
+          schema:
+            type: string
+        - example: 50
+          in: query
+          name: limit
+          schema:
+            default: 50
+            maximum: 100
+            minimum: 1
+            type: integer
+        - example: 0
+          in: query
+          name: offset
+          schema:
+            default: 0
+            minimum: 0
+            type: integer
+        - example: proj_123
+          in: query
+          name: project_id
+          required: true
+          schema:
+            type: string
+        - example: 'https://google.com'
+          in: query
+          name: referrer
+          schema:
+            type: string
+        - example: last_7_days
+          in: query
+          name: time_range
+          required: true
+          schema:
+            default: last_7_days
+            enum:
+              - last_hour
+              - today
+              - yesterday
+              - last_7_days
+              - last_30_days
+              - last_90_days
+            type: string
+          x-enum-varnames:
+            - TimeBoundariesHour
+            - TimeBoundariesToday
+            - TimeBoundariesYesterday
+            - TimeBoundariesLastWeek
+            - TimeBoundariesLastMonth
+            - TimeBoundariesLast90Days
+        - example: utm_source
+          in: query
+          name: utmtag
+          schema:
+            type: string
+        - example: google
+          in: query
+          name: utmtagValue
+          schema:
+            type: string
+        - example: visitor_abc123
+          in: query
+          name: visitor_id
+          schema:
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/types.LLMTraceFilterOptions'
+          description: Available filter options
+        '400':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Invalid request parameters
+        '401':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Unauthorized - Invalid or missing JWT token
+        '500':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Internal server error
+      security:
+        - ApiKeyAuth: []
+      tags:
+        - LLM Traces
+      description: >-
+        Get available filter options (providers, models, customer IDs) for the
+        trace list
+      summary: Get LLM trace filter options
+  /api/v1/llm-traces/list:
+    get:
+      parameters:
+        - description: Project ID
+          in: query
+          name: project_id
+          required: true
+          schema:
+            type: string
+        - description: >-
+            Time range (last_day, last_week, last_month, last_3_months,
+            last_year)
+          in: query
+          name: time_boundaries
+          schema:
+            type: string
+        - description: Filter by customer ID
+          in: query
+          name: customer_id
+          schema:
+            type: string
+        - description: Filter by visitor ID
+          in: query
+          name: visitor_id
+          schema:
+            type: string
+        - description: 'Filter by provider (e.g., openai, anthropic)'
+          in: query
+          name: provider
+          schema:
+            type: string
+        - description: Filter by model name
+          in: query
+          name: model
+          schema:
+            type: string
+        - description: 'Number of traces to return (default 50, max 100)'
+          in: query
+          name: limit
+          schema:
+            type: integer
+        - description: Offset for pagination
+          in: query
+          name: offset
+          schema:
+            type: integer
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/types.LLMTracesListResponse'
+          description: List of traces with pagination info
+        '400':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Invalid request parameters
+        '401':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Unauthorized - Invalid or missing JWT token
+        '500':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+          description: Internal server error
+      security:
+        - ApiKeyAuth: []
+      tags:
+        - LLM Traces
+      description: >-
+        Get a paginated list of LLM traces with filtering by customer, visitor,
+        provider, and model
+      summary: Get LLM traces list
   /api/v1/llm-traces/tiles/avg-price-per-customer:
     get:
       parameters:
@@ -4663,6 +4851,65 @@ components:
           type: integer
         timestamp:
           type: string
+      type: object
+    types.LLMTraceFilterOptions:
+      properties:
+        customer_ids:
+          items:
+            type: string
+          type: array
+        models:
+          items:
+            type: string
+          type: array
+        providers:
+          items:
+            type: string
+          type: array
+      type: object
+    types.LLMTraceListItem:
+      properties:
+        client_timestamp_utc:
+          type: string
+        customer_id:
+          type: string
+        extra_fee:
+          type: number
+        input_cost:
+          type: number
+        input_prompt:
+          type: string
+        input_tokens:
+          type: integer
+        model:
+          type: string
+        output_cost:
+          type: number
+        output_prompt:
+          type: string
+        output_tokens:
+          type: integer
+        provider:
+          type: string
+        total_cost:
+          type: number
+        trace_id:
+          type: string
+        visitor_id:
+          type: string
+      type: object
+    types.LLMTracesListResponse:
+      properties:
+        limit:
+          type: integer
+        offset:
+          type: integer
+        total_count:
+          type: integer
+        traces:
+          items:
+            $ref: '#/components/schemas/types.LLMTraceListItem'
+          type: array
       type: object
     types.ListPaymentProvidersResponse:
       properties:

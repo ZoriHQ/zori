@@ -3348,6 +3348,235 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/llm-traces/filter-options": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Get available filter options (providers, models, customer IDs) for the trace list",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "LLM Traces"
+                ],
+                "summary": "Get LLM trace filter options",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "cus_xyz789",
+                        "name": "customer_id",
+                        "in": "query"
+                    },
+                    {
+                        "maximum": 100,
+                        "minimum": 1,
+                        "type": "integer",
+                        "default": 50,
+                        "example": 50,
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "minimum": 0,
+                        "type": "integer",
+                        "default": 0,
+                        "example": 0,
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "proj_123",
+                        "name": "project_id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "https://google.com",
+                        "name": "referrer",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "last_hour",
+                            "today",
+                            "yesterday",
+                            "last_7_days",
+                            "last_30_days",
+                            "last_90_days"
+                        ],
+                        "type": "string",
+                        "default": "last_7_days",
+                        "example": "last_7_days",
+                        "x-enum-varnames": [
+                            "TimeBoundariesHour",
+                            "TimeBoundariesToday",
+                            "TimeBoundariesYesterday",
+                            "TimeBoundariesLastWeek",
+                            "TimeBoundariesLastMonth",
+                            "TimeBoundariesLast90Days"
+                        ],
+                        "name": "time_range",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "utm_source",
+                        "name": "utmtag",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "google",
+                        "name": "utmtagValue",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "visitor_abc123",
+                        "name": "visitor_id",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Available filter options",
+                        "schema": {
+                            "$ref": "#/definitions/types.LLMTraceFilterOptions"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request parameters",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - Invalid or missing JWT token",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/llm-traces/list": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Get a paginated list of LLM traces with filtering by customer, visitor, provider, and model",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "LLM Traces"
+                ],
+                "summary": "Get LLM traces list",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Project ID",
+                        "name": "project_id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Time range (last_day, last_week, last_month, last_3_months, last_year)",
+                        "name": "time_boundaries",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by customer ID",
+                        "name": "customer_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by visitor ID",
+                        "name": "visitor_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by provider (e.g., openai, anthropic)",
+                        "name": "provider",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by model name",
+                        "name": "model",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Number of traces to return (default 50, max 100)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Offset for pagination",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of traces with pagination info",
+                        "schema": {
+                            "$ref": "#/definitions/types.LLMTracesListResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request parameters",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - Invalid or missing JWT token",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/llm-traces/tiles/avg-price-per-customer": {
             "get": {
                 "security": [
@@ -5966,6 +6195,96 @@ const docTemplate = `{
                 },
                 "timestamp": {
                     "type": "string"
+                }
+            }
+        },
+        "types.LLMTraceFilterOptions": {
+            "type": "object",
+            "properties": {
+                "customer_ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "models": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "providers": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "types.LLMTraceListItem": {
+            "type": "object",
+            "properties": {
+                "client_timestamp_utc": {
+                    "type": "string"
+                },
+                "customer_id": {
+                    "type": "string"
+                },
+                "extra_fee": {
+                    "type": "number"
+                },
+                "input_cost": {
+                    "type": "number"
+                },
+                "input_prompt": {
+                    "type": "string"
+                },
+                "input_tokens": {
+                    "type": "integer"
+                },
+                "model": {
+                    "type": "string"
+                },
+                "output_cost": {
+                    "type": "number"
+                },
+                "output_prompt": {
+                    "type": "string"
+                },
+                "output_tokens": {
+                    "type": "integer"
+                },
+                "provider": {
+                    "type": "string"
+                },
+                "total_cost": {
+                    "type": "number"
+                },
+                "trace_id": {
+                    "type": "string"
+                },
+                "visitor_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "types.LLMTracesListResponse": {
+            "type": "object",
+            "properties": {
+                "limit": {
+                    "type": "integer"
+                },
+                "offset": {
+                    "type": "integer"
+                },
+                "total_count": {
+                    "type": "integer"
+                },
+                "traces": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/types.LLMTraceListItem"
+                    }
                 }
             }
         },

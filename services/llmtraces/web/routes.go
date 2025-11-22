@@ -2,7 +2,7 @@ package web
 
 import (
 	"time"
-	"zori/internal/cache"
+
 	"zori/internal/server"
 	"zori/internal/server/middlewares"
 	"zori/services/llmtraces/services"
@@ -15,11 +15,17 @@ var (
 		TTL:       1 * time.Minute,
 		KeyPrefix: cachePrefix,
 	}
+
+	mediumFreqTTLCache = middlewares.CacheConfig{
+		TTL:       2 * time.Minute,
+		KeyPrefix: cachePrefix,
+	}
 )
 
 func RegisterRoutes(
 	s *server.Server,
 	tilesService *services.LLMTracesTilesService,
+	tracesService *services.LLMTracesService,
 	authMiddleware middlewares.AuthMiddleware,
 	cacheMiddleware *middlewares.CacheMiddleware,
 ) {
@@ -27,9 +33,14 @@ func RegisterRoutes(
 	llmTracesRouteGroup.Use(authMiddleware.Middleware())
 
 	hfMiddleware := cacheMiddleware.Middleware(highFreqTTLCache)
-	_ = cache.LLMPriceCacheKey
+	mfMiddleware := cacheMiddleware.Middleware(mediumFreqTTLCache)
 
+	// Tiles endpoints
 	server.GroupGetWithFilter(llmTracesRouteGroup, "/tiles/avg-price-per-customer", tilesService.GetAvgPricePerCustomerTile, hfMiddleware)
 	server.GroupGetWithFilter(llmTracesRouteGroup, "/tiles/daily-price", tilesService.GetDailyPriceTile, hfMiddleware)
 	server.GroupGetWithFilter(llmTracesRouteGroup, "/tiles/timeline", tilesService.GetDailyPriceTimelineTile, hfMiddleware)
+
+	// Traces list endpoints
+	server.GroupGetWithFilter(llmTracesRouteGroup, "/list", tracesService.GetTraces)
+	server.GroupGetWithFilter(llmTracesRouteGroup, "/filter-options", tracesService.GetFilterOptions, mfMiddleware)
 }
