@@ -320,12 +320,12 @@ func (s *FunnelService) DeleteFunnel(c *ctx.Ctx) (map[string]string, error) {
 // @Security ApiKeyAuth
 // @Param id path string true "Funnel ID"
 // @Param filter query types.AnalyzeFunnelRequest true "Analysis parameters"
-// @Success 200 {object} types.FunnelAnalysisResponse "Funnel analysis results"
+// @Success 200 {object} types.UnifiedFunnelAnalysisResponse "Funnel analysis results"
 // @Failure 400 {object} map[string]interface{} "Invalid request"
 // @Failure 401 {object} map[string]interface{} "Unauthorized"
 // @Failure 404 {object} map[string]interface{} "Funnel not found"
 // @Router /api/v1/funnels/{id}/analyze [get]
-func (s *FunnelService) AnalyzeFunnel(c *ctx.Ctx, req *types.AnalyzeFunnelRequest) (interface{}, error) {
+func (s *FunnelService) AnalyzeFunnel(c *ctx.Ctx, req *types.AnalyzeFunnelRequest) (*types.UnifiedFunnelAnalysisResponse, error) {
 	funnelID := c.Echo.Param("id")
 	if funnelID == "" {
 		return nil, echo.NewHTTPError(http.StatusBadRequest, "Funnel ID is required")
@@ -347,9 +347,33 @@ func (s *FunnelService) AnalyzeFunnel(c *ctx.Ctx, req *types.AnalyzeFunnelReques
 
 	switch funnel.FunnelType {
 	case models.FunnelTypeSequential:
-		return s.analyticsData.AnalyzeSequentialFunnel(c, funnel, timeRange.Start)
+		result, err := s.analyticsData.AnalyzeSequentialFunnel(c, funnel, timeRange.Start)
+		if err != nil {
+			return nil, err
+		}
+		return &types.UnifiedFunnelAnalysisResponse{
+			FunnelID:          result.FunnelID,
+			FunnelName:        result.FunnelName,
+			FunnelType:        models.FunnelTypeSequential,
+			AnalyzedAt:        result.AnalyzedAt,
+			TotalVisitors:     result.TotalVisitors,
+			ConvertedVisitors: result.ConvertedVisitors,
+			OverallConversion: result.OverallConversion,
+			Steps:             result.Steps,
+		}, nil
 	case models.FunnelTypeDepth:
-		return s.analyticsData.AnalyzeDepthFunnel(c, funnel, timeRange.Start)
+		result, err := s.analyticsData.AnalyzeDepthFunnel(c, funnel, timeRange.Start)
+		if err != nil {
+			return nil, err
+		}
+		return &types.UnifiedFunnelAnalysisResponse{
+			FunnelID:          result.FunnelID,
+			FunnelName:        result.FunnelName,
+			FunnelType:        models.FunnelTypeDepth,
+			AnalyzedAt:        result.AnalyzedAt,
+			TotalSessions:     result.TotalSessions,
+			DepthDistribution: result.DepthDistribution,
+		}, nil
 	default:
 		return nil, echo.NewHTTPError(http.StatusBadRequest, "Unknown funnel type")
 	}

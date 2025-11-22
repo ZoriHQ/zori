@@ -64,6 +64,21 @@ type DepthFunnelAnalysisResponse struct {
 	AnalyzedAt        time.Time             `json:"analyzed_at" example:"2024-01-15T10:30:00Z"`
 }
 
+type UnifiedFunnelAnalysisResponse struct {
+	FunnelID   string            `json:"funnel_id" example:"550e8400-e29b-41d4-a716-446655440000"`
+	FunnelName string            `json:"funnel_name" example:"Checkout Funnel"`
+	FunnelType models.FunnelType `json:"funnel_type" example:"sequential"`
+	AnalyzedAt time.Time         `json:"analyzed_at" example:"2024-01-15T10:30:00Z"`
+
+	TotalVisitors     uint64             `json:"total_visitors,omitempty" example:"10000"`
+	ConvertedVisitors uint64             `json:"converted_visitors,omitempty" example:"1500"`
+	OverallConversion float64            `json:"overall_conversion,omitempty" example:"0.15"`
+	Steps             []FunnelStepResult `json:"steps,omitempty"`
+
+	TotalSessions     uint64                `json:"total_sessions,omitempty" example:"10000"`
+	DepthDistribution []DepthAnalysisResult `json:"depth_distribution,omitempty"`
+}
+
 func ToFunnelResponse(funnel *models.Funnel) *FunnelResponse {
 	response := &FunnelResponse{
 		ID:             funnel.ID,
