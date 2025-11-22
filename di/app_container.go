@@ -19,6 +19,7 @@ import (
 	"zori/services/analytics"
 	"zori/services/auth"
 	"zori/services/events"
+	"zori/services/funnels"
 	"zori/services/organizations"
 	orgServices "zori/services/organizations/services"
 	"zori/services/payments"
@@ -67,6 +68,7 @@ func NewApplication() *fx.App {
 		analytics.BuildAnalyticsDIContainer(),
 		revenue.BuildRevenueDIContainer(),
 		payments.BuildPaymentsDIContainer(),
+		funnels.BuildFunnelsDIContainer(),
 
 		fx.Provide(
 			fx.Annotate(
@@ -87,6 +89,7 @@ func NewApplication() *fx.App {
 		analytics.BuildAnalyticsWebDIContainer(),
 		revenue.BuildRevenueWebDIContainer(),
 		payments.BuildPaymentsWebDIContainer(),
+		funnels.BuildFunnelsWebDIContainer(),
 		events.BuildEventsDIContainer(),
 		events.BuildEventsWebContainer(),
 		payments.BuildPaymentsProcessorDIContainer(),
