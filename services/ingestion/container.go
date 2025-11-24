@@ -13,6 +13,7 @@ func BuildIngestionDiContainer() fx.Option {
 		fx.Provide(data.NewVisitorRepository),
 		fx.Provide(services.NewIngestor),
 		fx.Provide(services.NewIdentifier),
+		fx.Provide(services.NewRecorder),
 		fx.Provide(web.NewIngestionServer),
 	)
 }

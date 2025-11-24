@@ -19,15 +19,17 @@ import (
 type IngestionServer struct {
 	ingestor       *services.Ingestor
 	identifier     *services.Identifier
+	recorder       *services.Recorder
 	projectService *projectsServices.ProjectService
 	cacheService   *cache.CacheService
 	logger         *telemetry.Logger
 }
 
-func NewIngestionServer(ingestor *services.Ingestor, identifier *services.Identifier, projectService *projectsServices.ProjectService, cacheService *cache.CacheService, logger *telemetry.Logger) *IngestionServer {
+func NewIngestionServer(ingestor *services.Ingestor, identifier *services.Identifier, recorder *services.Recorder, projectService *projectsServices.ProjectService, cacheService *cache.CacheService, logger *telemetry.Logger) *IngestionServer {
 	return &IngestionServer{
 		ingestor:       ingestor,
 		identifier:     identifier,
+		recorder:       recorder,
 		projectService: projectService,
 		cacheService:   cacheService,
 		logger:         logger,
@@ -52,6 +54,8 @@ func (h *IngestionServer) HandleRequest(ctx *fasthttp.RequestCtx) {
 		h.Injest(ctx)
 	case "/identify":
 		h.Identify(ctx)
+	case "/recording":
+		h.Recording(ctx)
 	case "/health":
 		ctx.Response.SetStatusCode(fasthttp.StatusOK)
 		ctx.Response.SetBodyString("Zori - Ingestion Server")
@@ -266,5 +270,105 @@ func (h *IngestionServer) Identify(ctx *fasthttp.RequestCtx) {
 
 	if _, err := fmt.Fprintf(ctx, "IDENTIFIED %d", len(ctx.PostBody())); err != nil {
 		h.logger.Error("Failed to write identify response", telemetry.Error(err))
+	}
+}
+
+func (h *IngestionServer) Recording(ctx *fasthttp.RequestCtx) {
+	if !ctx.IsPost() {
+		ctx.Error("Bad Request", fasthttp.StatusBadRequest)
+		return
+	}
+
+	var recordingEvent types.RecordingEventV1
+	if err := json.Unmarshal(ctx.PostBody(), &recordingEvent); err != nil {
+		ctx.Error("Failed to decode recording payload", fasthttp.StatusBadRequest)
+		return
+	}
+
+	if recordingEvent.VisitorID == "" {
+		ctx.Error("visitor_id is required", fasthttp.StatusBadRequest)
+		return
+	}
+
+	if recordingEvent.SessionID == "" {
+		ctx.Error("session_id is required", fasthttp.StatusBadRequest)
+		return
+	}
+
+	visitorIDCookieBytes := ctx.Request.Header.Cookie("visitor_id")
+	if visitorIDCookieBytes == nil {
+		firstTimeVisitorCookie := fasthttp.Cookie{}
+		firstTimeVisitorCookie.SetKey("visitor_id")
+		firstTimeVisitorCookie.SetValue(recordingEvent.VisitorID)
+		firstTimeVisitorCookie.SetMaxAge(3600000)
+		firstTimeVisitorCookie.SetDomain(".zorihq.com")
+		firstTimeVisitorCookie.SetPath("/")
+		firstTimeVisitorCookie.SetSecure(false)
+		ctx.Response.Header.SetCookie(&firstTimeVisitorCookie)
+		visitorIDCookieBytes = firstTimeVisitorCookie.Value()
+	}
+
+	projectTokenBytes := ctx.Request.Header.Peek("x-zori-pt")
+	if projectTokenBytes == nil {
+		ctx.Error("X-Zori-PT Missing in the request header", fasthttp.StatusUnauthorized)
+		return
+	}
+
+	projectToken := string(projectTokenBytes)
+
+	projectFromCache, err := h.cacheService.Get(ctx, cache.ProjectCacheKey.FromValue(projectToken))
+	if err != nil {
+		ctx.Error("Invalid Project Token", fasthttp.StatusUnauthorized)
+		return
+	}
+
+	var project models.Project
+	if projectFromCache == nil {
+		projectPointer, err := h.projectService.GetProjectByPublishableToken(projectToken)
+		if err != nil {
+			ctx.Error("Invalid Project Token", fasthttp.StatusUnauthorized)
+			return
+		}
+
+		err = h.cacheService.Set(ctx, cache.ProjectCacheKey.FromValue(projectToken), *projectPointer, time.Minute)
+		if err != nil {
+			ctx.Error("Failed to cache project", fasthttp.StatusInternalServerError)
+			return
+		}
+
+		project = *projectPointer
+	} else {
+		if err = json.Unmarshal([]byte(*projectFromCache), &project); err != nil {
+			ctx.Error("Failed to unmarshal project", fasthttp.StatusInternalServerError)
+			return
+		}
+	}
+
+	if recordingEvent.VisitorID != string(visitorIDCookieBytes) {
+		ctx.Error("Missing or Invalid Visitor ID", fasthttp.StatusBadRequest)
+		return
+	}
+
+	recordingEvent.UserAgent = string(ctx.UserAgent())
+
+	cloudFlareHeaderIP := ctx.Request.Header.Peek("cf-connecting-ip")
+	if cloudFlareHeaderIP != nil {
+		recordingEvent.IP = string(cloudFlareHeaderIP)
+	} else if xForwardedForHeader := ctx.Request.Header.Peek(fasthttp.HeaderXForwardedFor); xForwardedForHeader != nil {
+		recordingEvent.IP = string(xForwardedForHeader)
+	} else {
+		recordingEvent.IP = ctx.RemoteIP().String()
+	}
+
+	go func() {
+		err := h.recorder.Record(&project, &recordingEvent)
+		if err != nil {
+			h.logger.Error("Failed to record session", telemetry.Error(err), telemetry.String("project_id", project.ID), telemetry.String("session_id", recordingEvent.SessionID))
+			return
+		}
+	}()
+
+	if _, err := fmt.Fprintf(ctx, "RECORDED %d", len(ctx.PostBody())); err != nil {
+		h.logger.Error("Failed to write recording response", telemetry.Error(err))
 	}
 }

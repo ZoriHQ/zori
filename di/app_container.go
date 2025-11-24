@@ -23,6 +23,7 @@ import (
 	orgServices "zori/services/organizations/services"
 	"zori/services/payments"
 	"zori/services/projects"
+	"zori/services/recordings"
 	"zori/services/revenue"
 
 	"go.uber.org/fx"
@@ -89,6 +90,8 @@ func NewApplication() *fx.App {
 		payments.BuildPaymentsWebDIContainer(),
 		events.BuildEventsDIContainer(),
 		events.BuildEventsWebContainer(),
+		recordings.BuildRecordingsDIContainer(),
+		recordings.BuildRecordingsWebContainer(),
 		payments.BuildPaymentsProcessorDIContainer(),
 		payments.BuildPaymentsWebhookDIContainer(),
 

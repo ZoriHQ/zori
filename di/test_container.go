@@ -29,6 +29,9 @@ import (
 	"zori/services/payments"
 	paymentsServices "zori/services/payments/services"
 	"zori/services/projects"
+	"zori/services/recordings"
+	recordingsData "zori/services/recordings/data"
+	recordingsServices "zori/services/recordings/services"
 	"zori/services/revenue"
 	revenueData "zori/services/revenue/data"
 	revenueServices "zori/services/revenue/services"
@@ -42,20 +45,22 @@ import (
 )
 
 type TestContainer struct {
-	App                *fxtest.App
-	DB                 *postgres.PostgresDB
-	ClickHouse         *clickhouse.ClickhouseDB
-	NATS               *natsstream.Stream
-	Server             *server.Server
-	Config             *config.Config
-	Cache              *cache.CacheService
-	Processor          *eventsServices.Processor
-	PaymentProcessor   *paymentsServices.PaymentProcessor
-	RevenueService     *revenueServices.RevenueService
-	IngestionServer    *ingestionWeb.IngestionServer
-	IngestionServerURL string
-	RevenueData        *revenueData.RevenueData
-	AnalyticsData      *analyticsData.AnalyticsData
+	App                  *fxtest.App
+	DB                   *postgres.PostgresDB
+	ClickHouse           *clickhouse.ClickhouseDB
+	NATS                 *natsstream.Stream
+	Server               *server.Server
+	Config               *config.Config
+	Cache                *cache.CacheService
+	Processor            *eventsServices.Processor
+	PaymentProcessor     *paymentsServices.PaymentProcessor
+	RevenueService       *revenueServices.RevenueService
+	IngestionServer      *ingestionWeb.IngestionServer
+	IngestionServerURL   string
+	RevenueData          *revenueData.RevenueData
+	AnalyticsData        *analyticsData.AnalyticsData
+	RecordingProcessor   *recordingsServices.RecordingProcessor
+	RecordingsData       *recordingsData.RecordingsData
 }
 
 var (
@@ -114,6 +119,7 @@ func NewTestContainer(t *testing.T) *TestContainer {
 		payments.BuildPaymentsDIContainer(),
 		revenue.BuildRevenueDIContainer(),
 		analytics.BuildAnalyticsDIContainer(),
+		recordings.BuildRecordingsDIContainer(),
 
 		fx.Provide(metrics.NewMetricsCollector),
 		fx.Provide(metrics.NewIngestMetrics),
@@ -165,7 +171,7 @@ func NewTestContainer(t *testing.T) *TestContainer {
 			})
 		}),
 		fx.NopLogger,
-		fx.Populate(&tc.DB, &tc.ClickHouse, &tc.NATS, &tc.Server, &tc.Config, &tc.Cache, &tc.Processor, &tc.PaymentProcessor, &tc.RevenueService, &tc.IngestionServer, &tc.RevenueData, &tc.AnalyticsData),
+		fx.Populate(&tc.DB, &tc.ClickHouse, &tc.NATS, &tc.Server, &tc.Config, &tc.Cache, &tc.Processor, &tc.PaymentProcessor, &tc.RevenueService, &tc.IngestionServer, &tc.RevenueData, &tc.AnalyticsData, &tc.RecordingProcessor, &tc.RecordingsData),
 	)
 
 	tc.App = app
@@ -227,6 +233,10 @@ func (tc *TestContainer) CleanupTestData(ctx context.Context) error {
 
 	if err := tc.ClickHouse.Db().Exec(ctx, "TRUNCATE TABLE IF EXISTS payment_events"); err != nil {
 		return fmt.Errorf("failed to truncate payment_events: %w", err)
+	}
+
+	if err := tc.ClickHouse.Db().Exec(ctx, "TRUNCATE TABLE IF EXISTS session_recordings"); err != nil {
+		return fmt.Errorf("failed to truncate session_recordings: %w", err)
 	}
 
 	if err := tc.Cache.FlushAll(ctx); err != nil {
