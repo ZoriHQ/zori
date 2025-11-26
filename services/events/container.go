@@ -6,6 +6,7 @@ import (
 	"zori/services/events/services"
 	"zori/services/events/web"
 	"zori/services/ingestion/data"
+	liveServices "zori/services/live/services"
 
 	"go.uber.org/fx"
 )
@@ -18,9 +19,13 @@ func BuildEventsDIContainer() fx.Option {
 		fx.Provide(services.NewIdentifyProcessor),
 		fx.Provide(services.NewEventsService),
 		fx.Provide(services.NewJWTService),
-		fx.Invoke(func(lc fx.Lifecycle, batchProcessor *services.BatchProcessor, processorService *services.Processor, identifyProcessor *services.IdentifyProcessor, logger *telemetry.Logger) {
+		fx.Invoke(func(lc fx.Lifecycle, batchProcessor *services.BatchProcessor, processorService *services.Processor, identifyProcessor *services.IdentifyProcessor, liveTracker *liveServices.LiveSessionTracker, logger *telemetry.Logger) {
 			lc.Append(fx.Hook{
 				OnStart: func(ctx context.Context) error {
+					// Start the live session tracker first
+					if err := liveTracker.Start(); err != nil {
+						logger.Fatal("Live session tracker failed to start", telemetry.Error(err))
+					}
 					go func() {
 						if err := batchProcessor.Start(); err != nil {
 							logger.Fatal("Batch processor failed", telemetry.Error(err))
@@ -43,6 +48,9 @@ func BuildEventsDIContainer() fx.Option {
 						return err
 					}
 					if err := processorService.Stop(); err != nil {
+						return err
+					}
+					if err := liveTracker.Stop(); err != nil {
 						return err
 					}
 					return batchProcessor.Stop()

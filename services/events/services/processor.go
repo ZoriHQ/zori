@@ -12,6 +12,7 @@ import (
 	"zori/internal/telemetry"
 	"zori/services/ingestion/data"
 	"zori/services/ingestion/types"
+	liveServices "zori/services/live/services"
 
 	"github.com/nats-io/nats.go/jetstream"
 )
@@ -36,9 +37,10 @@ type Processor struct {
 	natsMetrics    *metrics.NatsMetrics
 	batchProcessor *BatchProcessor
 	logger         *telemetry.Logger
+	liveTracker    *liveServices.LiveSessionTracker
 }
 
-func NewProcessor(natsStream *natsstream.Stream, clickDb *clickhouse.ClickhouseDB, natsMetrics *metrics.NatsMetrics, batchProcessor *BatchProcessor, visitorRepository *data.VisitorRepository, logger *telemetry.Logger) *Processor {
+func NewProcessor(natsStream *natsstream.Stream, clickDb *clickhouse.ClickhouseDB, natsMetrics *metrics.NatsMetrics, batchProcessor *BatchProcessor, visitorRepository *data.VisitorRepository, logger *telemetry.Logger, liveTracker *liveServices.LiveSessionTracker) *Processor {
 	err := natsStream.UpsertJetStream(rawEventsStream, rawEventsSubject)
 	if err != nil {
 		panic(err)
@@ -60,6 +62,7 @@ func NewProcessor(natsStream *natsstream.Stream, clickDb *clickhouse.ClickhouseD
 		natsMetrics:    natsMetrics,
 		batchProcessor: batchProcessor,
 		logger:         logger,
+		liveTracker:    liveTracker,
 	}
 
 	p.ctx, p.cancelConsumer = context.WithCancel(context.Background())
@@ -121,6 +124,17 @@ func (p *Processor) Start() error {
 		} else {
 			if err := p.natsStream.GetConnection().Publish(fmt.Sprintf("events:project:%s", eventFrame.ProjectID), marshalEventFrame); err != nil {
 				p.logger.Error("Failed to publish project events", telemetry.Error(err), telemetry.String("project_id", eventFrame.ProjectID))
+			}
+		}
+
+		// Track live session for real-time visitor count
+		if p.liveTracker != nil && eventFrame.SessionID != "" {
+			if err := p.liveTracker.TrackSession(context.Background(), eventFrame.ProjectID, eventFrame.SessionID); err != nil {
+				p.logger.Error("Failed to track live session",
+					telemetry.Error(err),
+					telemetry.String("project_id", eventFrame.ProjectID),
+					telemetry.String("session_id", eventFrame.SessionID),
+				)
 			}
 		}
 

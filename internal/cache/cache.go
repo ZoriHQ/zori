@@ -82,3 +82,53 @@ func (s *CacheService) SetNX(ctx context.Context, key string, value any, ttl tim
 func (s *CacheService) FlushAll(ctx context.Context) error {
 	return s.redisClient.FlushAll(ctx).Err()
 }
+
+func (s *CacheService) ZAdd(ctx context.Context, key string, score float64, member string) (bool, error) {
+	result, err := s.redisClient.ZAdd(ctx, key, redis.Z{
+		Score:  score,
+		Member: member,
+	}).Result()
+	if err != nil {
+		return false, err
+	}
+	return result > 0, nil
+}
+
+func (s *CacheService) ZRem(ctx context.Context, key string, member string) (bool, error) {
+	result, err := s.redisClient.ZRem(ctx, key, member).Result()
+	if err != nil {
+		return false, err
+	}
+	return result > 0, nil
+}
+
+func (s *CacheService) ZRemRangeByScore(ctx context.Context, key string, min, max string) (int64, error) {
+	return s.redisClient.ZRemRangeByScore(ctx, key, min, max).Result()
+}
+
+func (s *CacheService) ZCard(ctx context.Context, key string) (int64, error) {
+	return s.redisClient.ZCard(ctx, key).Result()
+}
+
+func (s *CacheService) ZScore(ctx context.Context, key string, member string) (*float64, error) {
+	result, err := s.redisClient.ZScore(ctx, key, member).Result()
+	if err == redis.Nil {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+func (s *CacheService) Keys(ctx context.Context, pattern string) ([]string, error) {
+	var keys []string
+	iter := s.redisClient.Scan(ctx, 0, pattern, 0).Iterator()
+	for iter.Next(ctx) {
+		keys = append(keys, iter.Val())
+	}
+	if err := iter.Err(); err != nil {
+		return nil, err
+	}
+	return keys, nil
+}

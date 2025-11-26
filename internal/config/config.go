@@ -49,6 +49,10 @@ type Config struct {
 	// OpenTelemetry Configuration
 	ServiceName          string `env:"SERVICE_NAME" envDefault:"zori"`
 	OtelExporterEndpoint string `env:"OTEL_EXPORTER_OTLP_ENDPOINT"`
+
+	// Live Visitor Tracking Configuration
+	LiveSessionTTLSeconds      int `env:"LIVE_SESSION_TTL_SECONDS" envDefault:"300"`       // 5 minutes default
+	LiveCleanupIntervalSeconds int `env:"LIVE_CLEANUP_INTERVAL_SECONDS" envDefault:"30"`   // 30 seconds default
 }
 
 func NewConfig() *Config {
