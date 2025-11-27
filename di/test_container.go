@@ -25,6 +25,7 @@ import (
 	eventsServices "zori/services/events/services"
 	"zori/services/ingestion"
 	ingestionWeb "zori/services/ingestion/web"
+	"zori/services/live"
 	"zori/services/organizations"
 	"zori/services/payments"
 	paymentsServices "zori/services/payments/services"
@@ -109,6 +110,7 @@ func NewTestContainer(t *testing.T) *TestContainer {
 		projects.BuildProjectWebDIContainer(),
 
 		ingestion.BuildIngestionDiContainer(),
+		live.BuildLiveDIContainer(),
 		events.BuildEventsDIContainer(),
 
 		payments.BuildPaymentsDIContainer(),

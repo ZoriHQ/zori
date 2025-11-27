@@ -94,20 +94,26 @@ func TestLiveSessionTrackerRefreshesTimestamp(t *testing.T) {
 	projectID := "test-project"
 	sessionID := "session-1"
 
+	// Track session at T=0
 	err = tracker.TrackSession(ctx, projectID, sessionID)
 	require.NoError(t, err)
 
-	time.Sleep(1 * time.Second)
+	// Wait 1.5s (less than TTL of 2s)
+	time.Sleep(1500 * time.Millisecond)
 
+	// Refresh the session - this should update the timestamp to T=1.5
 	err = tracker.TrackSession(ctx, projectID, sessionID)
 	require.NoError(t, err)
 
-	time.Sleep(2 * time.Second)
+	// Wait 1.5s more (now at T=3)
+	// Session was refreshed at T=1.5, so cutoff at T=3-2=T=1 means session with score=1.5 should survive
+	time.Sleep(1500 * time.Millisecond)
 
 	count, err := tracker.GetActiveCount(ctx, projectID)
 	require.NoError(t, err)
 	assert.Equal(t, int64(1), count, "Session should still be active after timestamp refresh")
 
+	// Wait another 2s for the session to expire (now at T=5, cutoff=T=3, score=1.5 < 3)
 	time.Sleep(2 * time.Second)
 
 	countAfter, err := tracker.GetActiveCount(ctx, projectID)
