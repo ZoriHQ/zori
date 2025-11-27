@@ -1,3 +1,16 @@
+<p align="center">
+  <img src="preview.png" alt="Zori - Revenue Analytics" width="100%" />
+</p>
+
+<p align="center">
+  <a href="https://github.com/ZoriHQ/zori/actions/workflows/tests.yml"><img src="https://github.com/ZoriHQ/zori/actions/workflows/tests.yml/badge.svg" alt="Build Status" /></a>
+  <a href="https://github.com/ZoriHQ/zori/releases/latest"><img src="https://img.shields.io/github/v/release/ZoriHQ/zori" alt="Latest Release" /></a>
+  <a href="https://goreportcard.com/report/github.com/ZoriHQ/zori"><img src="https://goreportcard.com/badge/github.com/ZoriHQ/zori" alt="Go Report Card" /></a>
+  <a href="https://codecov.io/gh/ZoriHQ/zori"><img src="https://codecov.io/gh/ZoriHQ/zori/branch/main/graph/badge.svg" alt="Coverage" /></a>
+  <a href="https://github.com/ZoriHQ/zori/blob/main/LICENSE"><img src="https://img.shields.io/github/license/ZoriHQ/zori" alt="License" /></a>
+  <img src="https://img.shields.io/badge/go-1.25-00ADD8" alt="Go Version" />
+</p>
+
 # zori.
 
 revenue → attribution → clarity.
