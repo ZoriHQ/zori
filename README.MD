@@ -170,7 +170,7 @@ task docs          # swagger at :8080/swagger
 
 ## license
 
-apache 2.0
+MIT
 
 ---
 
