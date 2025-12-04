@@ -33,6 +33,7 @@ import (
 	"zori/services/revenue"
 	revenueData "zori/services/revenue/data"
 	revenueServices "zori/services/revenue/services"
+	"zori/services/traces"
 
 	"github.com/uptrace/bun"
 	"github.com/uptrace/bun/dialect/pgdialect"
@@ -112,6 +113,7 @@ func NewTestContainer(t *testing.T) *TestContainer {
 		ingestion.BuildIngestionDiContainer(),
 		live.BuildLiveDIContainer(),
 		events.BuildEventsDIContainer(),
+		traces.BuildTracesDIContainer(),
 
 		payments.BuildPaymentsDIContainer(),
 		revenue.BuildRevenueDIContainer(),

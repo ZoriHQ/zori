@@ -47,7 +47,7 @@ func TestProjectService_CreateProject(t *testing.T) {
 	tests := []struct {
 		name          string
 		request       types.CreateProjectRequest
-		checkResponse func(t *testing.T, response *models.Project, err error)
+		checkResponse func(t *testing.T, result *data.CreateProjectResult, err error)
 	}{
 		{
 			name: "successful project creation",
@@ -56,21 +56,25 @@ func TestProjectService_CreateProject(t *testing.T) {
 				WebsiteURL:     "https://example.com",
 				AllowLocalHost: false,
 			},
-			checkResponse: func(t *testing.T, response *models.Project, err error) {
+			checkResponse: func(t *testing.T, result *data.CreateProjectResult, err error) {
 				require.NoError(t, err)
-				assert.NotEmpty(t, response.ID)
-				assert.Equal(t, "Test Project", response.Name)
-				assert.Equal(t, "https://example.com", response.Domain)
-				assert.False(t, response.AllowLocalHost)
-				assert.NotEmpty(t, response.ProjectToken)
-				assert.Equal(t, account.OrgID, response.OrganizationID)
-				assert.Nil(t, response.FirstEventReceivedAt)
+				assert.NotEmpty(t, result.Project.ID)
+				assert.Equal(t, "Test Project", result.Project.Name)
+				assert.Equal(t, "https://example.com", result.Project.Domain)
+				assert.False(t, result.Project.AllowLocalHost)
+				assert.NotEmpty(t, result.Project.ProjectToken)
+				assert.Equal(t, account.OrgID, result.Project.OrganizationID)
+				assert.Nil(t, result.Project.FirstEventReceivedAt)
+				assert.NotNil(t, result.Project.LangfusePublicKey)
+				assert.NotNil(t, result.Project.LangfuseSecretKey)
+				assert.True(t, len(*result.Project.LangfusePublicKey) > 0)
+				assert.True(t, len(*result.Project.LangfuseSecretKey) > 0)
 
 				dbCtx := context.Background()
 				var project models.Project
 				err = tc.DB.DB.NewSelect().
 					Model(&project).
-					Where("id = ?", response.ID).
+					Where("id = ?", result.Project.ID).
 					Scan(dbCtx)
 				require.NoError(t, err)
 				assert.Equal(t, "Test Project", project.Name)
@@ -85,11 +89,11 @@ func TestProjectService_CreateProject(t *testing.T) {
 				WebsiteURL:     "http://localhost:3000",
 				AllowLocalHost: true,
 			},
-			checkResponse: func(t *testing.T, response *models.Project, err error) {
+			checkResponse: func(t *testing.T, result *data.CreateProjectResult, err error) {
 				require.NoError(t, err)
-				assert.Equal(t, "Localhost Project", response.Name)
-				assert.Equal(t, "http://localhost:3000", response.Domain)
-				assert.True(t, response.AllowLocalHost)
+				assert.Equal(t, "Localhost Project", result.Project.Name)
+				assert.Equal(t, "http://localhost:3000", result.Project.Domain)
+				assert.True(t, result.Project.AllowLocalHost)
 			},
 		},
 		{
@@ -98,7 +102,7 @@ func TestProjectService_CreateProject(t *testing.T) {
 				WebsiteURL:     "https://example.com",
 				AllowLocalHost: false,
 			},
-			checkResponse: func(t *testing.T, response *models.Project, err error) {
+			checkResponse: func(t *testing.T, result *data.CreateProjectResult, err error) {
 				require.NoError(t, err)
 			},
 		},
@@ -108,7 +112,7 @@ func TestProjectService_CreateProject(t *testing.T) {
 				Name:           "Test Project",
 				AllowLocalHost: false,
 			},
-			checkResponse: func(t *testing.T, response *models.Project, err error) {
+			checkResponse: func(t *testing.T, result *data.CreateProjectResult, err error) {
 				require.NoError(t, err)
 			},
 		},
@@ -116,8 +120,8 @@ func TestProjectService_CreateProject(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			response, err := projectData.CreateProject(mockCtx, &tt.request)
-			tt.checkResponse(t, response, err)
+			result, err := projectData.CreateProject(mockCtx, &tt.request)
+			tt.checkResponse(t, result, err)
 		})
 	}
 }
@@ -133,14 +137,14 @@ func TestProjectService_ListProjects(t *testing.T) {
 
 	mockCtx := createMockContext(account)
 
-	project1, err := projectData.CreateProject(mockCtx, &types.CreateProjectRequest{
+	result1, err := projectData.CreateProject(mockCtx, &types.CreateProjectRequest{
 		Name:           "Project 1",
 		WebsiteURL:     "https://project1.com",
 		AllowLocalHost: false,
 	})
 	require.NoError(t, err)
 
-	project2, err := projectData.CreateProject(mockCtx, &types.CreateProjectRequest{
+	result2, err := projectData.CreateProject(mockCtx, &types.CreateProjectRequest{
 		Name:           "Project 2",
 		WebsiteURL:     "https://project2.com",
 		AllowLocalHost: true,
@@ -181,8 +185,8 @@ func TestProjectService_ListProjects(t *testing.T) {
 		assert.Len(t, response.Projects, 0)
 	})
 
-	_, _ = projectData.DeleteProject(mockCtx, project1.ID)
-	_, _ = projectData.DeleteProject(mockCtx, project2.ID)
+	_, _ = projectData.DeleteProject(mockCtx, result1.Project.ID)
+	_, _ = projectData.DeleteProject(mockCtx, result2.Project.ID)
 }
 
 func TestProjectService_GetProject(t *testing.T) {
@@ -196,12 +200,13 @@ func TestProjectService_GetProject(t *testing.T) {
 
 	mockCtx := createMockContext(account)
 
-	createdProject, err := projectData.CreateProject(mockCtx, &types.CreateProjectRequest{
+	createResult, err := projectData.CreateProject(mockCtx, &types.CreateProjectRequest{
 		Name:           "Get Test Project",
 		WebsiteURL:     "https://gettest.com",
 		AllowLocalHost: false,
 	})
 	require.NoError(t, err)
+	createdProject := createResult.Project
 
 	t.Run("get existing project", func(t *testing.T) {
 		response, err := projectService.GetProjectNoContext(context.Background(), createdProject.ID, account.OrgID)
@@ -242,12 +247,13 @@ func TestProjectService_UpdateProject(t *testing.T) {
 
 	mockCtx := createMockContext(account)
 
-	createdProject, err := projectData.CreateProject(mockCtx, &types.CreateProjectRequest{
+	createResult, err := projectData.CreateProject(mockCtx, &types.CreateProjectRequest{
 		Name:           "Update Test Project",
 		WebsiteURL:     "https://updatetest.com",
 		AllowLocalHost: false,
 	})
 	require.NoError(t, err)
+	createdProject := createResult.Project
 
 	tests := []struct {
 		name          string
@@ -343,12 +349,13 @@ func TestProjectService_DeleteProject(t *testing.T) {
 
 	mockCtx := createMockContext(account)
 
-	createdProject, err := projectData.CreateProject(mockCtx, &types.CreateProjectRequest{
+	createResult, err := projectData.CreateProject(mockCtx, &types.CreateProjectRequest{
 		Name:           "Delete Test Project",
 		WebsiteURL:     "https://deletetest.com",
 		AllowLocalHost: false,
 	})
 	require.NoError(t, err)
+	createdProject := createResult.Project
 
 	t.Run("successful project deletion", func(t *testing.T) {
 		rowsAffected, err := projectData.DeleteProject(mockCtx, createdProject.ID)
@@ -374,12 +381,13 @@ func TestProjectService_DeleteProject(t *testing.T) {
 	})
 
 	t.Run("delete project with wrong org ID", func(t *testing.T) {
-		newProject, err := projectData.CreateProject(mockCtx, &types.CreateProjectRequest{
+		newProjectResult, err := projectData.CreateProject(mockCtx, &types.CreateProjectRequest{
 			Name:           "Another Delete Test",
 			WebsiteURL:     "https://deletetest2.com",
 			AllowLocalHost: false,
 		})
 		require.NoError(t, err)
+		newProject := newProjectResult.Project
 
 		wrongOrgAccount := &fixtures.AccountFixture{
 			AccountID: account.AccountID,

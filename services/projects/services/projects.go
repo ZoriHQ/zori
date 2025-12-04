@@ -22,6 +22,10 @@ type ProjectResponse struct {
 	*models.Project
 }
 
+type CreateProjectResponse struct {
+	*models.Project
+}
+
 type ProjectService struct {
 	data *data.ProjectData
 }
@@ -32,6 +36,10 @@ func NewProjectService(data *data.ProjectData) *ProjectService {
 
 func (p *ProjectService) GetProjectByPublishableToken(token string) (*models.Project, error) {
 	return p.data.GetProjectByPublishableToken(token)
+}
+
+func (p *ProjectService) GetProjectByLangfusePublicKey(ctx context.Context, publicKey string) (*models.Project, error) {
+	return p.data.GetProjectByLangfusePublicKey(ctx, publicKey)
 }
 
 func (p *ProjectService) SetFirstEventReceivedNow(projectID string) error {
@@ -66,19 +74,19 @@ func (s *ProjectService) ListProjects(c *ctx.Ctx) (*ListProjectsResponse, error)
 }
 
 // @Summary Create a new project
-// @Description Create a new project for the authenticated user's organization
+// @Description Create a new project for the authenticated user's organization. The response includes Langfuse API keys for LLM trace ingestion.
 // @Tags Projects
 // @Accept json
 // @Produce json
 // @Security ApiKeyAuth
 // @Param request body types.CreateProjectRequest true "Project creation details"
-// @Success 201 {object} services.ProjectResponse "Created project"
+// @Success 201 {object} services.CreateProjectResponse "Created project with Langfuse credentials"
 // @Failure 400 {object} map[string]interface{} "Invalid request or validation failed"
 // @Failure 401 {object} map[string]interface{} "Unauthorized - Invalid or missing JWT token"
 // @Failure 409 {object} map[string]interface{} "Project with this name already exists"
 // @Failure 500 {object} map[string]interface{} "Internal server error"
 // @Router /api/v1/projects [post]
-func (s *ProjectService) CreateProject(c *ctx.Ctx) (*ProjectResponse, error) {
+func (s *ProjectService) CreateProject(c *ctx.Ctx) (*CreateProjectResponse, error) {
 	var req types.CreateProjectRequest
 	if err := c.Echo.Bind(&req); err != nil {
 		return nil, echo.NewHTTPError(http.StatusBadRequest, "Invalid request body")
@@ -88,14 +96,16 @@ func (s *ProjectService) CreateProject(c *ctx.Ctx) (*ProjectResponse, error) {
 		return nil, echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	project, err := s.data.CreateProject(c, &req)
+	result, err := s.data.CreateProject(c, &req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create project: %w", err)
 	}
 
 	c.Echo.Response().Status = http.StatusCreated
 
-	return &ProjectResponse{Project: project}, nil
+	return &CreateProjectResponse{
+		Project: result.Project,
+	}, nil
 }
 
 // @Summary Update a project

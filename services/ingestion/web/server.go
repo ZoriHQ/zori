@@ -12,6 +12,7 @@ import (
 	"zori/services/ingestion/services"
 	"zori/services/ingestion/types"
 	projectsServices "zori/services/projects/services"
+	tracesWeb "zori/services/traces/web"
 
 	"github.com/valyala/fasthttp"
 )
@@ -22,15 +23,17 @@ type IngestionServer struct {
 	projectService *projectsServices.ProjectService
 	cacheService   *cache.CacheService
 	logger         *telemetry.Logger
+	tracesHandler  *tracesWeb.TracesHandler
 }
 
-func NewIngestionServer(ingestor *services.Ingestor, identifier *services.Identifier, projectService *projectsServices.ProjectService, cacheService *cache.CacheService, logger *telemetry.Logger) *IngestionServer {
+func NewIngestionServer(ingestor *services.Ingestor, identifier *services.Identifier, projectService *projectsServices.ProjectService, cacheService *cache.CacheService, logger *telemetry.Logger, tracesHandler *tracesWeb.TracesHandler) *IngestionServer {
 	return &IngestionServer{
 		ingestor:       ingestor,
 		identifier:     identifier,
 		projectService: projectService,
 		cacheService:   cacheService,
 		logger:         logger,
+		tracesHandler:  tracesHandler,
 	}
 }
 
@@ -38,7 +41,7 @@ func (h *IngestionServer) HandleRequest(ctx *fasthttp.RequestCtx) {
 	ctx.Response.Header.Set("Access-Control-Allow-Credentials", "true")
 	ctx.Response.Header.SetBytesV("Access-Control-Allow-Origin", []byte("*"))
 	ctx.Response.Header.SetBytesV("Access-Control-Allow-Methods", []byte("POST"))
-	ctx.Response.Header.SetBytesV("Access-Control-Allow-Headers", []byte("Content-Type, X-Zori-PT, x-zori-version"))
+	ctx.Response.Header.SetBytesV("Access-Control-Allow-Headers", []byte("Content-Type, X-Zori-PT, x-zori-version, Authorization"))
 	ctx.Response.Header.SetBytesV("Access-Control-Max-Age", []byte("86400"))
 
 	if ctx.IsOptions() {
@@ -52,6 +55,15 @@ func (h *IngestionServer) HandleRequest(ctx *fasthttp.RequestCtx) {
 		h.Injest(ctx)
 	case "/identify":
 		h.Identify(ctx)
+	case "/traces/ingest/langfuse":
+		h.tracesHandler.HandleIngestion(ctx)
+	// Langfuse-compatible public API endpoints (for OpenRouter integration)
+	case "/api/public/projects":
+		h.tracesHandler.HandleGetProjects(ctx)
+	case "/api/public/ingestion":
+		h.tracesHandler.HandlePublicIngestion(ctx)
+	case "/api/public/otel/v1/traces":
+		h.tracesHandler.HandleOtelTraces(ctx)
 	case "/health":
 		ctx.Response.SetStatusCode(fasthttp.StatusOK)
 		ctx.Response.SetBodyString("Zori - Ingestion Server")
