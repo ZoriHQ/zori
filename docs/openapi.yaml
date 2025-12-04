@@ -3054,8 +3054,8 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/services.ProjectResponse'
-          description: Created project
+                $ref: '#/components/schemas/services.CreateProjectResponse'
+          description: Created project with Langfuse credentials
         '400':
           content:
             application/json:
@@ -3088,7 +3088,9 @@ paths:
         - ApiKeyAuth: []
       tags:
         - Projects
-      description: Create a new project for the authenticated user's organization
+      description: >-
+        Create a new project for the authenticated user's organization. The
+        response includes Langfuse API keys for LLM trace ingestion.
       requestBody:
         content:
           application/json:
@@ -3757,6 +3759,15 @@ components:
         id:
           example: 550e8400-e29b-41d4-a716-446655440000
           type: string
+        langfuse_public_key:
+          description: >-
+            Langfuse-compatible API keys for LLM trace ingestion (used to accept
+            OpenRouter traces)
+          example: pk-lf-a1b2c3d4e5f6
+          type: string
+        langfuse_secret_key:
+          example: sk-lf-a1b2c3d4e5f6
+          type: string
         name:
           example: My Awesome Project
           type: string
@@ -3784,6 +3795,45 @@ components:
         - ProviderTypePayPal
         - ProviderTypeLemonSqueezy
         - ProviderTypeSquare
+    services.CreateProjectResponse:
+      properties:
+        allow_local_host:
+          example: false
+          type: boolean
+        created_at:
+          example: '2024-01-15T10:30:00Z'
+          type: string
+        domain:
+          example: 'https://example.com'
+          type: string
+        first_event_received_at:
+          example: '2024-01-15T10:30:00Z'
+          type: string
+        id:
+          example: 550e8400-e29b-41d4-a716-446655440000
+          type: string
+        langfuse_public_key:
+          description: >-
+            Langfuse-compatible API keys for LLM trace ingestion (used to accept
+            OpenRouter traces)
+          example: pk-lf-a1b2c3d4e5f6
+          type: string
+        langfuse_secret_key:
+          example: sk-lf-a1b2c3d4e5f6
+          type: string
+        name:
+          example: My Awesome Project
+          type: string
+        organization_id:
+          example: 660e8400-e29b-41d4-a716-446655440001
+          type: string
+        project_token:
+          example: zori_pt_1234567890
+          type: string
+        updated_at:
+          example: '2024-01-15T10:30:00Z'
+          type: string
+      type: object
     services.ListProjectsResponse:
       properties:
         projects:
@@ -3810,6 +3860,15 @@ components:
           type: string
         id:
           example: 550e8400-e29b-41d4-a716-446655440000
+          type: string
+        langfuse_public_key:
+          description: >-
+            Langfuse-compatible API keys for LLM trace ingestion (used to accept
+            OpenRouter traces)
+          example: pk-lf-a1b2c3d4e5f6
+          type: string
+        langfuse_secret_key:
+          example: sk-lf-a1b2c3d4e5f6
           type: string
         name:
           example: My Awesome Project

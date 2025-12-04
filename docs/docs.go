@@ -3783,7 +3783,7 @@ const docTemplate = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "Create a new project for the authenticated user's organization",
+                "description": "Create a new project for the authenticated user's organization. The response includes Langfuse API keys for LLM trace ingestion.",
                 "consumes": [
                     "application/json"
                 ],
@@ -3807,9 +3807,9 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "201": {
-                        "description": "Created project",
+                        "description": "Created project with Langfuse credentials",
                         "schema": {
-                            "$ref": "#/definitions/services.ProjectResponse"
+                            "$ref": "#/definitions/services.CreateProjectResponse"
                         }
                     },
                     "400": {
@@ -4694,6 +4694,15 @@ const docTemplate = `{
                     "type": "string",
                     "example": "550e8400-e29b-41d4-a716-446655440000"
                 },
+                "langfuse_public_key": {
+                    "description": "Langfuse-compatible API keys for LLM trace ingestion (used to accept OpenRouter traces)",
+                    "type": "string",
+                    "example": "pk-lf-a1b2c3d4e5f6"
+                },
+                "langfuse_secret_key": {
+                    "type": "string",
+                    "example": "sk-lf-a1b2c3d4e5f6"
+                },
                 "name": {
                     "type": "string",
                     "example": "My Awesome Project"
@@ -4728,6 +4737,56 @@ const docTemplate = `{
                 "ProviderTypeLemonSqueezy",
                 "ProviderTypeSquare"
             ]
+        },
+        "services.CreateProjectResponse": {
+            "type": "object",
+            "properties": {
+                "allow_local_host": {
+                    "type": "boolean",
+                    "example": false
+                },
+                "created_at": {
+                    "type": "string",
+                    "example": "2024-01-15T10:30:00Z"
+                },
+                "domain": {
+                    "type": "string",
+                    "example": "https://example.com"
+                },
+                "first_event_received_at": {
+                    "type": "string",
+                    "example": "2024-01-15T10:30:00Z"
+                },
+                "id": {
+                    "type": "string",
+                    "example": "550e8400-e29b-41d4-a716-446655440000"
+                },
+                "langfuse_public_key": {
+                    "description": "Langfuse-compatible API keys for LLM trace ingestion (used to accept OpenRouter traces)",
+                    "type": "string",
+                    "example": "pk-lf-a1b2c3d4e5f6"
+                },
+                "langfuse_secret_key": {
+                    "type": "string",
+                    "example": "sk-lf-a1b2c3d4e5f6"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "My Awesome Project"
+                },
+                "organization_id": {
+                    "type": "string",
+                    "example": "660e8400-e29b-41d4-a716-446655440001"
+                },
+                "project_token": {
+                    "type": "string",
+                    "example": "zori_pt_1234567890"
+                },
+                "updated_at": {
+                    "type": "string",
+                    "example": "2024-01-15T10:30:00Z"
+                }
+            }
         },
         "services.ListProjectsResponse": {
             "type": "object",
@@ -4766,6 +4825,15 @@ const docTemplate = `{
                 "id": {
                     "type": "string",
                     "example": "550e8400-e29b-41d4-a716-446655440000"
+                },
+                "langfuse_public_key": {
+                    "description": "Langfuse-compatible API keys for LLM trace ingestion (used to accept OpenRouter traces)",
+                    "type": "string",
+                    "example": "pk-lf-a1b2c3d4e5f6"
+                },
+                "langfuse_secret_key": {
+                    "type": "string",
+                    "example": "sk-lf-a1b2c3d4e5f6"
                 },
                 "name": {
                     "type": "string",
