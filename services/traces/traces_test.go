@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"zori/di"
+	"zori/internal/utils"
 	"zori/services/projects/helpers"
 	"zori/services/traces/types"
 	"zori/testutil/fixtures"
@@ -45,7 +46,7 @@ func TestTracesIngestion_BasicAuth(t *testing.T) {
 
 		resp, err := http.DefaultClient.Do(req)
 		require.NoError(t, err)
-		defer resp.Body.Close()
+		defer utils.EnsureBodyClosed(resp)
 
 		assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
 	})
@@ -58,7 +59,7 @@ func TestTracesIngestion_BasicAuth(t *testing.T) {
 
 		resp, err := http.DefaultClient.Do(req)
 		require.NoError(t, err)
-		defer resp.Body.Close()
+		defer utils.EnsureBodyClosed(resp)
 
 		assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
 	})
@@ -72,7 +73,7 @@ func TestTracesIngestion_BasicAuth(t *testing.T) {
 
 		resp, err := http.DefaultClient.Do(req)
 		require.NoError(t, err)
-		defer resp.Body.Close()
+		defer utils.EnsureBodyClosed(resp)
 
 		assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
 	})
@@ -92,7 +93,7 @@ func TestTracesIngestion_BasicAuth(t *testing.T) {
 
 		resp, err := http.DefaultClient.Do(req)
 		require.NoError(t, err)
-		defer resp.Body.Close()
+		defer utils.EnsureBodyClosed(resp)
 
 		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
 	})
@@ -154,7 +155,7 @@ func TestTracesIngestion_TraceCreate(t *testing.T) {
 
 		resp, err := http.DefaultClient.Do(req)
 		require.NoError(t, err)
-		defer resp.Body.Close()
+		defer utils.EnsureBodyClosed(resp)
 
 		assert.Equal(t, http.StatusMultiStatus, resp.StatusCode)
 
@@ -202,11 +203,10 @@ func TestTracesIngestion_TraceCreate(t *testing.T) {
 
 		resp, err := http.DefaultClient.Do(req)
 		require.NoError(t, err)
-		defer resp.Body.Close()
+		defer utils.EnsureBodyClosed(resp)
 
 		if !assert.Equal(t, http.StatusMultiStatus, resp.StatusCode) {
-			respBody, _ := json.Marshal(resp)
-			t.Logf("Unexpected response code: %d, body: %s", resp.StatusCode, string(respBody))
+			t.Logf("Unexpected response code: %d", resp.StatusCode)
 			t.Logf("Auth header used: Basic %s", validAuth[:20]+"...")
 			return
 		}
@@ -301,7 +301,7 @@ func TestTracesIngestion_GenerationCreate(t *testing.T) {
 
 		resp, err := http.DefaultClient.Do(req)
 		require.NoError(t, err)
-		defer resp.Body.Close()
+		defer utils.EnsureBodyClosed(resp)
 
 		assert.Equal(t, http.StatusMultiStatus, resp.StatusCode)
 
@@ -364,7 +364,7 @@ func TestTracesIngestion_GenerationCreate(t *testing.T) {
 
 		resp, err := http.DefaultClient.Do(req)
 		require.NoError(t, err)
-		defer resp.Body.Close()
+		defer utils.EnsureBodyClosed(resp)
 
 		assert.Equal(t, http.StatusMultiStatus, resp.StatusCode)
 
@@ -443,7 +443,7 @@ func TestTracesIngestion_BatchEvents(t *testing.T) {
 
 		resp, err := http.DefaultClient.Do(req)
 		require.NoError(t, err)
-		defer resp.Body.Close()
+		defer utils.EnsureBodyClosed(resp)
 
 		assert.Equal(t, http.StatusMultiStatus, resp.StatusCode)
 
@@ -498,7 +498,7 @@ func TestTracesIngestion_BatchEvents(t *testing.T) {
 
 		resp, err := http.DefaultClient.Do(req)
 		require.NoError(t, err)
-		defer resp.Body.Close()
+		defer utils.EnsureBodyClosed(resp)
 
 		assert.Equal(t, http.StatusMultiStatus, resp.StatusCode)
 
@@ -554,7 +554,7 @@ func TestTracesIngestion_UnknownEventTypes(t *testing.T) {
 
 		resp, err := http.DefaultClient.Do(req)
 		require.NoError(t, err)
-		defer resp.Body.Close()
+		defer utils.EnsureBodyClosed(resp)
 
 		assert.Equal(t, http.StatusMultiStatus, resp.StatusCode)
 
@@ -586,7 +586,7 @@ func TestTracesIngestion_UnknownEventTypes(t *testing.T) {
 
 		resp, err := http.DefaultClient.Do(req)
 		require.NoError(t, err)
-		defer resp.Body.Close()
+		defer utils.EnsureBodyClosed(resp)
 
 		assert.Equal(t, http.StatusMultiStatus, resp.StatusCode)
 
