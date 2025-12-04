@@ -9,6 +9,7 @@ import (
 	"zori/internal/metrics"
 	"zori/internal/natsstream"
 	"zori/internal/server"
+	"zori/internal/storage/clickhouse"
 	"zori/internal/storage/postgres"
 	"zori/internal/telemetry"
 	"zori/services/ingestion"
@@ -16,6 +17,7 @@ import (
 	"zori/services/organizations"
 	"zori/services/payments"
 	"zori/services/projects"
+	"zori/services/traces"
 
 	"github.com/valyala/fasthttp"
 	"go.uber.org/fx"
@@ -26,6 +28,7 @@ func NewIngestionApplication() *fx.App {
 		fx.Provide(
 			config.NewConfig,
 			postgres.NewPostgresDB,
+			clickhouse.NewClickhouseDB,
 			server.New,
 			telemetry.NewLogger,
 			telemetry.NewTracerProvider,
@@ -42,6 +45,7 @@ func NewIngestionApplication() *fx.App {
 		organizations.BuildOrganizationDIContainer(),
 		projects.BuildProjectsDIContainer(),
 		payments.BuildPaymentsDIContainer(),
+		traces.BuildTracesDIContainer(),
 
 		fx.Invoke(registerDatabaseLifecycle),
 		ingestion.BuildIngestionDiContainer(),
