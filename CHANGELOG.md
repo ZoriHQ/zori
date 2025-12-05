@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.5.0](https://github.com/ZoriHQ/zori/compare/v0.4.1...v0.5.0) (2025-12-04)
+
+
+### Features
+
+* **traces:** added ability to ingest traces from open router ([8e9d079](https://github.com/ZoriHQ/zori/commit/8e9d079bafd9cecad53729fcb0fe7588ac978683))
+* **traces:** added ability to ingest traces from open router ([7d047ca](https://github.com/ZoriHQ/zori/commit/7d047ca0cce7e01ed015820601b5bafc0c200cf5))
+
 ## [0.4.1](https://github.com/ZoriHQ/zori/compare/v0.4.0...v0.4.1) (2025-11-21)
 
 
