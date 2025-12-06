@@ -374,6 +374,352 @@
         "summary": "Get recent events"
       }
     },
+    "/api/v1/analytics/llm/traces": {
+      "get": {
+        "parameters": [
+          {
+            "example": "cus_xyz789",
+            "in": "query",
+            "name": "customer_id",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "example": 50,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "example": "gpt-4",
+            "in": "query",
+            "name": "model",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "example": "chat-completion",
+            "in": "query",
+            "name": "name",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "example": 0,
+            "in": "query",
+            "name": "offset",
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          {
+            "example": "proj_123",
+            "in": "query",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "example": "https://google.com",
+            "in": "query",
+            "name": "referrer",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "example": "session_abc",
+            "in": "query",
+            "name": "session_id",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "example": "last_7_days",
+            "in": "query",
+            "name": "time_range",
+            "required": true,
+            "schema": {
+              "default": "last_7_days",
+              "enum": [
+                "last_hour",
+                "today",
+                "yesterday",
+                "last_7_days",
+                "last_30_days",
+                "last_90_days"
+              ],
+              "type": "string"
+            },
+            "x-enum-varnames": [
+              "TimeBoundariesHour",
+              "TimeBoundariesToday",
+              "TimeBoundariesYesterday",
+              "TimeBoundariesLastWeek",
+              "TimeBoundariesLastMonth",
+              "TimeBoundariesLast90Days"
+            ]
+          },
+          {
+            "example": "user_123",
+            "in": "query",
+            "name": "user_id",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "example": "utm_source",
+            "in": "query",
+            "name": "utmtag",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "example": "google",
+            "in": "query",
+            "name": "utmtagValue",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "example": "visitor_abc123",
+            "in": "query",
+            "name": "visitor_id",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/types.LLMTracesListResponse"
+                }
+              }
+            },
+            "description": "List of LLM traces with pagination info"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Invalid request parameters"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Unauthorized - Invalid or missing JWT token"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "tags": [
+          "Analytics"
+        ],
+        "description": "Get a paginated list of LLM traces with optional filters (name, user_id, session_id, model)",
+        "summary": "Get LLM traces list"
+      }
+    },
+    "/api/v1/analytics/llm/traces/filter-options": {
+      "get": {
+        "parameters": [
+          {
+            "example": "cus_xyz789",
+            "in": "query",
+            "name": "customer_id",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "example": 50,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "example": 0,
+            "in": "query",
+            "name": "offset",
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          {
+            "example": "proj_123",
+            "in": "query",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "example": "https://google.com",
+            "in": "query",
+            "name": "referrer",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "example": "last_7_days",
+            "in": "query",
+            "name": "time_range",
+            "required": true,
+            "schema": {
+              "default": "last_7_days",
+              "enum": [
+                "last_hour",
+                "today",
+                "yesterday",
+                "last_7_days",
+                "last_30_days",
+                "last_90_days"
+              ],
+              "type": "string"
+            },
+            "x-enum-varnames": [
+              "TimeBoundariesHour",
+              "TimeBoundariesToday",
+              "TimeBoundariesYesterday",
+              "TimeBoundariesLastWeek",
+              "TimeBoundariesLastMonth",
+              "TimeBoundariesLast90Days"
+            ]
+          },
+          {
+            "example": "utm_source",
+            "in": "query",
+            "name": "utmtag",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "example": "google",
+            "in": "query",
+            "name": "utmtagValue",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "example": "visitor_abc123",
+            "in": "query",
+            "name": "visitor_id",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/types.LLMTraceFilterOptionsResponse"
+                }
+              }
+            },
+            "description": "Filter options for LLM traces"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Invalid request parameters"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Unauthorized - Invalid or missing JWT token"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "tags": [
+          "Analytics"
+        ],
+        "description": "Get unique names, user_ids, session_ids, and models to populate filter dropdowns",
+        "summary": "Get LLM trace filter options"
+      }
+    },
     "/api/v1/analytics/retention/churn-rate": {
       "get": {
         "parameters": [
@@ -6919,6 +7265,129 @@
           },
           "timestamp": {
             "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "types.LLMTraceFilterOptionsResponse": {
+        "properties": {
+          "models": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "names": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "session_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "user_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object"
+      },
+      "types.LLMTraceItem": {
+        "properties": {
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "avg_latency_ms": {
+            "type": "number"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "generation_count": {
+            "type": "integer"
+          },
+          "input": {
+            "type": "string"
+          },
+          "input_tokens": {
+            "type": "integer"
+          },
+          "metadata": {
+            "type": "string"
+          },
+          "models": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "name": {
+            "type": "string"
+          },
+          "output": {
+            "type": "string"
+          },
+          "output_tokens": {
+            "type": "integer"
+          },
+          "public": {
+            "type": "boolean"
+          },
+          "release": {
+            "type": "string"
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "timestamp": {
+            "type": "string"
+          },
+          "total_cost": {
+            "type": "number"
+          },
+          "total_tokens": {
+            "type": "integer"
+          },
+          "trace_id": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string"
+          },
+          "user_id": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "types.LLMTracesListResponse": {
+        "properties": {
+          "limit": {
+            "type": "integer"
+          },
+          "offset": {
+            "type": "integer"
+          },
+          "total": {
+            "type": "integer"
+          },
+          "traces": {
+            "items": {
+              "$ref": "#/components/schemas/types.LLMTraceItem"
+            },
+            "type": "array"
           }
         },
         "type": "object"
