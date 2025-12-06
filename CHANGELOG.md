@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.0](https://github.com/ZoriHQ/zori/compare/v0.5.0...v0.6.0) (2025-12-06)
+
+
+### Features
+
+* **traces:** llm trace tiles; traces list ([8193961](https://github.com/ZoriHQ/zori/commit/81939610bd8a677fc0046fd82b8a9da45524008b))
+
 ## [0.5.0](https://github.com/ZoriHQ/zori/compare/v0.4.1...v0.5.0) (2025-12-04)
 
 
