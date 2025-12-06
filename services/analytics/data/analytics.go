@@ -999,3 +999,285 @@ func (a *AnalyticsData) GetCohortAnalysis(ctx *ctx.Ctx, filter *filters.SectionF
 		Cohorts: cohorts,
 	}, nil
 }
+
+func (a *AnalyticsData) GetLLMTraces(ctx *ctx.Ctx, req *types.LLMTracesListRequest) ([]types.LLMTraceItem, uint64, error) {
+	whereConditions := []string{"t.project_id = ?", "t.timestamp >= ?"}
+	args := []interface{}{req.ProjectID, req.TimeRange.Start}
+
+	if req.Name != nil && *req.Name != "" {
+		whereConditions = append(whereConditions, "t.name = ?")
+		args = append(args, *req.Name)
+	}
+
+	if req.UserID != nil && *req.UserID != "" {
+		whereConditions = append(whereConditions, "t.user_id = ?")
+		args = append(args, *req.UserID)
+	}
+
+	if req.SessionID != nil && *req.SessionID != "" {
+		whereConditions = append(whereConditions, "t.session_id = ?")
+		args = append(args, *req.SessionID)
+	}
+
+	whereClause := "WHERE " + strings.Join(whereConditions, " AND ")
+
+	modelCondition := ""
+	if req.Model != nil && *req.Model != "" {
+		modelCondition = " AND t.trace_id IN (SELECT trace_id FROM llm_generations WHERE project_id = ? AND model = ?)"
+		args = append(args, req.ProjectID, *req.Model)
+	}
+
+	countQuery := fmt.Sprintf(`
+		SELECT count(DISTINCT t.trace_id)
+		FROM llm_traces t
+		%s%s
+	`, whereClause, modelCondition)
+
+	var totalCount uint64
+	countRow := a.clickDb.Db().QueryRow(ctx, countQuery, args...)
+	if err := countRow.Scan(&totalCount); err != nil {
+		return nil, 0, fmt.Errorf("failed to get total count: %w", err)
+	}
+
+	query := fmt.Sprintf(`
+		SELECT
+			t.trace_id,
+			t.name,
+			t.user_id,
+			t.session_id,
+			t.release,
+			t.version,
+			t.input,
+			t.output,
+			t.metadata,
+			t.tags,
+			t.public,
+			t.timestamp,
+			t.created_at,
+			t.updated_at,
+			count(g.generation_id) as generation_count,
+			sum(g.total_cost) as total_cost,
+			sum(g.total_tokens) as total_tokens,
+			sum(g.input_tokens) as input_tokens,
+			sum(g.output_tokens) as output_tokens,
+			avg(g.latency_ms) as avg_latency_ms,
+			groupUniqArray(g.model) as models
+		FROM llm_traces t
+		LEFT JOIN llm_generations g ON t.project_id = g.project_id AND t.trace_id = g.trace_id
+		%s%s
+		GROUP BY t.trace_id, t.name, t.user_id, t.session_id, t.release, t.version,
+			t.input, t.output, t.metadata, t.tags, t.public, t.timestamp, t.created_at, t.updated_at
+		ORDER BY t.timestamp DESC
+		LIMIT ? OFFSET ?
+	`, whereClause, modelCondition)
+
+	queryArgs := make([]interface{}, len(args), len(args)+2)
+	copy(queryArgs, args)
+	queryArgs = append(queryArgs, req.Limit, req.Offset)
+
+	rows, err := a.clickDb.Db().Query(ctx, query, queryArgs...)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to query LLM traces: %w", err)
+	}
+	defer clickhouse.EnsureClosed(rows)
+
+	var traces []types.LLMTraceItem
+	for rows.Next() {
+		var trace types.LLMTraceItem
+		var models []string
+		if err := rows.Scan(
+			&trace.TraceID,
+			&trace.Name,
+			&trace.UserID,
+			&trace.SessionID,
+			&trace.Release,
+			&trace.Version,
+			&trace.Input,
+			&trace.Output,
+			&trace.Metadata,
+			&trace.Tags,
+			&trace.Public,
+			&trace.Timestamp,
+			&trace.CreatedAt,
+			&trace.UpdatedAt,
+			&trace.GenerationCount,
+			&trace.TotalCost,
+			&trace.TotalTokens,
+			&trace.InputTokens,
+			&trace.OutputTokens,
+			&trace.AvgLatencyMs,
+			&models,
+		); err != nil {
+			return nil, 0, fmt.Errorf("failed to scan row: %w", err)
+		}
+		// Filter out empty strings from models array
+		filteredModels := make([]string, 0, len(models))
+		for _, m := range models {
+			if m != "" {
+				filteredModels = append(filteredModels, m)
+			}
+		}
+		trace.Models = filteredModels
+		traces = append(traces, trace)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, 0, fmt.Errorf("error iterating rows: %w", err)
+	}
+
+	return traces, totalCount, nil
+}
+
+func (a *AnalyticsData) GetLLMTraceFilterOptions(ctx *ctx.Ctx, filter *filters.SectionFilter) (*types.LLMTraceFilterOptionsResponse, error) {
+	whereClause := "WHERE project_id = ?"
+	args := []interface{}{filter.ProjectID}
+
+	if filter.TimeRange != nil {
+		whereClause += " AND timestamp >= ?"
+		args = append(args, filter.TimeRange.Start)
+	}
+
+	namesQuery := fmt.Sprintf(`
+		SELECT DISTINCT name
+		FROM llm_traces
+		%s
+			AND name IS NOT NULL
+			AND name != ''
+		ORDER BY name
+		LIMIT 1000
+	`, whereClause)
+
+	namesRows, err := a.clickDb.Db().Query(ctx, namesQuery, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query trace names: %w", err)
+	}
+	defer clickhouse.EnsureClosed(namesRows)
+
+	var names []string
+	for namesRows.Next() {
+		var name string
+		if err := namesRows.Scan(&name); err != nil {
+			return nil, fmt.Errorf("failed to scan name: %w", err)
+		}
+		names = append(names, name)
+	}
+
+	if err := namesRows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating names: %w", err)
+	}
+
+	userIDsQuery := fmt.Sprintf(`
+		SELECT DISTINCT user_id
+		FROM llm_traces
+		%s
+			AND user_id IS NOT NULL
+			AND user_id != ''
+		ORDER BY user_id
+		LIMIT 1000
+	`, whereClause)
+
+	userIDsRows, err := a.clickDb.Db().Query(ctx, userIDsQuery, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query user_ids: %w", err)
+	}
+	defer clickhouse.EnsureClosed(userIDsRows)
+
+	var userIDs []string
+	for userIDsRows.Next() {
+		var userID string
+		if err := userIDsRows.Scan(&userID); err != nil {
+			return nil, fmt.Errorf("failed to scan user_id: %w", err)
+		}
+		userIDs = append(userIDs, userID)
+	}
+
+	if err := userIDsRows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating user_ids: %w", err)
+	}
+
+	sessionIDsQuery := fmt.Sprintf(`
+		SELECT DISTINCT session_id
+		FROM llm_traces
+		%s
+			AND session_id IS NOT NULL
+			AND session_id != ''
+		ORDER BY session_id
+		LIMIT 1000
+	`, whereClause)
+
+	sessionIDsRows, err := a.clickDb.Db().Query(ctx, sessionIDsQuery, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query session_ids: %w", err)
+	}
+	defer clickhouse.EnsureClosed(sessionIDsRows)
+
+	var sessionIDs []string
+	for sessionIDsRows.Next() {
+		var sessionID string
+		if err := sessionIDsRows.Scan(&sessionID); err != nil {
+			return nil, fmt.Errorf("failed to scan session_id: %w", err)
+		}
+		sessionIDs = append(sessionIDs, sessionID)
+	}
+
+	if err := sessionIDsRows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating session_ids: %w", err)
+	}
+
+	genWhereClause := "WHERE project_id = ?"
+	genArgs := []interface{}{filter.ProjectID}
+
+	if filter.TimeRange != nil {
+		genWhereClause += " AND start_time >= ?"
+		genArgs = append(genArgs, filter.TimeRange.Start)
+	}
+
+	modelsQuery := fmt.Sprintf(`
+		SELECT DISTINCT model
+		FROM llm_generations
+		%s
+			AND model IS NOT NULL
+			AND model != ''
+		ORDER BY model
+		LIMIT 1000
+	`, genWhereClause)
+
+	modelsRows, err := a.clickDb.Db().Query(ctx, modelsQuery, genArgs...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query models: %w", err)
+	}
+	defer clickhouse.EnsureClosed(modelsRows)
+
+	var models []string
+	for modelsRows.Next() {
+		var model string
+		if err := modelsRows.Scan(&model); err != nil {
+			return nil, fmt.Errorf("failed to scan model: %w", err)
+		}
+		models = append(models, model)
+	}
+
+	if err := modelsRows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating models: %w", err)
+	}
+
+	if names == nil {
+		names = []string{}
+	}
+	if userIDs == nil {
+		userIDs = []string{}
+	}
+	if sessionIDs == nil {
+		sessionIDs = []string{}
+	}
+	if models == nil {
+		models = []string{}
+	}
+
+	return &types.LLMTraceFilterOptionsResponse{
+		Names:      names,
+		UserIDs:    userIDs,
+		SessionIDs: sessionIDs,
+		Models:     models,
+	}, nil
+}

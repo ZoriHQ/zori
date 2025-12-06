@@ -253,3 +253,50 @@ type EventFilterOptionsResponse struct {
 	Pages          []string `json:"pages"`
 	EventNames     []string `json:"event_names"`
 }
+
+type LLMTracesListRequest struct {
+	filters.SectionFilter
+	Name      *string `json:"name" query:"name" example:"chat-completion"`
+	UserID    *string `json:"user_id" query:"user_id" example:"user_123"`
+	SessionID *string `json:"session_id" query:"session_id" example:"session_abc"`
+	Model     *string `json:"model" query:"model" example:"gpt-4"`
+}
+
+type LLMTracesListResponse struct {
+	Traces []LLMTraceItem `json:"traces"`
+	Total  uint64         `json:"total"`
+	Limit  int            `json:"limit"`
+	Offset int            `json:"offset"`
+}
+
+type LLMTraceItem struct {
+	TraceID   string    `json:"trace_id"`
+	Name      *string   `json:"name,omitempty"`
+	UserID    *string   `json:"user_id,omitempty"`
+	SessionID *string   `json:"session_id,omitempty"`
+	Release   *string   `json:"release,omitempty"`
+	Version   *string   `json:"version,omitempty"`
+	Input     string    `json:"input"`
+	Output    string    `json:"output"`
+	Metadata  string    `json:"metadata"`
+	Tags      []string  `json:"tags"`
+	Public    bool      `json:"public"`
+	Timestamp time.Time `json:"timestamp"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+
+	GenerationCount uint64   `json:"generation_count"`
+	TotalCost       *float64 `json:"total_cost,omitempty"`
+	TotalTokens     *uint64  `json:"total_tokens,omitempty"`
+	InputTokens     *uint64  `json:"input_tokens,omitempty"`
+	OutputTokens    *uint64  `json:"output_tokens,omitempty"`
+	AvgLatencyMs    *float64 `json:"avg_latency_ms,omitempty"`
+	Models          []string `json:"models,omitempty"`
+}
+
+type LLMTraceFilterOptionsResponse struct {
+	Names      []string `json:"names"`
+	UserIDs    []string `json:"user_ids"`
+	SessionIDs []string `json:"session_ids"`
+	Models     []string `json:"models"`
+}

@@ -71,7 +71,13 @@ func RegisterRoutes(
 	server.GroupGetWithFilter(analyticsRouteGroup, "/tiles/entry-pages", tilesService.GetEntryPagesTile, mfMiddleware)
 	server.GroupGetWithFilter(analyticsRouteGroup, "/tiles/exit-pages", tilesService.GetExitPagesTile, mfMiddleware)
 
+	server.GroupGetWithFilter(analyticsRouteGroup, "/tiles/llm-cost", tilesService.GetLLMCostTile, hfMiddleware)
+	server.GroupGetWithFilter(analyticsRouteGroup, "/tiles/llm-top-models-cost", tilesService.GetLLMTopModelsCostTile, hfMiddleware)
+
 	// Events page endpoints
 	server.GroupGetWithFilter(analyticsRouteGroup, "/events/recent", analyticsService.GetRecentEvents)
 	server.GroupGetWithFilter(analyticsRouteGroup, "/events/filter-options", analyticsService.GetEventFilterOptions, mfMiddleware)
+
+	server.GroupGetWithFilter(analyticsRouteGroup, "/llm/traces", analyticsService.GetLLMTraces)
+	server.GroupGetWithFilter(analyticsRouteGroup, "/llm/traces/filter-options", analyticsService.GetLLMTraceFilterOptions, mfMiddleware)
 }

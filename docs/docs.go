@@ -1086,6 +1086,264 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/analytics/tiles/llm-cost": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Get total LLM cost for current period compared to the previous period",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Analytics"
+                ],
+                "summary": "Get LLM cost tile",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "cus_xyz789",
+                        "name": "customer_id",
+                        "in": "query"
+                    },
+                    {
+                        "maximum": 100,
+                        "minimum": 1,
+                        "type": "integer",
+                        "default": 50,
+                        "example": 50,
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "minimum": 0,
+                        "type": "integer",
+                        "default": 0,
+                        "example": 0,
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "proj_123",
+                        "name": "project_id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "https://google.com",
+                        "name": "referrer",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "last_hour",
+                            "today",
+                            "yesterday",
+                            "last_7_days",
+                            "last_30_days",
+                            "last_90_days"
+                        ],
+                        "type": "string",
+                        "default": "last_7_days",
+                        "example": "last_7_days",
+                        "x-enum-varnames": [
+                            "TimeBoundariesHour",
+                            "TimeBoundariesToday",
+                            "TimeBoundariesYesterday",
+                            "TimeBoundariesLastWeek",
+                            "TimeBoundariesLastMonth",
+                            "TimeBoundariesLast90Days"
+                        ],
+                        "name": "time_range",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "utm_source",
+                        "name": "utmtag",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "google",
+                        "name": "utmtagValue",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "visitor_abc123",
+                        "name": "visitor_id",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "LLM cost with period comparison",
+                        "schema": {
+                            "$ref": "#/definitions/tiles.LLMCostResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request parameters",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - Invalid or missing JWT token",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/analytics/tiles/llm-top-models-cost": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Get top 3 most expensive LLM models for current period compared to the previous period",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Analytics"
+                ],
+                "summary": "Get top LLM models by cost tile",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "cus_xyz789",
+                        "name": "customer_id",
+                        "in": "query"
+                    },
+                    {
+                        "maximum": 100,
+                        "minimum": 1,
+                        "type": "integer",
+                        "default": 50,
+                        "example": 50,
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "minimum": 0,
+                        "type": "integer",
+                        "default": 0,
+                        "example": 0,
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "proj_123",
+                        "name": "project_id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "https://google.com",
+                        "name": "referrer",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "last_hour",
+                            "today",
+                            "yesterday",
+                            "last_7_days",
+                            "last_30_days",
+                            "last_90_days"
+                        ],
+                        "type": "string",
+                        "default": "last_7_days",
+                        "example": "last_7_days",
+                        "x-enum-varnames": [
+                            "TimeBoundariesHour",
+                            "TimeBoundariesToday",
+                            "TimeBoundariesYesterday",
+                            "TimeBoundariesLastWeek",
+                            "TimeBoundariesLastMonth",
+                            "TimeBoundariesLast90Days"
+                        ],
+                        "name": "time_range",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "utm_source",
+                        "name": "utmtag",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "google",
+                        "name": "utmtagValue",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "visitor_abc123",
+                        "name": "visitor_id",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Top LLM models by cost with period comparison",
+                        "schema": {
+                            "$ref": "#/definitions/tiles.LLMTopModelsCostResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request parameters",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - Invalid or missing JWT token",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/analytics/tiles/mau": {
             "get": {
                 "security": [
@@ -4963,6 +5221,42 @@ const docTemplate = `{
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/tiles.ExitPagesData"
+                    }
+                }
+            }
+        },
+        "tiles.LLMCostResponse": {
+            "type": "object",
+            "properties": {
+                "cost": {
+                    "type": "number"
+                },
+                "previous_cost": {
+                    "type": "number"
+                }
+            }
+        },
+        "tiles.LLMModelCostData": {
+            "type": "object",
+            "properties": {
+                "cost": {
+                    "type": "number"
+                },
+                "model": {
+                    "type": "string"
+                },
+                "previous_cost": {
+                    "type": "number"
+                }
+            }
+        },
+        "tiles.LLMTopModelsCostResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/tiles.LLMModelCostData"
                     }
                 }
             }

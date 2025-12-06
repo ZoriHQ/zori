@@ -32,6 +32,8 @@ func BuildAnalyticsDIContainer() fx.Option {
 		fx.Provide(tiles.NewVisitorsByOSTile),
 		fx.Provide(tiles.NewEntryPagesTile),
 		fx.Provide(tiles.NewExitPagesTile),
+		fx.Provide(tiles.NewLLMCostTile),
+		fx.Provide(tiles.NewLLMTopModelsCostTile),
 		fx.Provide(services.NewAnalyticsService),
 		fx.Provide(services.NewVisitorsService),
 		fx.Provide(services.NewTilesService),

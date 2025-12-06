@@ -78,6 +78,12 @@ resources:
           entry_pages_response: "#/components/schemas/tiles.EntryPagesResponse"
           exit_pages_data: "#/components/schemas/tiles.ExitPagesData"
           exit_pages_response: "#/components/schemas/tiles.ExitPagesResponse"
+          llm_cost_response: "#/components/schemas/tiles.LLMCostResponse"
+          llm_model_cost_data: "#/components/schemas/tiles.LLMModelCostData"
+          llm_top_models_cost_response: "#/components/schemas/tiles.LLMTopModelsCostResponse"
+          llm_trace_item: "#/components/schemas/types.LLMTraceItem"
+          llm_traces_list_response: "#/components/schemas/types.LLMTracesListResponse"
+          llm_trace_filter_options_response: "#/components/schemas/types.LLMTraceFilterOptionsResponse"
         methods:
           timeline: get /api/v1/analytics/timeline
         subresources:
@@ -91,6 +97,10 @@ resources:
             methods:
               recent: get /api/v1/analytics/events/recent
               filter_options: get /api/v1/analytics/events/filter-options
+          llm:
+            methods:
+              traces: get /api/v1/analytics/llm/traces
+              traces_filter_options: get /api/v1/analytics/llm/traces/filter-options
           tiles:
             methods:
               unique_visitors: get /api/v1/analytics/tiles/unique-visitors
@@ -110,6 +120,8 @@ resources:
               visitors_by_os: get /api/v1/analytics/tiles/visitors-by-os
               entry_pages: get /api/v1/analytics/tiles/entry-pages
               exit_pages: get /api/v1/analytics/tiles/exit-pages
+              llm_cost: get /api/v1/analytics/tiles/llm-cost
+              llm_top_models_cost: get /api/v1/analytics/tiles/llm-top-models-cost
           retention:
             methods:
               churn_rate: get /api/v1/analytics/retention/churn-rate
