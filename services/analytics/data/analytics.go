@@ -1001,37 +1001,43 @@ func (a *AnalyticsData) GetCohortAnalysis(ctx *ctx.Ctx, filter *filters.SectionF
 }
 
 func (a *AnalyticsData) GetLLMTraces(ctx *ctx.Ctx, req *types.LLMTracesListRequest) ([]types.LLMTraceItem, uint64, error) {
-	whereConditions := []string{"t.project_id = ?", "t.timestamp >= ?"}
+	// Build WHERE conditions for generations table
+	genWhereConditions := []string{"g.project_id = ?", "g.start_time >= ?"}
 	args := []interface{}{req.ProjectID, req.TimeRange.Start}
 
+	if req.Model != nil && *req.Model != "" {
+		genWhereConditions = append(genWhereConditions, "g.model = ?")
+		args = append(args, *req.Model)
+	}
+
+	genWhereClause := "WHERE " + strings.Join(genWhereConditions, " AND ")
+
+	// Build WHERE conditions for traces table (for LEFT JOIN filtering)
+	traceConditions := []string{}
 	if req.Name != nil && *req.Name != "" {
-		whereConditions = append(whereConditions, "t.name = ?")
+		traceConditions = append(traceConditions, "t.name = ?")
 		args = append(args, *req.Name)
 	}
-
 	if req.UserID != nil && *req.UserID != "" {
-		whereConditions = append(whereConditions, "t.user_id = ?")
+		traceConditions = append(traceConditions, "t.user_id = ?")
 		args = append(args, *req.UserID)
 	}
-
 	if req.SessionID != nil && *req.SessionID != "" {
-		whereConditions = append(whereConditions, "t.session_id = ?")
+		traceConditions = append(traceConditions, "t.session_id = ?")
 		args = append(args, *req.SessionID)
 	}
 
-	whereClause := "WHERE " + strings.Join(whereConditions, " AND ")
-
-	modelCondition := ""
-	if req.Model != nil && *req.Model != "" {
-		modelCondition = " AND t.trace_id IN (SELECT trace_id FROM llm_generations WHERE project_id = ? AND model = ?)"
-		args = append(args, req.ProjectID, *req.Model)
+	traceFilterClause := ""
+	if len(traceConditions) > 0 {
+		traceFilterClause = " AND " + strings.Join(traceConditions, " AND ")
 	}
 
 	countQuery := fmt.Sprintf(`
-		SELECT count(DISTINCT t.trace_id)
-		FROM llm_traces t
+		SELECT count(DISTINCT g.trace_id)
+		FROM llm_generations g
+		LEFT JOIN llm_traces t ON g.project_id = t.project_id AND g.trace_id = t.trace_id
 		%s%s
-	`, whereClause, modelCondition)
+	`, genWhereClause, traceFilterClause)
 
 	var totalCount uint64
 	countRow := a.clickDb.Db().QueryRow(ctx, countQuery, args...)
@@ -1041,20 +1047,20 @@ func (a *AnalyticsData) GetLLMTraces(ctx *ctx.Ctx, req *types.LLMTracesListReque
 
 	query := fmt.Sprintf(`
 		SELECT
-			t.trace_id,
-			t.name,
-			t.user_id,
-			t.session_id,
-			t.release,
-			t.version,
-			t.input,
-			t.output,
-			t.metadata,
-			t.tags,
-			t.public,
-			t.timestamp,
-			t.created_at,
-			t.updated_at,
+			g.trace_id,
+			any(t.name) as name,
+			any(t.user_id) as user_id,
+			any(t.session_id) as session_id,
+			any(t.release) as release,
+			any(t.version) as version,
+			any(t.input) as input,
+			any(t.output) as output,
+			any(t.metadata) as metadata,
+			any(t.tags) as tags,
+			any(t.public) as public,
+			min(g.start_time) as timestamp,
+			min(g.created_at) as created_at,
+			max(g.updated_at) as updated_at,
 			count(g.generation_id) as generation_count,
 			sum(g.total_cost) as total_cost,
 			sum(g.total_tokens) as total_tokens,
@@ -1062,14 +1068,13 @@ func (a *AnalyticsData) GetLLMTraces(ctx *ctx.Ctx, req *types.LLMTracesListReque
 			sum(g.output_tokens) as output_tokens,
 			avg(g.latency_ms) as avg_latency_ms,
 			groupUniqArray(g.model) as models
-		FROM llm_traces t
-		LEFT JOIN llm_generations g ON t.project_id = g.project_id AND t.trace_id = g.trace_id
+		FROM llm_generations g
+		LEFT JOIN llm_traces t ON g.project_id = t.project_id AND g.trace_id = t.trace_id
 		%s%s
-		GROUP BY t.trace_id, t.name, t.user_id, t.session_id, t.release, t.version,
-			t.input, t.output, t.metadata, t.tags, t.public, t.timestamp, t.created_at, t.updated_at
-		ORDER BY t.timestamp DESC
+		GROUP BY g.trace_id
+		ORDER BY timestamp DESC
 		LIMIT ? OFFSET ?
-	`, whereClause, modelCondition)
+	`, genWhereClause, traceFilterClause)
 
 	queryArgs := make([]interface{}, len(args), len(args)+2)
 	copy(queryArgs, args)
