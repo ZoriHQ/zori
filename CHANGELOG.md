@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.6.1](https://github.com/ZoriHQ/zori/compare/v0.6.0...v0.6.1) (2025-12-07)
+
+
+### Bug Fixes
+
+* **db:** removed old column ([80ad998](https://github.com/ZoriHQ/zori/commit/80ad9980e390a24103238b4a02c603f82f0529f5))
+* **docs:** updated openapi spec ([d6f6939](https://github.com/ZoriHQ/zori/commit/d6f6939bc359bd563afe5ed5bf0ca8720d86b9ef))
+
 ## [0.6.0](https://github.com/ZoriHQ/zori/compare/v0.5.0...v0.6.0) (2025-12-06)
 
 
