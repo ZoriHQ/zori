@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.7.0](https://github.com/ZoriHQ/zori/compare/v0.6.1...v0.7.0) (2025-12-08)
+
+
+### Features
+
+* **events:** added unique events list materialized view ([01a2bc8](https://github.com/ZoriHQ/zori/commit/01a2bc8c1460bb775d5caa8ea307e2c422542737))
+
+
+### Miscellaneous
+
+* **events:** added more data to events return ([7f0aaa8](https://github.com/ZoriHQ/zori/commit/7f0aaa85e04c096bd424618d4531198e40e8a4b5))
+
 ## [0.6.1](https://github.com/ZoriHQ/zori/compare/v0.6.0...v0.6.1) (2025-12-07)
 
 
