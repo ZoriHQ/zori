@@ -281,7 +281,7 @@ func (a *AnalyticsData) GetRecentEvents(ctx *ctx.Ctx, req *types.RecentEventsReq
 
 func (a *AnalyticsData) GetEventFilterOptions(ctx *ctx.Ctx, filter *filters.SectionFilter) (*types.EventFilterOptionsResponse, error) {
 	whereClause := "WHERE project_id = ?"
-	args := []interface{}{filter.ProjectID}
+	args := []any{filter.ProjectID}
 
 	if filter.TimeRange != nil {
 		whereClause += " AND client_timestamp_utc >= ? AND client_timestamp_utc <= now()"
@@ -346,17 +346,15 @@ func (a *AnalyticsData) GetEventFilterOptions(ctx *ctx.Ctx, filter *filters.Sect
 		return nil, fmt.Errorf("error iterating pages: %w", err)
 	}
 
-	eventNamesQuery := fmt.Sprintf(`
-		SELECT DISTINCT event_name
-		FROM events
-		%s
-			AND event_name IS NOT NULL
-			AND event_name != ''
+	eventNamesQuery := `
+		SELECT event_name
+		FROM unique_event_names
+		WHERE project_id = ?
 		ORDER BY event_name
 		LIMIT 1000
-	`, whereClause)
+	`
 
-	eventNamesRows, err := a.clickDb.Db().Query(ctx, eventNamesQuery, args...)
+	eventNamesRows, err := a.clickDb.Db().Query(ctx, eventNamesQuery, filter.ProjectID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query event names: %w", err)
 	}
