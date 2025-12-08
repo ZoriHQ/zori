@@ -72,19 +72,30 @@ type RecentEventsResponse struct {
 type RecentEvent struct {
 	EventName          *string   `json:"event_name"`
 	VisitorID          string    `json:"visitor_id"`
+	SessionID          string    `json:"session_id"`
 	UserID             *string   `json:"user_id,omitempty"`
 	ExternalID         *string   `json:"external_id,omitempty"`
 	ClientTimestampUTC time.Time `json:"client_timestamp_utc"`
 	PageURL            string    `json:"page_url"`
 	PagePath           string    `json:"page_path"`
+	Host               string    `json:"host"`
 	ReferrerURL        string    `json:"referrer_url,omitempty"`
 	ReferrerDomain     *string   `json:"referrer_domain,omitempty"`
 	DeviceType         *string   `json:"device_type,omitempty"`
 	BrowserName        *string   `json:"browser_name,omitempty"`
+	OsName             *string   `json:"os_name,omitempty"`
 	LocationCountryISO *string   `json:"location_country_iso,omitempty"`
 	LocationCity       *string   `json:"location_city,omitempty"`
 	LocationLatitude   *float64  `json:"location_latitude,omitempty"`
 	LocationLongitude  *float64  `json:"location_longitude,omitempty"`
+
+	// UTM parameters for campaign attribution
+	UTMSource   *string `json:"utm_source,omitempty"`
+	UTMMedium   *string `json:"utm_medium,omitempty"`
+	UTMCampaign *string `json:"utm_campaign,omitempty"`
+
+	// Custom properties sent with the event
+	CustomProperties map[string]any `json:"custom_properties,omitempty"`
 
 	ClickElementTag      *string  `json:"click_element_tag,omitempty"`
 	ClickElementSelector *string  `json:"click_element_selector,omitempty"`

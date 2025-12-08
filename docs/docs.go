@@ -6571,6 +6571,11 @@ const docTemplate = `{
                 "client_timestamp_utc": {
                     "type": "string"
                 },
+                "custom_properties": {
+                    "description": "Custom properties sent with the event",
+                    "type": "object",
+                    "additionalProperties": {}
+                },
                 "device_type": {
                     "type": "string"
                 },
@@ -6578,6 +6583,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "external_id": {
+                    "type": "string"
+                },
+                "host": {
                     "type": "string"
                 },
                 "is_cta_click": {
@@ -6604,6 +6612,9 @@ const docTemplate = `{
                 "location_longitude": {
                     "type": "number"
                 },
+                "os_name": {
+                    "type": "string"
+                },
                 "page_path": {
                     "type": "string"
                 },
@@ -6616,7 +6627,20 @@ const docTemplate = `{
                 "referrer_url": {
                     "type": "string"
                 },
+                "session_id": {
+                    "type": "string"
+                },
                 "user_id": {
+                    "type": "string"
+                },
+                "utm_campaign": {
+                    "type": "string"
+                },
+                "utm_medium": {
+                    "type": "string"
+                },
+                "utm_source": {
+                    "description": "UTM parameters for campaign attribution",
                     "type": "string"
                 },
                 "visitor_id": {

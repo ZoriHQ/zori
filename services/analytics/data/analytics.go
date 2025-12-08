@@ -2,6 +2,7 @@ package data
 
 import (
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -155,19 +156,26 @@ func (a *AnalyticsData) GetRecentEvents(ctx *ctx.Ctx, req *types.RecentEventsReq
 		SELECT
 			event_name,
 			visitor_id,
+			session_id,
 			user_id,
 			external_id,
 			client_timestamp_utc,
 			page_url,
 			page_path,
+			host,
 			referrer_url,
 			referrer_domain,
 			device_type,
 			browser_name,
+			os_name,
 			location_country_iso,
 			location_city,
 			location_latitude,
 			location_longitude,
+			utm_source,
+			utm_medium,
+			utm_campaign,
+			custom_properties,
 			click_element_tag,
 			click_element_selector,
 			click_element_text,
@@ -200,22 +208,31 @@ func (a *AnalyticsData) GetRecentEvents(ctx *ctx.Ctx, req *types.RecentEventsReq
 	var events []types.RecentEvent
 	for rows.Next() {
 		var event types.RecentEvent
+		var customPropertiesStr string
+		var utmSource, utmMedium, utmCampaign string
 		if err := rows.Scan(
 			&event.EventName,
 			&event.VisitorID,
+			&event.SessionID,
 			&event.UserID,
 			&event.ExternalID,
 			&event.ClientTimestampUTC,
 			&event.PageURL,
 			&event.PagePath,
+			&event.Host,
 			&event.ReferrerURL,
 			&event.ReferrerDomain,
 			&event.DeviceType,
 			&event.BrowserName,
+			&event.OsName,
 			&event.LocationCountryISO,
 			&event.LocationCity,
 			&event.LocationLatitude,
 			&event.LocationLongitude,
+			&utmSource,
+			&utmMedium,
+			&utmCampaign,
+			&customPropertiesStr,
 			&event.ClickElementTag,
 			&event.ClickElementSelector,
 			&event.ClickElementText,
@@ -232,6 +249,26 @@ func (a *AnalyticsData) GetRecentEvents(ctx *ctx.Ctx, req *types.RecentEventsReq
 		); err != nil {
 			return nil, 0, fmt.Errorf("failed to scan row: %w", err)
 		}
+
+		// Set UTM parameters only if they have values
+		if utmSource != "" {
+			event.UTMSource = &utmSource
+		}
+		if utmMedium != "" {
+			event.UTMMedium = &utmMedium
+		}
+		if utmCampaign != "" {
+			event.UTMCampaign = &utmCampaign
+		}
+
+		// Parse custom properties JSON string into map
+		if customPropertiesStr != "" && customPropertiesStr != "{}" {
+			var customProps map[string]any
+			if err := json.Unmarshal([]byte(customPropertiesStr), &customProps); err == nil && len(customProps) > 0 {
+				event.CustomProperties = customProps
+			}
+		}
+
 		events = append(events, event)
 	}
 
