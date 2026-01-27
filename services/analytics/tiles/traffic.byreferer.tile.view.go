@@ -12,11 +12,9 @@ type RefererTrafficSourceResponse struct {
 }
 
 type RefererTrafficSourceData struct {
-	RefererURL      string  `json:"referer_url" ch:"referer_url"`
-	Count           *uint64 `json:"count" ch:"current_visits"`
-	PreviousCount   *uint64 `json:"previous_count" ch:"previous_visits"`
-	Revenue         *uint64 `json:"revenue" ch:"current_revenue"`
-	PreviousRevenue *uint64 `json:"previous_revenue" ch:"previous_revenue"`
+	RefererURL    string  `json:"referer_url" ch:"referer_url"`
+	Count         *uint64 `json:"count" ch:"current_visits"`
+	PreviousCount *uint64 `json:"previous_count" ch:"previous_visits"`
 }
 
 type TrafficRefererSourceTile struct {
@@ -76,26 +74,3 @@ func (t *TrafficRefererSourceTile) buildTrafficSourceRefererQuery(ctx *ctx.Ctx, 
 	`, filter.TimeRange.IntervalValue, filter.TimeRange.IntervalValueDelta)
 }
 
-//nolint:all
-func (t *TrafficRefererSourceTile) buildTrafficSourceRevenueQuery(filter *filters.SectionFilter) string {
-	return fmt.Sprintf(`
-		WITH visitor_attribution AS (
-		    SELECT
-		        visitor_id,
-		        argMax(referrer_domain, client_timestamp_utc) AS last_referrer
-		    FROM events
-		    GROUP BY visitor_id
-		)
-		SELECT
-		    ifNull(va.last_referrer, 'DIRECT/NONE') AS referer_url,
-			countDistinct(pe.visitor_id) AS visitors,
-		    sumIf(pe.amount, pe.payment_timestamp_utc > now() - %[1]s) AS current_revenue,
-		    uniqIf(pe.visitor_id, pe.payment_timestamp_utc > now() - %[1]s) AS current_paying_visitors,
-		    countIf(pe.payment_id, pe.payment_timestamp_utc > now() - %[1]s) AS current_payments
-		FROM payment_events pe
-		LEFT JOIN visitor_attribution va ON pe.visitor_id = va.visitor_id
-		WHERE pe.visitor_id IS NOT NULL
-		GROUP BY referer_url
-		ORDER BY current_revenue DESC;
-	`, filter.TimeRange.IntervalValue, filter.TimeRange.IntervalValueDelta)
-}

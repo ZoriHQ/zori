@@ -5,7 +5,6 @@ import (
 	"zori/services/analytics/services"
 	"zori/services/analytics/tiles"
 	"zori/services/analytics/web"
-	ingestionData "zori/services/ingestion/data"
 
 	"go.uber.org/fx"
 )
@@ -13,7 +12,6 @@ import (
 func BuildAnalyticsDIContainer() fx.Option {
 	return fx.Module("analytics",
 		fx.Provide(data.NewAnalyticsData),
-		fx.Provide(fx.Private, ingestionData.NewVisitorRepository),
 		fx.Provide(tiles.NewTimelineTile),
 		fx.Provide(tiles.NewTrafficRefererSourceTile),
 		fx.Provide(tiles.NewTrafficCountrySourceTile),
@@ -32,8 +30,6 @@ func BuildAnalyticsDIContainer() fx.Option {
 		fx.Provide(tiles.NewVisitorsByOSTile),
 		fx.Provide(tiles.NewEntryPagesTile),
 		fx.Provide(tiles.NewExitPagesTile),
-		fx.Provide(tiles.NewLLMCostTile),
-		fx.Provide(tiles.NewLLMTopModelsCostTile),
 		fx.Provide(services.NewAnalyticsService),
 		fx.Provide(services.NewVisitorsService),
 		fx.Provide(services.NewTilesService),

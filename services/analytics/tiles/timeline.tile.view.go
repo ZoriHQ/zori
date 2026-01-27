@@ -22,7 +22,6 @@ type TimelineTileData struct {
 	NumDesktopVisits uint64    `json:"num_desktop_visits" ch:"desktop"`
 	NumMobileVisits  uint64    `json:"num_mobile_visits" ch:"mobile"`
 	NumUnknownVisits uint64    `json:"num_unknown_visits" ch:"unknown"`
-	NumRevenue       *int64    `json:"num_revenue" ch:"amount_in_cents"`
 }
 
 type TimelineTileResponse struct {
@@ -50,9 +49,6 @@ func (c *TimelineTile) Fetch(ctx *ctx.Ctx, filter *filters.SectionFilter) (*Time
 		ctx.OrgID(),
 		filter.ProjectID,
 		filter.TimeRange.Start,
-		ctx.OrgID(),
-		filter.ProjectID,
-		filter.TimeRange.Start,
 		filter.TimeRange.Start,
 	)
 
@@ -75,30 +71,16 @@ func (c *TimelineTile) Fetch(ctx *ctx.Ctx, filter *filters.SectionFilter) (*Time
 
 func (c *TimelineTile) buildTimelineQuery(filter *filters.SectionFilter) string {
 	return fmt.Sprintf(`
-		WITH revenue AS (
-			SELECT
-				%[1]s(payment_timestamp_utc) AS time_bucket,
-				sum(amount) AS amount_in_cents
-			FROM payment_events
-			WHERE organization_id = ?
-				AND project_id = ?
-				AND payment_timestamp_utc >= ?
-				AND payment_timestamp_utc <= now()
-				AND payment_status = 'succeeded'
-			GROUP BY time_bucket
-		)
 		SELECT
 		    %[1]s(toDateTime(client_timestamp_utc)) AS time_bucket,
 		    countDistinctIf(visitor_id, device_type = 'Desktop') AS desktop,
 	        countDistinctIf(visitor_id, device_type = 'Mobile') AS mobile,
-	        countDistinctIf(visitor_id, device_type IS NULL OR (device_type != 'Desktop' AND device_type != 'Mobile')) AS unknown,
-		    any(r.amount_in_cents) AS amount_in_cents
-		FROM events e
-		LEFT JOIN revenue r ON %[1]s(e.client_timestamp_utc) = r.time_bucket
-		WHERE e.organization_id = ?
-		  AND e.project_id = ?
-		  AND e.client_timestamp_utc >= ?
-		  AND e.client_timestamp_utc <= now()
+	        countDistinctIf(visitor_id, device_type IS NULL OR (device_type != 'Desktop' AND device_type != 'Mobile')) AS unknown
+		FROM events
+		WHERE organization_id = ?
+		  AND project_id = ?
+		  AND client_timestamp_utc >= ?
+		  AND client_timestamp_utc <= now()
 		GROUP BY time_bucket
 		ORDER BY time_bucket ASC
 		WITH FILL FROM %[1]s(toDateTime(?)) TO %[1]s(now()) STEP %[5]s(1);`,

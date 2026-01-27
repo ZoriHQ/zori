@@ -27,13 +27,7 @@ import (
 	ingestionWeb "zori/services/ingestion/web"
 	"zori/services/live"
 	"zori/services/organizations"
-	"zori/services/payments"
-	paymentsServices "zori/services/payments/services"
 	"zori/services/projects"
-	"zori/services/revenue"
-	revenueData "zori/services/revenue/data"
-	revenueServices "zori/services/revenue/services"
-	"zori/services/traces"
 
 	"github.com/uptrace/bun"
 	"github.com/uptrace/bun/dialect/pgdialect"
@@ -52,11 +46,8 @@ type TestContainer struct {
 	Config             *config.Config
 	Cache              *cache.CacheService
 	Processor          *eventsServices.Processor
-	PaymentProcessor   *paymentsServices.PaymentProcessor
-	RevenueService     *revenueServices.RevenueService
 	IngestionServer    *ingestionWeb.IngestionServer
 	IngestionServerURL string
-	RevenueData        *revenueData.RevenueData
 	AnalyticsData      *analyticsData.AnalyticsData
 }
 
@@ -113,10 +104,6 @@ func NewTestContainer(t *testing.T) *TestContainer {
 		ingestion.BuildIngestionDiContainer(),
 		live.BuildLiveDIContainer(),
 		events.BuildEventsDIContainer(),
-		traces.BuildTracesDIContainer(),
-
-		payments.BuildPaymentsDIContainer(),
-		revenue.BuildRevenueDIContainer(),
 		analytics.BuildAnalyticsDIContainer(),
 
 		fx.Provide(metrics.NewMetricsCollector),
@@ -158,18 +145,8 @@ func NewTestContainer(t *testing.T) *TestContainer {
 			})
 		}),
 
-		fx.Invoke(func(lc fx.Lifecycle, processor *paymentsServices.PaymentProcessor) {
-			lc.Append(fx.Hook{
-				OnStart: func(ctx context.Context) error {
-					return processor.Start()
-				},
-				OnStop: func(ctx context.Context) error {
-					return processor.Stop()
-				},
-			})
-		}),
 		fx.NopLogger,
-		fx.Populate(&tc.DB, &tc.ClickHouse, &tc.NATS, &tc.Server, &tc.Config, &tc.Cache, &tc.Processor, &tc.PaymentProcessor, &tc.RevenueService, &tc.IngestionServer, &tc.RevenueData, &tc.AnalyticsData),
+		fx.Populate(&tc.DB, &tc.ClickHouse, &tc.NATS, &tc.Server, &tc.Config, &tc.Cache, &tc.Processor, &tc.IngestionServer, &tc.AnalyticsData),
 	)
 
 	tc.App = app
@@ -227,10 +204,6 @@ func (tc *TestContainer) CleanupTestData(ctx context.Context) error {
 
 	if err := tc.ClickHouse.Db().Exec(ctx, "TRUNCATE TABLE IF EXISTS events"); err != nil {
 		return fmt.Errorf("failed to truncate events: %w", err)
-	}
-
-	if err := tc.ClickHouse.Db().Exec(ctx, "TRUNCATE TABLE IF EXISTS payment_events"); err != nil {
-		return fmt.Errorf("failed to truncate payment_events: %w", err)
 	}
 
 	if err := tc.Cache.FlushAll(ctx); err != nil {

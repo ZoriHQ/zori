@@ -5,7 +5,6 @@ import (
 	"zori/internal/telemetry"
 	"zori/services/events/services"
 	"zori/services/events/web"
-	"zori/services/ingestion/data"
 	liveServices "zori/services/live/services"
 
 	"go.uber.org/fx"
@@ -14,7 +13,6 @@ import (
 func BuildEventsDIContainer() fx.Option {
 	return fx.Module("events",
 		fx.Provide(services.NewBatchProcessor),
-		fx.Provide(fx.Private, data.NewVisitorRepository),
 		fx.Provide(services.NewProcessor),
 		fx.Provide(services.NewIdentifyProcessor),
 		fx.Provide(services.NewEventsService),

@@ -38,10 +38,6 @@ func (p *ProjectService) GetProjectByPublishableToken(token string) (*models.Pro
 	return p.data.GetProjectByPublishableToken(token)
 }
 
-func (p *ProjectService) GetProjectByLangfusePublicKey(ctx context.Context, publicKey string) (*models.Project, error) {
-	return p.data.GetProjectByLangfusePublicKey(ctx, publicKey)
-}
-
 func (p *ProjectService) SetFirstEventReceivedNow(projectID string) error {
 	err := p.data.SetFirstEventReceived(projectID)
 	if err != nil {
@@ -74,7 +70,7 @@ func (s *ProjectService) ListProjects(c *ctx.Ctx) (*ListProjectsResponse, error)
 }
 
 // @Summary Create a new project
-// @Description Create a new project for the authenticated user's organization. The response includes Langfuse API keys for LLM trace ingestion.
+// @Description Create a new project for the authenticated user's organization.
 // @Tags Projects
 // @Accept json
 // @Produce json

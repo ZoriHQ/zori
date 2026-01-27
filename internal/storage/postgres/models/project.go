@@ -17,10 +17,6 @@ type Project struct {
 	FirstEventReceivedAt *time.Time `json:"first_event_received_at" example:"2024-01-15T10:30:00Z"`
 	ProjectToken         string     `json:"project_token" bun:",notnull" example:"zori_pt_1234567890"`
 
-	// Langfuse-compatible API keys for LLM trace ingestion (used to accept OpenRouter traces)
-	LangfusePublicKey *string `json:"langfuse_public_key" bun:"langfuse_public_key" example:"pk-lf-a1b2c3d4e5f6"`
-	LangfuseSecretKey *string `json:"langfuse_secret_key" bun:"langfuse_secret_key" example:"sk-lf-a1b2c3d4e5f6"`
-
 	CreatedAt time.Time `json:"created_at" bun:",notnull,default:current_timestamp" example:"2024-01-15T10:30:00Z"`
 	UpdatedAt time.Time `json:"updated_at" bun:",notnull,default:current_timestamp" example:"2024-01-15T10:30:00Z"`
 }

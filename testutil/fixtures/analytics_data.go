@@ -163,37 +163,3 @@ func NewEventInsertData(projectID, organizationID string) EventInsertData {
 	}
 }
 
-type LLMGenerationInsertData struct {
-	ProjectID    string
-	GenerationID string
-	TraceID      string
-	Model        *string
-	StartTime    time.Time
-	TotalCost    *float64
-}
-
-func InsertLLMGenerationsDirect(t *testing.T, tc *di.TestContainer, generations []LLMGenerationInsertData) error {
-	t.Helper()
-
-	ctx := context.Background()
-	query := `INSERT INTO llm_generations (
-		project_id, generation_id, trace_id, model, start_time, total_cost, created_at
-	) VALUES (?, ?, ?, ?, ?, ?, ?)`
-
-	for i, g := range generations {
-		err := tc.ClickHouse.Db().Exec(ctx, query,
-			g.ProjectID,
-			g.GenerationID,
-			g.TraceID,
-			g.Model,
-			g.StartTime,
-			g.TotalCost,
-			g.StartTime,
-		)
-		if err != nil {
-			return fmt.Errorf("failed to insert LLM generation %d: %w", i, err)
-		}
-	}
-
-	return nil
-}

@@ -22,9 +22,7 @@ import (
 	"zori/services/live"
 	"zori/services/organizations"
 	orgServices "zori/services/organizations/services"
-	"zori/services/payments"
 	"zori/services/projects"
-	"zori/services/revenue"
 
 	"go.uber.org/fx"
 )
@@ -66,8 +64,6 @@ func NewApplication() *fx.App {
 		organizations.BuildOrganizationDIContainer(),
 		projects.BuildProjectsDIContainer(),
 		analytics.BuildAnalyticsDIContainer(),
-		revenue.BuildRevenueDIContainer(),
-		payments.BuildPaymentsDIContainer(),
 		live.BuildLiveDIContainer(),
 
 		fx.Provide(
@@ -87,13 +83,9 @@ func NewApplication() *fx.App {
 		projects.BuildProjectWebDIContainer(),
 		organizations.BuildOrganizationWebDIContainer(),
 		analytics.BuildAnalyticsWebDIContainer(),
-		revenue.BuildRevenueWebDIContainer(),
-		payments.BuildPaymentsWebDIContainer(),
 		events.BuildEventsDIContainer(),
 		events.BuildEventsWebContainer(),
 		live.BuildLiveWebDIContainer(),
-		payments.BuildPaymentsProcessorDIContainer(),
-		payments.BuildPaymentsWebhookDIContainer(),
 
 		fx.Invoke(func(lc fx.Lifecycle, metricsServer *metrics.MetricsServer) {
 			lc.Append(fx.Hook{

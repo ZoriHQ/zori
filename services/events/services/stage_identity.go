@@ -1,27 +1,15 @@
 package services
 
 import (
-	"context"
 	"crypto/sha256"
 	"encoding/hex"
-	"fmt"
-	"zori/internal/storage/postgres/models"
-	"zori/services/ingestion/data"
 	"zori/services/ingestion/types"
 )
 
-type StageIdentity struct {
-	visitorRepository *data.VisitorRepository
-}
+type StageIdentity struct{}
 
 func NewStageIdentity() *StageIdentity {
 	return &StageIdentity{}
-}
-
-func NewStageIdentityWithRepository(visitorRepository *data.VisitorRepository) *StageIdentity {
-	return &StageIdentity{
-		visitorRepository: visitorRepository,
-	}
 }
 
 func (s *StageIdentity) ProcessFrame(frame *types.ClientEventFrameV1) error {
@@ -29,27 +17,6 @@ func (s *StageIdentity) ProcessFrame(frame *types.ClientEventFrameV1) error {
 	if frame.Email != nil && *frame.Email != "" {
 		emailHash := hashEmail(*frame.Email)
 		frame.EmailHash = &emailHash
-	}
-
-	if s.visitorRepository != nil {
-		hasIdentity := (frame.UserID != nil && *frame.UserID != "") ||
-			(frame.ExternalID != nil && *frame.ExternalID != "") ||
-			(frame.Email != nil && *frame.Email != "")
-
-		if hasIdentity {
-			visitor := &models.Visitor{
-				VisitorID:      frame.VisitorID,
-				ProjectID:      frame.ProjectID,
-				OrganizationID: frame.OrganizationID,
-				UserID:         frame.UserID,
-				ExternalID:     frame.ExternalID,
-				Email:          frame.Email,
-			}
-
-			if err := s.visitorRepository.UpsertVisitor(context.Background(), visitor); err != nil {
-				fmt.Printf("Error upserting visitor: %s \n", err.Error())
-			}
-		}
 	}
 
 	return nil
