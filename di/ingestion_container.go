@@ -15,9 +15,7 @@ import (
 	"zori/services/ingestion"
 	"zori/services/ingestion/web"
 	"zori/services/organizations"
-	"zori/services/payments"
 	"zori/services/projects"
-	"zori/services/traces"
 
 	"github.com/valyala/fasthttp"
 	"go.uber.org/fx"
@@ -44,8 +42,6 @@ func NewIngestionApplication() *fx.App {
 
 		organizations.BuildOrganizationDIContainer(),
 		projects.BuildProjectsDIContainer(),
-		payments.BuildPaymentsDIContainer(),
-		traces.BuildTracesDIContainer(),
 
 		fx.Invoke(registerDatabaseLifecycle),
 		ingestion.BuildIngestionDiContainer(),

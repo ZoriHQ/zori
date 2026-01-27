@@ -65,10 +65,6 @@ func TestProjectService_CreateProject(t *testing.T) {
 				assert.NotEmpty(t, result.Project.ProjectToken)
 				assert.Equal(t, account.OrgID, result.Project.OrganizationID)
 				assert.Nil(t, result.Project.FirstEventReceivedAt)
-				assert.NotNil(t, result.Project.LangfusePublicKey)
-				assert.NotNil(t, result.Project.LangfuseSecretKey)
-				assert.True(t, len(*result.Project.LangfusePublicKey) > 0)
-				assert.True(t, len(*result.Project.LangfuseSecretKey) > 0)
 
 				dbCtx := context.Background()
 				var project models.Project

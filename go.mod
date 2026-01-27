@@ -27,8 +27,6 @@ require (
 	github.com/redis/go-redis/v9 v9.14.1
 	github.com/speps/go-hashids/v2 v2.0.1
 	github.com/stretchr/testify v1.11.1
-	github.com/stripe/stripe-go/v82 v82.5.1
-	github.com/stripe/stripe-go/v83 v83.1.0
 	github.com/swaggo/echo-swagger v1.4.1
 	github.com/swaggo/swag v1.16.6
 	github.com/uptrace/bun v1.2.15

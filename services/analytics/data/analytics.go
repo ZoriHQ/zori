@@ -11,28 +11,16 @@ import (
 	"zori/internal/storage/clickhouse"
 	"zori/services/analytics/filters"
 	"zori/services/analytics/types"
-	ingestionData "zori/services/ingestion/data"
 )
 
 type AnalyticsData struct {
-	clickDb           *clickhouse.ClickhouseDB
-	visitorRepository *ingestionData.VisitorRepository
+	clickDb *clickhouse.ClickhouseDB
 }
 
-func NewAnalyticsData(clickDb *clickhouse.ClickhouseDB, visitorRepository *ingestionData.VisitorRepository) *AnalyticsData {
+func NewAnalyticsData(clickDb *clickhouse.ClickhouseDB) *AnalyticsData {
 	return &AnalyticsData{
-		clickDb:           clickDb,
-		visitorRepository: visitorRepository,
+		clickDb: clickDb,
 	}
-}
-
-func contains(slice []string, str string) bool {
-	for _, item := range slice {
-		if item == str {
-			return true
-		}
-	}
-	return false
 }
 
 func (a *AnalyticsData) GetVisitorsByDevice(ctx *ctx.Ctx, filter *filters.SectionFilter) ([]types.VisitorDataPoint, error) {
@@ -391,6 +379,7 @@ func (a *AnalyticsData) GetEventFilterOptions(ctx *ctx.Ctx, filter *filters.Sect
 }
 
 func (a *AnalyticsData) GetTopVisitors(ctx *ctx.Ctx, filter *filters.SectionFilter) ([]types.TopVisitor, error) {
+	// Get visitor data with identity information directly from events table
 	visitorDataQuery := `
 		SELECT
 			visitor_id,
@@ -400,7 +389,9 @@ func (a *AnalyticsData) GetTopVisitors(ctx *ctx.Ctx, filter *filters.SectionFilt
 			any(location_country_iso) as location_country_iso,
 			any(location_city) as location_city,
 			any(device_type) as device_type,
-			any(browser_name) as browser_name
+			any(browser_name) as browser_name,
+			anyIf(user_id, user_id IS NOT NULL AND user_id != '') as user_id,
+			anyIf(external_id, external_id IS NOT NULL AND external_id != '') as external_id
 		FROM events
 		WHERE project_id = ?
 			AND client_timestamp_utc >= ?
@@ -424,10 +415,11 @@ func (a *AnalyticsData) GetTopVisitors(ctx *ctx.Ctx, filter *filters.SectionFilt
 		LocationCity       *string
 		DeviceType         *string
 		BrowserName        *string
+		UserID             *string
+		ExternalID         *string
 	}
 
 	var allVisitorData []visitorData
-	visitorIDs := make([]string, 0)
 
 	for rows.Next() {
 		var vd visitorData
@@ -440,198 +432,36 @@ func (a *AnalyticsData) GetTopVisitors(ctx *ctx.Ctx, filter *filters.SectionFilt
 			&vd.LocationCity,
 			&vd.DeviceType,
 			&vd.BrowserName,
+			&vd.UserID,
+			&vd.ExternalID,
 		); err != nil {
 			return nil, fmt.Errorf("failed to scan visitor data: %w", err)
 		}
 		allVisitorData = append(allVisitorData, vd)
-		visitorIDs = append(visitorIDs, vd.VisitorID)
 	}
 
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("error iterating visitor rows: %w", err)
 	}
 
-	type visitorIdentity struct {
-		UserID     *string
-		ExternalID *string
-		Email      *string
-		Name       *string
-	}
-	visitorIdentityMap := make(map[string]*visitorIdentity)
-
-	var allRelatedVisitorIDs []string
-	if len(visitorIDs) > 0 {
-		identities, err := a.visitorRepository.GetVisitorsByIDs(ctx, visitorIDs)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get visitor identities: %w", err)
-		}
-		for _, identity := range identities {
-			visitorIdentityMap[identity.VisitorID] = &visitorIdentity{
-				UserID:     identity.UserID,
-				ExternalID: identity.ExternalID,
-				Email:      identity.Email,
-				Name:       identity.Name,
-			}
-		}
-
-		allRelatedVisitorIDs, err = a.visitorRepository.GetAllVisitorIDsByIdentities(ctx, filter.ProjectID, visitorIDs)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get all related visitor IDs: %w", err)
-		}
-
-		allIdentities, err := a.visitorRepository.GetVisitorsByIDs(ctx, allRelatedVisitorIDs)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get all related visitor identities: %w", err)
-		}
-		for _, identity := range allIdentities {
-			if _, exists := visitorIdentityMap[identity.VisitorID]; !exists {
-				visitorIdentityMap[identity.VisitorID] = &visitorIdentity{
-					UserID:     identity.UserID,
-					ExternalID: identity.ExternalID,
-					Email:      identity.Email,
-					Name:       identity.Name,
-				}
-			}
-		}
-	} else {
-		allRelatedVisitorIDs = []string{}
-	}
-
-	earliestSeenQuery := `
-		SELECT
-			visitor_id,
-			min(client_timestamp_utc) as earliest_seen
-		FROM events
-		WHERE project_id = ?
-			AND visitor_id IN (` + clickhouse.BuildPlaceholders(len(allRelatedVisitorIDs)) + `)
-		GROUP BY visitor_id
-	`
-
-	earliestSeenArgs := []interface{}{filter.ProjectID}
-	for _, vid := range allRelatedVisitorIDs {
-		earliestSeenArgs = append(earliestSeenArgs, vid)
-	}
-
-	type earliestSeenData struct {
-		VisitorID    string
-		EarliestSeen time.Time
-	}
-
-	earliestSeenMap := make(map[string]time.Time)
-	if len(allRelatedVisitorIDs) > 0 {
-		earliestRows, err := a.clickDb.Db().Query(ctx, earliestSeenQuery, earliestSeenArgs...)
-		if err != nil {
-			return nil, fmt.Errorf("failed to query earliest seen data: %w", err)
-		}
-		defer clickhouse.EnsureClosed(earliestRows)
-
-		for earliestRows.Next() {
-			var esd earliestSeenData
-			if err := earliestRows.Scan(&esd.VisitorID, &esd.EarliestSeen); err != nil {
-				return nil, fmt.Errorf("failed to scan earliest seen data: %w", err)
-			}
-			earliestSeenMap[esd.VisitorID] = esd.EarliestSeen
-		}
-
-		if err := earliestRows.Err(); err != nil {
-			return nil, fmt.Errorf("error iterating earliest seen rows: %w", err)
-		}
-	}
-
-	allVisitorIDsForPayments := make(map[string]bool)
-	for _, vid := range visitorIDs {
-		allVisitorIDsForPayments[vid] = true
-	}
-	for _, vid := range allRelatedVisitorIDs {
-		allVisitorIDsForPayments[vid] = true
-	}
-
-	visitorIDListForPayments := make([]string, 0, len(allVisitorIDsForPayments))
-	for vid := range allVisitorIDsForPayments {
-		visitorIDListForPayments = append(visitorIDListForPayments, vid)
-	}
-
-	paymentQuery := `
-		SELECT
-			visitor_id,
-			count(DISTINCT payment_id) as distinct_payments,
-			sum(amount) as total_amount,
-			any(currency) as currency,
-			min(payment_timestamp_utc) as first_payment_date
-		FROM payment_events
-		WHERE project_id = ?
-			AND payment_status = 'succeeded'
-			AND visitor_id IS NOT NULL
-			AND visitor_id IN (` + clickhouse.BuildPlaceholders(len(visitorIDListForPayments)) + `)
-		GROUP BY visitor_id
-	`
-
-	paymentArgs := []interface{}{filter.ProjectID}
-	for _, vid := range visitorIDListForPayments {
-		paymentArgs = append(paymentArgs, vid)
-	}
-
-	type paymentData struct {
-		VisitorID        string
-		DistinctPayments uint64
-		TotalAmount      int64 // in cents
-		Currency         string
-		FirstPaymentDate time.Time
-	}
-
-	paymentMap := make(map[string]paymentData)
-	if len(visitorIDs) > 0 {
-		paymentRows, err := a.clickDb.Db().Query(ctx, paymentQuery, paymentArgs...)
-		if err != nil {
-			return nil, fmt.Errorf("failed to query payment data: %w", err)
-		}
-		defer clickhouse.EnsureClosed(paymentRows)
-
-		for paymentRows.Next() {
-			var pd paymentData
-			if err := paymentRows.Scan(
-				&pd.VisitorID,
-				&pd.DistinctPayments,
-				&pd.TotalAmount,
-				&pd.Currency,
-				&pd.FirstPaymentDate,
-			); err != nil {
-				return nil, fmt.Errorf("failed to scan payment data: %w", err)
-			}
-			paymentMap[pd.VisitorID] = pd
-		}
-
-		if err := paymentRows.Err(); err != nil {
-			return nil, fmt.Errorf("error iterating payment rows: %w", err)
-		}
-	}
-
 	type groupKey struct {
 		UserID     string
 		ExternalID string
-		Email      string
 	}
 
 	groupMap := make(map[groupKey]*types.TopVisitor)
 	ungroupedVisitors := make([]*types.TopVisitor, 0)
 
 	for _, vd := range allVisitorData {
-		identity, hasIdentity := visitorIdentityMap[vd.VisitorID]
-
 		var key groupKey
 		var canGroup bool
 
-		if hasIdentity {
-			if identity.UserID != nil && *identity.UserID != "" {
-				key.UserID = *identity.UserID
-				canGroup = true
-			} else if identity.ExternalID != nil && *identity.ExternalID != "" {
-				key.ExternalID = *identity.ExternalID
-				canGroup = true
-			} else if identity.Email != nil && *identity.Email != "" {
-				key.Email = *identity.Email
-				canGroup = true
-			}
+		if vd.UserID != nil && *vd.UserID != "" {
+			key.UserID = *vd.UserID
+			canGroup = true
+		} else if vd.ExternalID != nil && *vd.ExternalID != "" {
+			key.ExternalID = *vd.ExternalID
+			canGroup = true
 		}
 
 		if canGroup {
@@ -646,21 +476,10 @@ func (a *AnalyticsData) GetTopVisitors(ctx *ctx.Ctx, filter *filters.SectionFilt
 				if vd.LastSeen.After(existing.LastSeen) {
 					existing.LastSeen = vd.LastSeen
 				}
-
-				if pd, hasPayment := paymentMap[vd.VisitorID]; hasPayment {
-					existing.DistinctPayments += pd.DistinctPayments
-					existing.TotalRevenue += float64(pd.TotalAmount) / 100.0
-
-					if existing.FirstPaymentDate == nil || pd.FirstPaymentDate.Before(*existing.FirstPaymentDate) {
-						existing.FirstPaymentDate = &pd.FirstPaymentDate
-					}
-				}
 			} else {
 				enhanced := &types.TopVisitor{
-					UserID:             identity.UserID,
-					ExternalID:         identity.ExternalID,
-					Email:              identity.Email,
-					Name:               identity.Name,
+					UserID:             vd.UserID,
+					ExternalID:         vd.ExternalID,
 					VisitorIDs:         []string{vd.VisitorID},
 					IsGrouped:          false,
 					EventCount:         vd.EventCount,
@@ -670,48 +489,6 @@ func (a *AnalyticsData) GetTopVisitors(ctx *ctx.Ctx, filter *filters.SectionFilt
 					LocationCity:       vd.LocationCity,
 					DeviceType:         vd.DeviceType,
 					BrowserName:        vd.BrowserName,
-				}
-
-				if pd, hasPayment := paymentMap[vd.VisitorID]; hasPayment {
-					enhanced.DistinctPayments = pd.DistinctPayments
-					enhanced.TotalRevenue = float64(pd.TotalAmount) / 100.0
-					enhanced.Currency = &pd.Currency
-					enhanced.FirstPaymentDate = &pd.FirstPaymentDate
-				}
-
-				for _, relatedID := range allRelatedVisitorIDs {
-					if relatedID == vd.VisitorID {
-						continue // Already checked above
-					}
-
-					if relatedIdentity, exists := visitorIdentityMap[relatedID]; exists {
-						matchesIdentity := false
-						if identity.UserID != nil && *identity.UserID != "" && relatedIdentity.UserID != nil && *relatedIdentity.UserID == *identity.UserID {
-							matchesIdentity = true
-						} else if identity.ExternalID != nil && *identity.ExternalID != "" && relatedIdentity.ExternalID != nil && *relatedIdentity.ExternalID == *identity.ExternalID {
-							matchesIdentity = true
-						} else if identity.Email != nil && *identity.Email != "" && relatedIdentity.Email != nil && *relatedIdentity.Email == *identity.Email {
-							matchesIdentity = true
-						}
-
-						if matchesIdentity {
-							if !contains(enhanced.VisitorIDs, relatedID) {
-								enhanced.VisitorIDs = append(enhanced.VisitorIDs, relatedID)
-							}
-
-							if pd, hasPayment := paymentMap[relatedID]; hasPayment {
-								enhanced.DistinctPayments += pd.DistinctPayments
-								enhanced.TotalRevenue += float64(pd.TotalAmount) / 100.0
-
-								if enhanced.FirstPaymentDate == nil || pd.FirstPaymentDate.Before(*enhanced.FirstPaymentDate) {
-									enhanced.FirstPaymentDate = &pd.FirstPaymentDate
-								}
-								if enhanced.Currency == nil {
-									enhanced.Currency = &pd.Currency
-								}
-							}
-						}
-					}
 				}
 
 				groupMap[key] = enhanced
@@ -729,13 +506,6 @@ func (a *AnalyticsData) GetTopVisitors(ctx *ctx.Ctx, filter *filters.SectionFilt
 				BrowserName:        vd.BrowserName,
 			}
 
-			if pd, hasPayment := paymentMap[vd.VisitorID]; hasPayment {
-				enhanced.DistinctPayments = pd.DistinctPayments
-				enhanced.TotalRevenue = float64(pd.TotalAmount) / 100.0
-				enhanced.Currency = &pd.Currency
-				enhanced.FirstPaymentDate = &pd.FirstPaymentDate
-			}
-
 			ungroupedVisitors = append(ungroupedVisitors, enhanced)
 		}
 	}
@@ -743,43 +513,10 @@ func (a *AnalyticsData) GetTopVisitors(ctx *ctx.Ctx, filter *filters.SectionFilt
 	result := make([]types.TopVisitor, 0)
 
 	for _, enhanced := range groupMap {
-		var absoluteEarliestSeen time.Time
-		for _, vid := range enhanced.VisitorIDs {
-			if earliestSeen, exists := earliestSeenMap[vid]; exists {
-				if absoluteEarliestSeen.IsZero() || earliestSeen.Before(absoluteEarliestSeen) {
-					absoluteEarliestSeen = earliestSeen
-				}
-			}
-		}
-
-		if !absoluteEarliestSeen.IsZero() && absoluteEarliestSeen.Before(enhanced.FirstSeen) {
-			enhanced.FirstSeen = absoluteEarliestSeen
-		}
-
-		if enhanced.FirstPaymentDate != nil {
-			timeToFirstPurchase := enhanced.FirstPaymentDate.Sub(enhanced.FirstSeen).Seconds()
-			if timeToFirstPurchase >= 0 {
-				enhanced.TimeToFirstPurchaseSeconds = &timeToFirstPurchase
-			}
-		}
 		result = append(result, *enhanced)
 	}
 
 	for _, enhanced := range ungroupedVisitors {
-		for _, vid := range enhanced.VisitorIDs {
-			if earliestSeen, exists := earliestSeenMap[vid]; exists {
-				if earliestSeen.Before(enhanced.FirstSeen) {
-					enhanced.FirstSeen = earliestSeen
-				}
-			}
-		}
-
-		if enhanced.FirstPaymentDate != nil {
-			timeToFirstPurchase := enhanced.FirstPaymentDate.Sub(enhanced.FirstSeen).Seconds()
-			if timeToFirstPurchase >= 0 {
-				enhanced.TimeToFirstPurchaseSeconds = &timeToFirstPurchase
-			}
-		}
 		result = append(result, *enhanced)
 	}
 
@@ -892,24 +629,26 @@ func (a *AnalyticsData) GetVisitorProfile(ctx *ctx.Ctx, filter *filters.VisitorP
 	}
 	profile.EventsOverTime = eventsOverTime
 
-	visitorIdentity, err := a.visitorRepository.GetVisitorByID(ctx, *filter.VisitorID)
-	if err != nil && !errors.Is(err, sql.ErrNoRows) {
-		fmt.Printf("Warning: failed to fetch visitor identity: %v\n", err)
+	// Get identity info from events table
+	identityQuery := `
+		SELECT
+			anyIf(user_id, user_id IS NOT NULL AND user_id != '') as user_id,
+			anyIf(external_id, external_id IS NOT NULL AND external_id != '') as external_id
+		FROM events
+		WHERE project_id = ?
+			AND visitor_id = ?
+		LIMIT 1
+	`
+
+	var userID, externalID *string
+	identityRow := a.clickDb.Db().QueryRow(ctx, identityQuery, filter.ProjectID, *filter.VisitorID)
+	if err := identityRow.Scan(&userID, &externalID); err != nil && !errors.Is(err, sql.ErrNoRows) {
+		fmt.Printf("Warning: failed to fetch visitor identity from events: %v\n", err)
 	}
 
-	if visitorIdentity != nil {
-		profile.IsIdentified = true
-		profile.UserID = visitorIdentity.UserID
-		profile.ExternalID = visitorIdentity.ExternalID
-		profile.Email = visitorIdentity.Email
-		profile.Name = visitorIdentity.Name
-		profile.Phone = visitorIdentity.Phone
-		profile.CustomTraits = visitorIdentity.CustomTraits
-		profile.FirstIdentifiedAt = visitorIdentity.FirstIdentifiedAt
-		profile.LastIdentifiedAt = visitorIdentity.LastIdentifiedAt
-	} else {
-		profile.IsIdentified = false
-	}
+	profile.UserID = userID
+	profile.ExternalID = externalID
+	profile.IsIdentified = (userID != nil && *userID != "") || (externalID != nil && *externalID != "")
 
 	return &profile, nil
 }
@@ -1035,289 +774,3 @@ func (a *AnalyticsData) GetCohortAnalysis(ctx *ctx.Ctx, filter *filters.SectionF
 	}, nil
 }
 
-func (a *AnalyticsData) GetLLMTraces(ctx *ctx.Ctx, req *types.LLMTracesListRequest) ([]types.LLMTraceItem, uint64, error) {
-	// Build WHERE conditions for generations table
-	genWhereConditions := []string{"g.project_id = ?", "g.start_time >= ?"}
-	args := []interface{}{req.ProjectID, req.TimeRange.Start}
-
-	if req.Model != nil && *req.Model != "" {
-		genWhereConditions = append(genWhereConditions, "g.model = ?")
-		args = append(args, *req.Model)
-	}
-
-	genWhereClause := "WHERE " + strings.Join(genWhereConditions, " AND ")
-
-	// Build WHERE conditions for traces table (for LEFT JOIN filtering)
-	traceConditions := []string{}
-	if req.Name != nil && *req.Name != "" {
-		traceConditions = append(traceConditions, "t.name = ?")
-		args = append(args, *req.Name)
-	}
-	if req.UserID != nil && *req.UserID != "" {
-		traceConditions = append(traceConditions, "t.user_id = ?")
-		args = append(args, *req.UserID)
-	}
-	if req.SessionID != nil && *req.SessionID != "" {
-		traceConditions = append(traceConditions, "t.session_id = ?")
-		args = append(args, *req.SessionID)
-	}
-
-	traceFilterClause := ""
-	if len(traceConditions) > 0 {
-		traceFilterClause = " AND " + strings.Join(traceConditions, " AND ")
-	}
-
-	countQuery := fmt.Sprintf(`
-		SELECT count(DISTINCT g.trace_id)
-		FROM llm_generations g
-		LEFT JOIN llm_traces t ON g.project_id = t.project_id AND g.trace_id = t.trace_id
-		%s%s
-	`, genWhereClause, traceFilterClause)
-
-	var totalCount uint64
-	countRow := a.clickDb.Db().QueryRow(ctx, countQuery, args...)
-	if err := countRow.Scan(&totalCount); err != nil {
-		return nil, 0, fmt.Errorf("failed to get total count: %w", err)
-	}
-
-	query := fmt.Sprintf(`
-		SELECT
-			g.trace_id,
-			any(t.name) as name,
-			any(t.user_id) as user_id,
-			any(t.session_id) as session_id,
-			any(t.release) as release,
-			any(t.version) as version,
-			any(t.input) as input,
-			any(t.output) as output,
-			any(t.metadata) as metadata,
-			any(t.tags) as tags,
-			any(t.public) as public,
-			min(g.start_time) as timestamp,
-			min(g.created_at) as created_at,
-			max(g.updated_at) as updated_at,
-			count(g.generation_id) as generation_count,
-			sum(g.total_cost) as total_cost,
-			sum(g.total_tokens) as total_tokens,
-			sum(g.input_tokens) as input_tokens,
-			sum(g.output_tokens) as output_tokens,
-			avg(g.latency_ms) as avg_latency_ms,
-			groupUniqArray(g.model) as models
-		FROM llm_generations g
-		LEFT JOIN llm_traces t ON g.project_id = t.project_id AND g.trace_id = t.trace_id
-		%s%s
-		GROUP BY g.trace_id
-		ORDER BY timestamp DESC
-		LIMIT ? OFFSET ?
-	`, genWhereClause, traceFilterClause)
-
-	queryArgs := make([]interface{}, len(args), len(args)+2)
-	copy(queryArgs, args)
-	queryArgs = append(queryArgs, req.Limit, req.Offset)
-
-	rows, err := a.clickDb.Db().Query(ctx, query, queryArgs...)
-	if err != nil {
-		return nil, 0, fmt.Errorf("failed to query LLM traces: %w", err)
-	}
-	defer clickhouse.EnsureClosed(rows)
-
-	var traces []types.LLMTraceItem
-	for rows.Next() {
-		var trace types.LLMTraceItem
-		var models []string
-		if err := rows.Scan(
-			&trace.TraceID,
-			&trace.Name,
-			&trace.UserID,
-			&trace.SessionID,
-			&trace.Release,
-			&trace.Version,
-			&trace.Input,
-			&trace.Output,
-			&trace.Metadata,
-			&trace.Tags,
-			&trace.Public,
-			&trace.Timestamp,
-			&trace.CreatedAt,
-			&trace.UpdatedAt,
-			&trace.GenerationCount,
-			&trace.TotalCost,
-			&trace.TotalTokens,
-			&trace.InputTokens,
-			&trace.OutputTokens,
-			&trace.AvgLatencyMs,
-			&models,
-		); err != nil {
-			return nil, 0, fmt.Errorf("failed to scan row: %w", err)
-		}
-		// Filter out empty strings from models array
-		filteredModels := make([]string, 0, len(models))
-		for _, m := range models {
-			if m != "" {
-				filteredModels = append(filteredModels, m)
-			}
-		}
-		trace.Models = filteredModels
-		traces = append(traces, trace)
-	}
-
-	if err := rows.Err(); err != nil {
-		return nil, 0, fmt.Errorf("error iterating rows: %w", err)
-	}
-
-	return traces, totalCount, nil
-}
-
-func (a *AnalyticsData) GetLLMTraceFilterOptions(ctx *ctx.Ctx, filter *filters.SectionFilter) (*types.LLMTraceFilterOptionsResponse, error) {
-	whereClause := "WHERE project_id = ?"
-	args := []interface{}{filter.ProjectID}
-
-	if filter.TimeRange != nil {
-		whereClause += " AND timestamp >= ?"
-		args = append(args, filter.TimeRange.Start)
-	}
-
-	namesQuery := fmt.Sprintf(`
-		SELECT DISTINCT name
-		FROM llm_traces
-		%s
-			AND name IS NOT NULL
-			AND name != ''
-		ORDER BY name
-		LIMIT 1000
-	`, whereClause)
-
-	namesRows, err := a.clickDb.Db().Query(ctx, namesQuery, args...)
-	if err != nil {
-		return nil, fmt.Errorf("failed to query trace names: %w", err)
-	}
-	defer clickhouse.EnsureClosed(namesRows)
-
-	var names []string
-	for namesRows.Next() {
-		var name string
-		if err := namesRows.Scan(&name); err != nil {
-			return nil, fmt.Errorf("failed to scan name: %w", err)
-		}
-		names = append(names, name)
-	}
-
-	if err := namesRows.Err(); err != nil {
-		return nil, fmt.Errorf("error iterating names: %w", err)
-	}
-
-	userIDsQuery := fmt.Sprintf(`
-		SELECT DISTINCT user_id
-		FROM llm_traces
-		%s
-			AND user_id IS NOT NULL
-			AND user_id != ''
-		ORDER BY user_id
-		LIMIT 1000
-	`, whereClause)
-
-	userIDsRows, err := a.clickDb.Db().Query(ctx, userIDsQuery, args...)
-	if err != nil {
-		return nil, fmt.Errorf("failed to query user_ids: %w", err)
-	}
-	defer clickhouse.EnsureClosed(userIDsRows)
-
-	var userIDs []string
-	for userIDsRows.Next() {
-		var userID string
-		if err := userIDsRows.Scan(&userID); err != nil {
-			return nil, fmt.Errorf("failed to scan user_id: %w", err)
-		}
-		userIDs = append(userIDs, userID)
-	}
-
-	if err := userIDsRows.Err(); err != nil {
-		return nil, fmt.Errorf("error iterating user_ids: %w", err)
-	}
-
-	sessionIDsQuery := fmt.Sprintf(`
-		SELECT DISTINCT session_id
-		FROM llm_traces
-		%s
-			AND session_id IS NOT NULL
-			AND session_id != ''
-		ORDER BY session_id
-		LIMIT 1000
-	`, whereClause)
-
-	sessionIDsRows, err := a.clickDb.Db().Query(ctx, sessionIDsQuery, args...)
-	if err != nil {
-		return nil, fmt.Errorf("failed to query session_ids: %w", err)
-	}
-	defer clickhouse.EnsureClosed(sessionIDsRows)
-
-	var sessionIDs []string
-	for sessionIDsRows.Next() {
-		var sessionID string
-		if err := sessionIDsRows.Scan(&sessionID); err != nil {
-			return nil, fmt.Errorf("failed to scan session_id: %w", err)
-		}
-		sessionIDs = append(sessionIDs, sessionID)
-	}
-
-	if err := sessionIDsRows.Err(); err != nil {
-		return nil, fmt.Errorf("error iterating session_ids: %w", err)
-	}
-
-	genWhereClause := "WHERE project_id = ?"
-	genArgs := []interface{}{filter.ProjectID}
-
-	if filter.TimeRange != nil {
-		genWhereClause += " AND start_time >= ?"
-		genArgs = append(genArgs, filter.TimeRange.Start)
-	}
-
-	modelsQuery := fmt.Sprintf(`
-		SELECT DISTINCT model
-		FROM llm_generations
-		%s
-			AND model IS NOT NULL
-			AND model != ''
-		ORDER BY model
-		LIMIT 1000
-	`, genWhereClause)
-
-	modelsRows, err := a.clickDb.Db().Query(ctx, modelsQuery, genArgs...)
-	if err != nil {
-		return nil, fmt.Errorf("failed to query models: %w", err)
-	}
-	defer clickhouse.EnsureClosed(modelsRows)
-
-	var models []string
-	for modelsRows.Next() {
-		var model string
-		if err := modelsRows.Scan(&model); err != nil {
-			return nil, fmt.Errorf("failed to scan model: %w", err)
-		}
-		models = append(models, model)
-	}
-
-	if err := modelsRows.Err(); err != nil {
-		return nil, fmt.Errorf("error iterating models: %w", err)
-	}
-
-	if names == nil {
-		names = []string{}
-	}
-	if userIDs == nil {
-		userIDs = []string{}
-	}
-	if sessionIDs == nil {
-		sessionIDs = []string{}
-	}
-	if models == nil {
-		models = []string{}
-	}
-
-	return &types.LLMTraceFilterOptionsResponse{
-		Names:      names,
-		UserIDs:    userIDs,
-		SessionIDs: sessionIDs,
-		Models:     models,
-	}, nil
-}

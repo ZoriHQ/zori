@@ -6,21 +6,18 @@ import (
 	"zori/services/analytics/data"
 	"zori/services/analytics/filters"
 	"zori/services/analytics/types"
-	ingestionData "zori/services/ingestion/data"
 	projectsData "zori/services/projects/data"
 )
 
 type AnalyticsService struct {
-	data              *data.AnalyticsData
-	visitorRepository *ingestionData.VisitorRepository
-	projectData       *projectsData.ProjectData
+	data        *data.AnalyticsData
+	projectData *projectsData.ProjectData
 }
 
-func NewAnalyticsService(data *data.AnalyticsData, visitorRepository *ingestionData.VisitorRepository, projectData *projectsData.ProjectData) *AnalyticsService {
+func NewAnalyticsService(data *data.AnalyticsData, projectData *projectsData.ProjectData) *AnalyticsService {
 	return &AnalyticsService{
-		data:              data,
-		visitorRepository: visitorRepository,
-		projectData:       projectData,
+		data:        data,
+		projectData: projectData,
 	}
 }
 
@@ -171,55 +168,3 @@ func (s *AnalyticsService) GetCohortAnalysis(ctx *ctx.Ctx, filter *filters.Secti
 	return cohorts, nil
 }
 
-// GetLLMTraces returns a paginated list of LLM traces with optional filters
-// @Summary Get LLM traces list
-// @Description Get a paginated list of LLM traces with optional filters (name, user_id, session_id, model)
-// @Tags Analytics
-// @Accept json
-// @Produce json
-// @Security ApiKeyAuth
-// @Param filter query types.LLMTracesListRequest true "Filter parameters"
-// @Success 200 {object} types.LLMTracesListResponse "List of LLM traces with pagination info"
-// @Failure 400 {object} map[string]interface{} "Invalid request parameters"
-// @Failure 401 {object} map[string]interface{} "Unauthorized - Invalid or missing JWT token"
-// @Failure 500 {object} map[string]interface{} "Internal server error"
-// @Router /api/v1/analytics/llm/traces [get]
-func (s *AnalyticsService) GetLLMTraces(ctx *ctx.Ctx, filter *types.LLMTracesListRequest) (*types.LLMTracesListResponse, error) {
-	traces, totalCount, err := s.data.GetLLMTraces(ctx, filter)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get LLM traces: %w", err)
-	}
-
-	if len(traces) == 0 {
-		traces = make([]types.LLMTraceItem, 0)
-	}
-
-	return &types.LLMTracesListResponse{
-		Traces: traces,
-		Total:  totalCount,
-		Limit:  filter.Limit,
-		Offset: filter.Offset,
-	}, nil
-}
-
-// GetLLMTraceFilterOptions returns available filter options for LLM traces
-// @Summary Get LLM trace filter options
-// @Description Get unique names, user_ids, session_ids, and models to populate filter dropdowns
-// @Tags Analytics
-// @Accept json
-// @Produce json
-// @Security ApiKeyAuth
-// @Param filter query filters.SectionFilter true "Filter parameters"
-// @Success 200 {object} types.LLMTraceFilterOptionsResponse "Filter options for LLM traces"
-// @Failure 400 {object} map[string]interface{} "Invalid request parameters"
-// @Failure 401 {object} map[string]interface{} "Unauthorized - Invalid or missing JWT token"
-// @Failure 500 {object} map[string]interface{} "Internal server error"
-// @Router /api/v1/analytics/llm/traces/filter-options [get]
-func (s *AnalyticsService) GetLLMTraceFilterOptions(ctx *ctx.Ctx, filter *filters.SectionFilter) (*types.LLMTraceFilterOptionsResponse, error) {
-	filterOptions, err := s.data.GetLLMTraceFilterOptions(ctx, filter)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get LLM trace filter options: %w", err)
-	}
-
-	return filterOptions, nil
-}

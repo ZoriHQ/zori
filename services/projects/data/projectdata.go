@@ -59,19 +59,12 @@ func (p *ProjectData) CreateProject(c *ctx.Ctx, req *types.CreateProjectRequest)
 		return nil, err
 	}
 
-	langfuseKeys, err := helpers.GenerateLangfuseKeys()
-	if err != nil {
-		return nil, err
-	}
-
 	project := &models.Project{
-		Name:              req.Name,
-		Domain:            req.WebsiteURL,
-		ProjectToken:      projectToken,
-		OrganizationID:    c.OrgID(),
-		AllowLocalHost:    req.AllowLocalHost,
-		LangfusePublicKey: &langfuseKeys.PublicKey,
-		LangfuseSecretKey: &langfuseKeys.SecretKey,
+		Name:           req.Name,
+		Domain:         req.WebsiteURL,
+		ProjectToken:   projectToken,
+		OrganizationID: c.OrgID(),
+		AllowLocalHost: req.AllowLocalHost,
 	}
 
 	_, err = p.db.NewInsert().
@@ -160,11 +153,3 @@ func (p *ProjectData) GetProjectByID(ctx context.Context, projectID string) (*mo
 	return project, err
 }
 
-func (p *ProjectData) GetProjectByLangfusePublicKey(ctx context.Context, publicKey string) (*models.Project, error) {
-	project := &models.Project{}
-	err := p.db.NewSelect().
-		Model(project).
-		Where("langfuse_public_key = ?", publicKey).
-		Scan(ctx)
-	return project, err
-}

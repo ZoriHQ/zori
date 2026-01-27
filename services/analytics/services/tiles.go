@@ -28,8 +28,6 @@ type TilesService struct {
 	visitorsByOSTile         *tiles.VisitorsByOSTile
 	entryPagesTile           *tiles.EntryPagesTile
 	exitPagesTile            *tiles.ExitPagesTile
-	llmCostTile              *tiles.LLMCostTile
-	llmTopModelsCostTile     *tiles.LLMTopModelsCostTile
 }
 
 func NewTilesService(
@@ -51,8 +49,6 @@ func NewTilesService(
 	visitorsByOSTile *tiles.VisitorsByOSTile,
 	entryPagesTile *tiles.EntryPagesTile,
 	exitPagesTile *tiles.ExitPagesTile,
-	llmCostTile *tiles.LLMCostTile,
-	llmTopModelsCostTile *tiles.LLMTopModelsCostTile,
 ) *TilesService {
 	return &TilesService{
 		timelineTile:             timelineTile,
@@ -73,8 +69,6 @@ func NewTilesService(
 		visitorsByBrowserTile:    visitorsByBrowserTile,
 		entryPagesTile:           entryPagesTile,
 		exitPagesTile:            exitPagesTile,
-		llmCostTile:              llmCostTile,
-		llmTopModelsCostTile:     llmTopModelsCostTile,
 	}
 }
 
@@ -384,36 +378,3 @@ func (s *TilesService) GetExitPagesTile(ctx *ctx.Ctx, filter *filters.SectionFil
 	return s.exitPagesTile.Fetch(ctx, filter)
 }
 
-// GetLLMCostTile returns the total LLM cost for current and previous periods
-// @Summary Get LLM cost tile
-// @Description Get total LLM cost for current period compared to the previous period
-// @Tags Analytics
-// @Accept json
-// @Produce json
-// @Security ApiKeyAuth
-// @Param filter query filters.SectionFilter true "Filter parameters"
-// @Success 200 {object} tiles.LLMCostResponse "LLM cost with period comparison"
-// @Failure 400 {object} map[string]interface{} "Invalid request parameters"
-// @Failure 401 {object} map[string]interface{} "Unauthorized - Invalid or missing JWT token"
-// @Failure 500 {object} map[string]interface{} "Internal server error"
-// @Router /api/v1/analytics/tiles/llm-cost [get]
-func (s *TilesService) GetLLMCostTile(ctx *ctx.Ctx, filter *filters.SectionFilter) (*tiles.LLMCostResponse, error) {
-	return s.llmCostTile.Fetch(ctx, filter)
-}
-
-// GetLLMTopModelsCostTile returns the top 3 most expensive LLM models for current and previous periods
-// @Summary Get top LLM models by cost tile
-// @Description Get top 3 most expensive LLM models for current period compared to the previous period
-// @Tags Analytics
-// @Accept json
-// @Produce json
-// @Security ApiKeyAuth
-// @Param filter query filters.SectionFilter true "Filter parameters"
-// @Success 200 {object} tiles.LLMTopModelsCostResponse "Top LLM models by cost with period comparison"
-// @Failure 400 {object} map[string]interface{} "Invalid request parameters"
-// @Failure 401 {object} map[string]interface{} "Unauthorized - Invalid or missing JWT token"
-// @Failure 500 {object} map[string]interface{} "Internal server error"
-// @Router /api/v1/analytics/tiles/llm-top-models-cost [get]
-func (s *TilesService) GetLLMTopModelsCostTile(ctx *ctx.Ctx, filter *filters.SectionFilter) (*tiles.LLMTopModelsCostResponse, error) {
-	return s.llmTopModelsCostTile.Fetch(ctx, filter)
-}

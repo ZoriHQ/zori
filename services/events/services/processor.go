@@ -10,7 +10,6 @@ import (
 	"zori/internal/natsstream"
 	"zori/internal/storage/clickhouse"
 	"zori/internal/telemetry"
-	"zori/services/ingestion/data"
 	"zori/services/ingestion/types"
 	liveServices "zori/services/live/services"
 
@@ -40,7 +39,7 @@ type Processor struct {
 	liveTracker    *liveServices.LiveSessionTracker
 }
 
-func NewProcessor(natsStream *natsstream.Stream, clickDb *clickhouse.ClickhouseDB, natsMetrics *metrics.NatsMetrics, batchProcessor *BatchProcessor, visitorRepository *data.VisitorRepository, logger *telemetry.Logger, liveTracker *liveServices.LiveSessionTracker) *Processor {
+func NewProcessor(natsStream *natsstream.Stream, clickDb *clickhouse.ClickhouseDB, natsMetrics *metrics.NatsMetrics, batchProcessor *BatchProcessor, logger *telemetry.Logger, liveTracker *liveServices.LiveSessionTracker) *Processor {
 	err := natsStream.UpsertJetStream(rawEventsStream, rawEventsSubject)
 	if err != nil {
 		panic(err)
@@ -51,7 +50,7 @@ func NewProcessor(natsStream *natsstream.Stream, clickDb *clickhouse.ClickhouseD
 		NewStagePage(),
 		NewStageUserAgent(),
 		NewStageReferrer(),
-		NewStageIdentityWithRepository(visitorRepository),
+		NewStageIdentity(),
 		NewStageClickClassification(),
 	}
 
