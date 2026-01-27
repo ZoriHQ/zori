@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="preview.png" alt="Zori - Revenue Analytics" width="100%" />
+  <img src="preview.png" alt="Zori - Web Analytics" width="100%" />
 </p>
 
 <p align="center">
@@ -13,19 +13,19 @@
 
 # zori.
 
-revenue → attribution → clarity.
+visitors → clicks → clarity.
 
 ---
 
 ## the problem?
-you know your traffic.
-you don't know your money.
-the gap between visitor and customer is dark.
+you know visitors came.
+you don't know what they did.
+the gap between pageview and intent is dark.
 
 ## the answer.
-zori watches first touch.
-remembers everything.
-connects dots when stripe speaks.
+zori watches every interaction.
+classifies every click.
+reveals patterns in behavior.
 
 ---
 
@@ -36,11 +36,11 @@ visitor arrives (utm_source=magic)
      ↓
 zori remembers
      ↓
-[... time passes ...]
+clicks. scrolls. navigates.
      ↓
-visitor → customer ($$$)
+patterns emerge
      ↓
-"ah, magic brought money"
+"ah, that's what they wanted"
 ```
 
 **first touch.**
@@ -51,9 +51,9 @@ matters most
 buttons. links. intentions.
 classified. understood.
 
-**revenue flows.**
-mrr. ltv. conversion time.
-truth in numbers.
+**traffic sources.**
+referrers. utm params. campaigns.
+truth in attribution.
 
 ---
 
@@ -64,9 +64,9 @@ truth in numbers.
 │ browser  │────▶│ingestion │──┐
 └──────────┘     └──────────┘  │
                                 ▼
-┌──────────┐     ┌──────────┐  NATS
-│  stripe  │────▶│processor │◀─┘
-└──────────┘     └──────────┘
+                 ┌──────────┐  NATS
+                 │processor │◀─┘
+                 └──────────┘
                        │
         ┌──────────────┼──────────────┐
         ▼              ▼              ▼
@@ -119,11 +119,11 @@ done. tracking begins.
 
 **oss mode**
 `ZORI_IS_OSS=true`
-single tenant. your auth. your stripe key.
+single tenant. your auth. your data.
 freedom.
 
 **cloud mode**
-multi-tenant. clerk auth. stripe oauth.
+multi-tenant. clerk auth.
 scale.
 
 ---
@@ -179,4 +179,4 @@ sees through clickhouse.
 remembers in postgres.
 messages through nats.
 
-track money. not just traffic.
+track clicks. understand intent.
